@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -14,6 +15,7 @@ public class EqualLinearLayout extends LinearLayout {
         super(context);
     }
 
+    @TargetApi(11)
     public EqualLinearLayout(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
     }
