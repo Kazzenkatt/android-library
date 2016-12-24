@@ -295,7 +295,14 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 textView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        File parentDirectory = currentPath.getParentFile();
+                        File parentDirectory = currentPath;
+                        if (parentDirectory.isDirectory()) {
+                            parentDirectory = parentDirectory.getParentFile();
+                        } else {
+                            parentDirectory = parentDirectory.getParentFile();
+                            if (parentDirectory != null)
+                                parentDirectory = parentDirectory.getParentFile();
+                        }
 
                         if (parentDirectory == null)
                             parentDirectory = new File(ROOT);
