@@ -20,16 +20,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * <application>
- * <provider
- * android:name=".AssetsProvider"
- * android:authorities="com.github.axet.appspace"
- * android:exported="false"
- * android:grantUriPermissions="true">
- * </provider>
- * </application>
- */
 public class AssetsProvider extends ContentProvider {
     static Map<Uri, String> types = new HashMap<>();
     static Map<Uri, String> names = new HashMap<>();
