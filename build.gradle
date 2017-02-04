@@ -84,12 +84,12 @@ uploadArchives {
                 packaging 'jar'
                 // optionally artifactId can be defined here
                 description 'Android Simple Widgets and Support classes.'
-                url 'https://github.com/axet/android-library'
+                url 'https://gitlab.com/axet/android-library'
 
                 scm {
-                    connection 'scm:git:https://github.com/axet/android-library'
-                    developerConnection 'scm:git:https://github.com/axet/android-library'
-                    url 'https://github.com/axet/android-library'
+                    connection 'scm:git:https://gitlab.com/axet/android-library'
+                    developerConnection 'scm:git:https://gitlab.com/axet/android-library'
+                    url 'https://gitlab.com/axet/android-library'
                 }
 
                 licenses {
