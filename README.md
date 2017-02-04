@@ -38,7 +38,7 @@ Support Apache HttpClient, Proxying...
 
 Unread Count Drawable
 
-![./docs/unread.pnp](./docs/unread.pnp)
+![./docs/unread.png](./docs/unread.png)
 
 # Install
 
