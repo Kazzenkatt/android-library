@@ -15,11 +15,13 @@
  */
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.database.DataSetObservable;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,6 +42,7 @@ import java.util.ArrayList;
  * very similar way to {@link android.widget.ListView}.
  * See {@link HeaderGridView#addHeaderView(View, Object, boolean)}
  */
+@TargetApi(11)
 public class HeaderGridView extends GridView {
     public static final String TAG = HeaderGridView.class.getSimpleName();
 
@@ -578,7 +581,14 @@ public class HeaderGridView extends GridView {
     protected void dispatchDraw(Canvas canvas) {
         int targetWidth = HeaderGridView.this.getMeasuredWidth() - HeaderGridView.this.getPaddingLeft() - HeaderGridView.this.getPaddingRight();
 
-        int space = getVerticalSpacing();
+        int space = 0;
+        if (Build.VERSION.SDK_INT >= 16) {
+            space = getVerticalSpacing();
+        } else {
+            if (getChildCount() > 1) {
+                space = getChildAt(1).getTop() - getChildAt(0).getBottom();
+            }
+        }
         float dividerSize = space / 2;
 
         final int count = getChildCount();
