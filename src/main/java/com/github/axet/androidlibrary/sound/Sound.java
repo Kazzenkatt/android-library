@@ -1,9 +1,47 @@
 package com.github.axet.androidlibrary.sound;
 
 import android.content.Context;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
+
+import java.util.Arrays;
 
 public class Sound {
+
+    static int[] RATES = new int[]{8000, 11025, 16000, 22050, 44100};
+
+    public static int getValidRecordRate(int rate) {
+        int i = Arrays.binarySearch(RATES, rate);
+        if (i < 0) {
+            i = -i - 2;
+        }
+        for (; i >= 0; i--) {
+            int r = RATES[i];
+            int bufferSize = AudioRecord.getMinBufferSize(r, AudioFormat.CHANNEL_IN_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
+            if (bufferSize > 0) {
+                return r;
+            }
+        }
+        return 16000;
+    }
+
+    public static int getValidAudioRate(int rate) {
+        int i = Arrays.binarySearch(RATES, rate);
+        if (i < 0) {
+            i = -i - 2;
+        }
+        for (; i < RATES.length; i++) {
+            int r = RATES[i];
+            int bufferSize = AudioTrack.getMinBufferSize(r, AudioFormat.CHANNEL_OUT_DEFAULT, AudioFormat.ENCODING_PCM_16BIT);
+            if (bufferSize > 0) {
+                return r;
+            }
+        }
+        return 16000;
+    }
+
     protected Context context;
 
     protected int soundMode = -1;
