@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.TargetApi;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +9,7 @@ import android.net.Uri;
 import android.support.v7.preference.EditTextPreference;
 import android.util.AttributeSet;
 
+@TargetApi(11)
 public class RingtonePreference extends EditTextPreference {
     public RingtonePreference(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -35,6 +37,5 @@ public class RingtonePreference extends EditTextPreference {
     }
 
     public void activityResult() {
-        ;
     }
 }
