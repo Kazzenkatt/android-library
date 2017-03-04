@@ -40,6 +40,12 @@ public class OpenFileDialog extends AlertDialog.Builder {
     public static final String UP = "[..]";
     public static final String ROOT = "/";
 
+    public enum DIALOG_TYPE {
+        FILE_DIALOG,
+        FOLDER_FIALOG,
+        BOOTH
+    }
+
     File currentPath;
     TextView title;
     TextView message;
@@ -59,7 +65,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
     // file / folder readonly dialog selection or output directory? also shows readonly folder tooltip.
     boolean readonly = false;
     // allow select files, or just select directory
-    boolean files = true;
+    DIALOG_TYPE type = DIALOG_TYPE.BOOTH;
 
     Button positive; // enable / disable OK
 
@@ -240,9 +246,10 @@ public class OpenFileDialog extends AlertDialog.Builder {
         }
     }
 
-    public OpenFileDialog(Context context) {
+    public OpenFileDialog(Context context, DIALOG_TYPE type) {
         super(context);
 
+        this.type = type;
         currentPath = Environment.getExternalStorageDirectory();
         paddingLeft = dp2px(14);
         paddingRight = dp2px(14);
@@ -414,16 +421,19 @@ public class OpenFileDialog extends AlertDialog.Builder {
                     if (file.isDirectory()) {
                         RebuildFiles();
                     } else {
-                        if (files) { // allowed select files
-                            if (index != adapter.selectedIndex) {
-                                updateSelected(index);
-                            } else {
-                                currentPath = file.getParentFile();
-                                updateSelected(-1);
-                            }
-                            adapter.notifyDataSetChanged();
-                        } else {
-                            Toast.makeText(getContext(), R.string.select_folder, Toast.LENGTH_SHORT).show();
+                        switch (type) {
+                            case FILE_DIALOG:
+                            case BOOTH:
+                                if (index != adapter.selectedIndex) {
+                                    updateSelected(index);
+                                } else {
+                                    currentPath = file.getParentFile();
+                                    updateSelected(-1);
+                                }
+                                adapter.notifyDataSetChanged();
+                                break;
+                            default:
+                                Toast.makeText(getContext(), R.string.select_folder, Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -465,10 +475,12 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
     void updateSelected(int i) {
         if (positive != null) {
-            if (files && i == -1) {
-                positive.setEnabled(false);
-            } else {
-                positive.setEnabled(true);
+            switch (type) {
+                case FILE_DIALOG:
+                    positive.setEnabled(i != -1);
+                    break;
+                default:
+                    positive.setEnabled(true);
             }
         }
         adapter.selectedIndex = i;
@@ -498,8 +510,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
     }
 
     // file select dialog or directory select dialog?
-    public void setSelectFiles(boolean b) {
-        files = b;
+    public void setSelectFiles(DIALOG_TYPE type) {
+        this.type = type;
     }
 
     public void setChangeFolderListener(Runnable r) {
