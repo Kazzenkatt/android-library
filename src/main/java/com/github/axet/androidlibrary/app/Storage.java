@@ -25,7 +25,7 @@ public class Storage {
     }
 
     public File getLocalStorage() {
-        return new File(context.getApplicationInfo().dataDir);
+        return new File(context.getApplicationInfo().dataDir, "data");
     }
 
     public File getStoragePath(File file) {
