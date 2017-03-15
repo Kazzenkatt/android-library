@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.app;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -20,12 +21,21 @@ import java.io.OutputStream;
 public class Storage {
     protected Context context;
 
+    public static final String[] PERMISSIONS = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
     public Storage(Context context) {
         this.context = context;
     }
 
     public File getLocalStorage() {
         File internal = context.getFilesDir();
+
+        // Starting in KITKAT, no permissions are required to read or write to the getExternalFilesDir;
+        // it's always accessible to the calling app.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            if (!permitted(context, PERMISSIONS))
+                return internal;
+        }
 
         File external = context.getExternalFilesDir("");
         if (external == null) // some old phones <15API with disabled sdcard return null
