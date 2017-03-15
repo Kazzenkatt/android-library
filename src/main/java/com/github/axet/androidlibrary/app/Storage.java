@@ -27,17 +27,27 @@ public class Storage {
         this.context = context;
     }
 
-    public File getLocalStorage() {
-        File internal = context.getFilesDir();
+    public File getLocalInternal() {
+        return context.getFilesDir();
+    }
+
+    public File getLocalExternal() {
+        File external = context.getExternalFilesDir("");
 
         // Starting in KITKAT, no permissions are required to read or write to the getExternalFilesDir;
         // it's always accessible to the calling app.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
             if (!permitted(context, PERMISSIONS))
-                return internal;
+                return null;
         }
 
-        File external = context.getExternalFilesDir("");
+        return external;
+    }
+
+    public File getLocalStorage() {
+        File internal = getLocalInternal();
+
+        File external = getLocalExternal();
         if (external == null) // some old phones <15API with disabled sdcard return null
             return internal;
 

@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.TypedArray;
@@ -15,7 +16,12 @@ import android.widget.Button;
 
 import com.github.axet.androidlibrary.app.Storage;
 
+import com.github.axet.androidlibrary.R;
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class StoragePathPreference extends EditTextPreference {
     public String def;
@@ -48,40 +54,64 @@ public class StoragePathPreference extends EditTextPreference {
 
     @Override
     protected void showDialog(Bundle state) {
-        f = new OpenFileDialog(getContext(), OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
-        f.setChangeFolderListener(new Runnable() {
-            @Override
-            public void run() {
-                File ff = f.getCurrentPath();
-                if (!ff.isDirectory())
-                    ff = ff.getParentFile();
-                if (!ff.canWrite()) {
-                    Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                    b2.setEnabled(false);
-                } else {
-                    Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                    b2.setEnabled(true);
+        Storage storage = new Storage(getContext());
+        if (!Storage.permitted(getContext(), Storage.PERMISSIONS)) {
+            final List<String> ss = new ArrayList<>();
+            ss.add(storage.getLocalInternal().getAbsolutePath());
+            File ext = storage.getLocalExternal();
+            if (ext != null)
+                ss.add(ext.getAbsolutePath());
+            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+            builder.setTitle(getTitle());
+            File summ = storage.getStoragePath(getPath());
+            builder.setSingleChoiceItems(ss.toArray(new CharSequence[]{}), ss.indexOf(summ.getAbsolutePath()), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    String fileName = ss.get(which);
+                    if (callChangeListener(fileName)) {
+                        setText(fileName);
+                    }
+                    dialog.dismiss();
                 }
-            }
-        });
-
-        File p = getPath();
-
-        f.setCurrentPath(p);
-        f.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                File ff = f.getCurrentPath();
-                if (!ff.isDirectory())
-                    ff = ff.getParentFile();
-                String fileName = ff.getPath();
-                if (callChangeListener(fileName)) {
-                    setText(fileName);
+            });
+            Dialog d = builder.create();
+            d.show();
+        } else {
+            f = new OpenFileDialog(getContext(), OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
+            f.setChangeFolderListener(new Runnable() {
+                @Override
+                public void run() {
+                    File ff = f.getCurrentPath();
+                    if (!ff.isDirectory())
+                        ff = ff.getParentFile();
+                    if (!ff.canWrite()) {
+                        Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
+                        b2.setEnabled(false);
+                    } else {
+                        Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
+                        b2.setEnabled(true);
+                    }
                 }
-            }
-        });
-        d = f.create();
-        d.show();
+            });
+
+            File p = getPath();
+
+            f.setCurrentPath(p);
+            f.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    File ff = f.getCurrentPath();
+                    if (!ff.isDirectory())
+                        ff = ff.getParentFile();
+                    String fileName = ff.getPath();
+                    if (callChangeListener(fileName)) {
+                        setText(fileName);
+                    }
+                }
+            });
+            d = f.create();
+            d.show();
+        }
     }
 
     @Override
