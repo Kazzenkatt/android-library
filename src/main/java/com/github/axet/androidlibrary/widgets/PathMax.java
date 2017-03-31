@@ -93,12 +93,11 @@ public class PathMax extends ViewGroup {
     }
 
     public List<String> splitPath(String s) {
-        return new ArrayList<String>(Arrays.asList(s.split(Pattern.quote(File.separator))));
+        return new ArrayList<>(Arrays.asList(s.split(Pattern.quote(File.separator))));
     }
 
     int getMaxWidth() {
         TextView text = (TextView) getChildAt(0);
-
         return text.getWidth() - text.getPaddingLeft() - text.getPaddingRight() - getPaddingLeft() - getPaddingRight();
     }
 
@@ -114,9 +113,7 @@ public class PathMax extends ViewGroup {
 
     int measureText(String s) {
         TextView text = (TextView) getChildAt(0);
-
         set(s);
-
         text.measure(0, 0);
         return text.getMeasuredWidth();
     }
@@ -150,7 +147,14 @@ public class PathMax extends ViewGroup {
         String sdots = makePath(scheme, ssdots, suffix);
 
         while (measureText(sdots) > max) {
-            if (ss.size() == 2) {
+            if (ss.size() == 3) {
+                int mid = 1;
+                ssdots = new ArrayList<>(ss);
+                ssdots.set(mid, MID);
+                removed = true;
+                ss.remove(mid);
+                sdots = makePath(scheme, ssdots, suffix);
+            } else if (ss.size() == 2) {
                 String sdot = ss.get(1);
 
                 // cant go lower remove last element
@@ -203,8 +207,7 @@ public class PathMax extends ViewGroup {
 
                 sdots = scheme + sdot + suffix;
             } else {
-                int mid = (ss.size() - 1) / 2;
-
+                int mid = (ss.size() - 1) / 2 + 1;
                 ssdots = new ArrayList<>(ss);
                 ssdots.set(mid, MID);
                 removed = true;
@@ -267,7 +270,6 @@ public class PathMax extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         TextView text = (TextView) getChildAt(0);
-
         text.layout(getPaddingLeft(), getPaddingTop(), getPaddingLeft() + text.getMeasuredWidth(), getPaddingTop() + text.getMeasuredHeight());
     }
 }
