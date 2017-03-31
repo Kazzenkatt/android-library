@@ -8,9 +8,12 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
+import android.os.StatFs;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
+import android.system.Os;
+import android.system.StructStatVfs;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -99,15 +102,30 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
         public StorageAdapter() {
             File ext = Environment.getExternalStorageDirectory();
-            if (ext == null || !ext.canWrite())
+            if (ext == null || (!readonly && !ext.canWrite()))
                 ext = getContext().getFilesDir();
             add(ext);
             if (Build.VERSION.SDK_INT >= 19) {
                 File[] ff = getContext().getExternalFilesDirs("");
                 if (ff != null) {
                     for (File f : ff) {
-                        if (!f.getAbsolutePath().startsWith(ext.getAbsolutePath())) // skip default /storage/.../files
-                            add(f);
+                        if (!f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // skip default /storage/.../files
+                            File a = f;
+
+                            StatFs stat = new StatFs(f.getPath());
+                            File p = f;
+                            while (f != null) {
+                                StatFs fs = new StatFs(f.getPath());
+                                if (fs.getTotalBytes() != stat.getTotalBytes()) {
+                                    add(p); // add sdcard root
+                                    break;
+                                }
+                                p = f;
+                                f = f.getParentFile();
+                            }
+
+                            add(a);
+                        }
                     }
                 }
             }
@@ -180,7 +198,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 final LinearLayout titlebar = new LinearLayout(getContext());
                 titlebar.setOrientation(LinearLayout.HORIZONTAL);
                 titlebar.setPadding(paddingLeft, 0, paddingRight, 0);
-                titlebar.setLayoutParams(new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                titlebar.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 TextView title = (TextView) inflater.inflate(android.R.layout.simple_list_item_1, null);
                 title.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -424,11 +442,13 @@ public class OpenFileDialog extends AlertDialog.Builder {
         title.setPadding(0, paddingTop, 0, paddingBottom);
 
         PathMax textMax = new PathMax(getContext(), title);
-        textMax.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+        lp.gravity = Gravity.CENTER;
+        textMax.setLayoutParams(lp);
         titlebar.addView(textMax);
 
         free = new TextView(getContext());
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.gravity = Gravity.CENTER;
         free.setLayoutParams(lp);
         titlebar.addView(free);
