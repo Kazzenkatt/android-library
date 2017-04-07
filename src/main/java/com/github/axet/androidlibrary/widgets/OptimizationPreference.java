@@ -14,7 +14,7 @@ import android.util.AttributeSet;
 /**
  * Add users permission to app manifest:
  *
- *     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+ *     &lt;uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" /&gt;
  */
 public class OptimizationPreference extends SwitchPreferenceCompat {
 
