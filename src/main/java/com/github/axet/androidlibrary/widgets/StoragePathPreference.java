@@ -49,10 +49,14 @@ public class StoragePathPreference extends EditTextPreference {
 
 
     public static void setText(Object o, String name) {
-        if (o instanceof StoragePathPreference)
+        if (o instanceof StoragePathPreference) {
             ((StoragePathPreference) o).setText(name);
-        if (o instanceof StoragePathPreferenceCompat)
+            return;
+        }
+        if (o instanceof StoragePathPreferenceCompat) {
             ((StoragePathPreferenceCompat) o).setText(name);
+            return;
+        }
         throw new RuntimeException("unknown class");
     }
 
