@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -11,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.AttributeSet;
@@ -26,8 +28,10 @@ import java.util.List;
  * &lt;uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" /&gt;
  */
 public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
+    // http://stackoverflow.com/questions/31638986/protected-apps-setting-on-huawei-phones-and-how-to-handle-it/35220476
     Intent huawei = new Intent();
     // http://stackoverflow.com/questions/37205106/how-do-i-avoid-that-my-app-enters-optimization-on-samsung-devices
+    // http://stackoverflow.com/questions/34074955/android-exact-alarm-is-always-3-minutes-off/34085645#34085645
     Intent samsung = new Intent();
 
     @TargetApi(21)
@@ -54,12 +58,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     void create() {
         huawei.setClassName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity");
-        samsung.setComponent(new ComponentName("com.samsung.android.sm", "com.samsung.android.sm.ui.battery.BatteryActivity"));
+        samsung.setClassName("com.samsung.android.sm", "com.samsung.android.sm.ui.battery.BatteryActivity");
         onResume();
     }
 
     String getUserSerial() {
-        Object userManager = getContext().getSystemService("user");
+        Object userManager = getContext().getSystemService(Context.USER_SERVICE);
         if (null == userManager)
             return "";
         try {
@@ -97,8 +101,32 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return isCallable(huawei);
     }
 
+    AlertDialog.Builder huaweiWarning() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Huawei Settings");
+        builder.setMessage("You have to change the power plan to “normal” under settings → power saving to let application be exact on time.");
+        builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        return builder;
+    }
+
     boolean isSamsung() {
         return isCallable(samsung);
+    }
+
+    AlertDialog.Builder samsungWarninig() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Samsung Settings");
+        builder.setMessage("Consider disabling Samsung SmartManager to keep application running.");
+        builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        return builder;
     }
 
     public void onResume() {
@@ -110,8 +138,16 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     @Override
                     public boolean onPreferenceChange(Preference preference, Object newValue) {
                         boolean b = (boolean) newValue;
-                        if (b)
-                            huaweiProtectedApps();
+                        if (b) {
+                            AlertDialog.Builder builder = huaweiWarning();
+                            builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    huaweiProtectedApps();
+                                }
+                            });
+                            builder.show();
+                        }
                         return false;
                     }
                 });
@@ -119,7 +155,17 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                     @Override
                     public boolean onPreferenceChange(Preference preference, Object newValue) {
-                        getContext().startActivity(samsung);
+                        boolean b = (boolean) newValue;
+                        if (b) {
+                            AlertDialog.Builder builder = samsungWarninig();
+                            builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    getContext().startActivity(samsung);
+                                }
+                            });
+                            builder.show();
+                        }
                         return false;
                     }
                 });
@@ -132,17 +178,50 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 @Override
                 @TargetApi(23)
                 public boolean onPreferenceChange(Preference preference, Object o) {
-                    if (pm.isIgnoringBatteryOptimizations(n)) {
-                        Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                        getContext().startActivity(intent);
+                    if (isHuawei()) {
+                        AlertDialog.Builder builder = huaweiWarning();
+                        builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                huaweiProtectedApps();
+                            }
+                        });
+                        builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                showOptimization();
+                            }
+                        });
+                        builder.show();
+                    } else if (isSamsung()) {
+                        AlertDialog.Builder builder = samsungWarninig();
+                        builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                showOptimization();
+                            }
+                        });
+                        builder.show();
                     } else {
-                        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                        intent.setData(Uri.parse("package:" + n));
-                        getContext().startActivity(intent);
+                        showOptimization();
                     }
                     return false;
                 }
             });
+        }
+    }
+
+    @TargetApi(23)
+    void showOptimization() {
+        final PowerManager pm = (PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+        final String n = getContext().getPackageName();
+        if (pm.isIgnoringBatteryOptimizations(n)) {
+            Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+            getContext().startActivity(intent);
+        } else {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + n));
+            getContext().startActivity(intent);
         }
     }
 
