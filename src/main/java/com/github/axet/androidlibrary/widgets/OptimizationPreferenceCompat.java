@@ -230,7 +230,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         };
         if (Build.VERSION.SDK_INT >= 23) {
             if (click != null)
-                builder.setNeutralButton("Settings", click);
+                builder.setNeutralButton(R.string.settings, click);
             builder.setPositiveButton(android.R.string.yes, opt);
         } else {
             builder.setPositiveButton(android.R.string.yes, click);
