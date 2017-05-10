@@ -60,6 +60,8 @@ public class WebViewCustom extends WebView {
     public static final String INJECTS_URL = "inject://";
     public static final String ABOUT_ERROR = "about:error";
 
+    protected boolean destroyed;
+
     protected String head;
     protected String js;
     protected String js_post;
@@ -522,6 +524,10 @@ public class WebViewCustom extends WebView {
             data = loadBase(data);
         }
         this.html = data;
+
+        if(destroyed)
+            return; // old api crash
+
         super.loadDataWithBaseURL(baseUrl, data, mimeType, encoding, historyUrl);
     }
 
@@ -896,4 +902,9 @@ public class WebViewCustom extends WebView {
             CookieManager.getInstance().removeAllCookie();
     }
 
+    @Override
+    public void destroy() {
+        super.destroy();
+        destroyed = true;
+    }
 }
