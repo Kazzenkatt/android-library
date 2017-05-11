@@ -122,18 +122,22 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             context.unregisterReceiver(this);
         }
 
-        public void check(Intent intent) {
+        public boolean onStartCommand(Intent intent, int flags, int startId) {
             register();
             if (intent == null)
-                return;
+                return true;
             String a = intent.getAction();
             if (a == null)
-                return;
+                return false;
             if (a.equals(SERVICE_CHECK)) {
+                handler.postDelayed(check, 5 * 1000);
                 Intent i = new Intent(PING);
                 context.sendBroadcast(i);
-                handler.postDelayed(check, 5 * 1000);
             }
+            if (a.equals(SERVICE_RESTART)) {
+                return true;
+            }
+            return false;
         }
 
         void register() {
