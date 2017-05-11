@@ -63,7 +63,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     public static void enable(Context context, long next, Class<? extends Service> service) {
         Intent intent = new Intent(context, service);
         intent.setAction(SERVICE_CHECK);
-        AlarmManager.setExact(context, next, intent);
+        AlarmManager.set(context, next, intent);
     }
 
     public static void disable(Context context, Class<? extends Service> service) {

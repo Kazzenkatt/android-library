@@ -99,6 +99,18 @@ public class AlarmManager {
         }
     }
 
+    public static PendingIntent set(Context context, long time, Intent intent) {
+        PendingIntent pe = createPendingIntent(context, intent);
+        android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarm.set(android.app.AlarmManager.RTC_WAKEUP, time, pe);
+        return pe;
+    }
+
+    public void set(long time, Intent intent) {
+        PendingIntent pe = set(context, time, intent);
+        checkPost(time, intent, pe);
+    }
+
     public static PendingIntent setExact(Context context, long time, Intent intent) {
         PendingIntent pe = createPendingIntent(context, intent);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
