@@ -153,8 +153,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
 
         public void onTaskRemoved(Intent intent) {
+            next = System.currentTimeMillis() + AlarmManager.SEC10;
             register();
-            check();
         }
 
         void register() {
