@@ -138,9 +138,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             if (a == null)
                 return false;
             if (a.equals(SERVICE_CHECK)) {
-                handler.postDelayed(check, CHECK_DELAY);
-                Intent i = new Intent(service.getCanonicalName() + PING);
-                context.sendBroadcast(i);
+                check();
             }
             if (a.equals(SERVICE_RESTART)) {
                 return true;
@@ -148,8 +146,15 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             return false;
         }
 
+        void check() {
+            handler.postDelayed(check, CHECK_DELAY);
+            Intent i = new Intent(service.getCanonicalName() + PING);
+            context.sendBroadcast(i);
+        }
+
         public void onTaskRemoved(Intent intent) {
             register();
+            check();
         }
 
         void register() {
