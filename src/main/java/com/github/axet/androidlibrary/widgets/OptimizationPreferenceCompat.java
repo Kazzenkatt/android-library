@@ -76,8 +76,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     Class<? extends Service> service;
 
     public static class ApplicationReceiver extends BroadcastReceiver {
-        Context context;
-        Class<? extends Service> service;
+        protected Context context;
+        protected Class<? extends Service> service;
 
         public ApplicationReceiver(Context context, Class<? extends Service> klass) {
             this.context = context;
@@ -102,11 +102,11 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     public static class ServiceReceiver extends BroadcastReceiver {
-        Context context;
-        Handler handler = new Handler();
-        Class<? extends Service> service;
-        long next;
-        Runnable check = new Runnable() {
+        protected Context context;
+        protected Handler handler = new Handler();
+        protected Class<? extends Service> service;
+        protected long next;
+        protected Runnable check = new Runnable() {
             @Override
             public void run() {
                 Intent intent = new Intent(context, service);
@@ -146,7 +146,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             return false;
         }
 
-        void check() {
+        public void check() {
             handler.postDelayed(check, CHECK_DELAY);
             Intent i = new Intent(service.getCanonicalName() + PING);
             context.sendBroadcast(i);
@@ -157,7 +157,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             register();
         }
 
-        void register() {
+        public void register() {
             if (Build.VERSION.SDK_INT >= 23) {
                 if (!isIgnoringBatteryOptimizations(context)) {
                     unregister();
@@ -177,7 +177,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             enable(context, next, service);
         }
 
-        void unregister() {
+        public void unregister() {
             disable(context, service);
         }
 
