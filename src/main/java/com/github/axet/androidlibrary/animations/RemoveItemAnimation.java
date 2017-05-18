@@ -8,7 +8,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Transformation;
 
-public class RemoveItemAnimation extends Animation {
+public class RemoveItemAnimation extends StepAnimation {
     ViewGroup list;
     View convertView;
     Runnable run;
@@ -29,14 +29,18 @@ public class RemoveItemAnimation extends Animation {
     Handler handler;
 
     public static void apply(final ViewGroup list, final View v, final Runnable run) {
-        v.startAnimation(new RemoveItemAnimation(list, v, run));
+        apply(new LateCreator() {
+            @Override
+            public StepAnimation create() {
+                return new RemoveItemAnimation(list, v, run);
+            }
+        }, v, false, true);
     }
 
     public static void restore(final View v) {
         Animation a = v.getAnimation();
         if (a != null && a instanceof RemoveItemAnimation) {
             v.clearAnimation();
-
             RemoveItemAnimation m = (RemoveItemAnimation) a;
             m.restore();
         }
@@ -44,6 +48,7 @@ public class RemoveItemAnimation extends Animation {
     }
 
     public RemoveItemAnimation(ViewGroup list, View v, Runnable run) {
+        super(v, false);
         this.convertView = v;
         this.list = list;
         this.run = run;
@@ -91,36 +96,27 @@ public class RemoveItemAnimation extends Animation {
     }
 
     @Override
-    protected void applyTransformation(float interpolatedTime, Transformation t) {
-        super.applyTransformation(interpolatedTime, t);
-
-        {
-            float ia = intTime(alphaOffset, alphaDuration);
-            if (ia >= 0) {
-                t.setAlpha(1 - ia);
-                t.getMatrix().setTranslate(w * ia, 0);
-            }
-            float is = intTime(scaleOffset, scaleDuration);
-            if (is >= 0) {
-                is = 1 - is;
-                t.getMatrix().setScale(is, is, mPivotX, 0);
-                lp.height = (int) (h * is);
-                convertView.requestLayout();
-            }
+    public void calc(float i, Transformation t) {
+        float ia = intTime(alphaOffset, alphaDuration);
+        if (ia >= 0) {
+            t.setAlpha(1 - ia);
+            t.getMatrix().setTranslate(w * ia, 0);
         }
-
-        if (interpolatedTime >= 1) {
-            restore();
-            end();
+        float is = intTime(scaleOffset, scaleDuration);
+        if (is >= 0) {
+            is = 1 - is;
+            t.getMatrix().setScale(is, is, mPivotX, 0);
+            lp.height = (int) (h * is);
+            convertView.requestLayout();
         }
     }
 
-    void restore() {
+    public void restore() {
         lp.height = lpOrig.height;
         convertView.requestLayout();
     }
 
-    void end() {
+    public void end() {
         convertView.setVisibility(View.GONE);
         if (run != null) {
             handler.post(run);

@@ -20,6 +20,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.AttributeSet;
+import android.widget.Toast;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
@@ -387,16 +388,29 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
+    public static boolean startActivity(Context context, Intent intent) {
+        if (isCallable(context, intent)) {
+            context.startActivity(intent);
+            return true;
+        }
+        return false;
+    }
+
     @TargetApi(23)
     static void showOptimization(Context context) {
         final String n = context.getPackageName();
         if (isIgnoringBatteryOptimizations(context)) {
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-            context.startActivity(intent);
+            startActivity(context, intent);
         } else {
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
             intent.setData(Uri.parse("package:" + n));
-            context.startActivity(intent);
+            if (!startActivity(context, intent)) { // some samsung phones does not have this
+                intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                if (!startActivity(context, intent)) {
+                    Toast.makeText(context, "Optimization Settings not found", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
@@ -450,7 +464,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             setPositive(builder, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    context.startActivity(samsung);
+                    startActivity(context, samsung);
                 }
             });
             return builder;
@@ -462,7 +476,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     setPositive(builder, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            context.startActivity(i);
+                            startActivity(context, i);
                         }
                     });
                     return builder;
