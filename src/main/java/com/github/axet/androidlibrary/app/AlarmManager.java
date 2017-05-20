@@ -10,6 +10,8 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.util.Log;
 
+import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,58 +32,6 @@ public class AlarmManager {
     public static String formatTime(long time) {
         SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return s.format(new Date(time));
-    }
-
-    public class Check {
-        public long time;
-        public Runnable r;
-        public Intent intent;
-        public PendingIntent pe;
-        PowerManager.WakeLock wlCpu;
-
-        public Check(long time, Runnable r, Intent intent, PendingIntent pe) {
-            this.time = time;
-            this.r = r;
-            this.intent = intent;
-            this.pe = pe;
-        }
-
-        public void close() {
-            wakeClose();
-        }
-
-        public void wakeLock() {
-            wakeClose();
-            Log.d(TAG, "Wake CPU lock " + time);
-            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            wlCpu = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, AlarmManager.class.getCanonicalName() + "_" + time + "_cpulock");
-            wlCpu.acquire();
-        }
-
-        public void wakeClose() {
-            if (wlCpu != null) {
-                Log.d(TAG, "Wake CPU lock close " + time);
-                if (wlCpu.isHeld())
-                    wlCpu.release();
-                wlCpu = null;
-            }
-        }
-    }
-
-    Context context;
-    Handler handler = new Handler();
-    Map<String, Check> check = new HashMap<>();
-
-    public AlarmManager(Context context) {
-        this.context = context;
-    }
-
-    public void close() {
-        for (String s : check.keySet()) {
-            Check old = check.get(s);
-            old.close();
-        }
-        check.clear();
     }
 
     public static PendingIntent createPendingIntent(Context context, Intent intent) {
@@ -106,11 +56,6 @@ public class AlarmManager {
         return pe;
     }
 
-    public void set(long time, Intent intent) {
-        PendingIntent pe = set(context, time, intent);
-        checkPost(time, intent, pe);
-    }
-
     public static PendingIntent setExact(Context context, long time, Intent intent) {
         PendingIntent pe = createPendingIntent(context, intent);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -122,11 +67,6 @@ public class AlarmManager {
             alarm.set(android.app.AlarmManager.RTC_WAKEUP, time, pe);
         }
         return pe;
-    }
-
-    public void setExact(long time, Intent intent) {
-        PendingIntent pe = setExact(context, time, intent);
-        checkPost(time, intent, pe);
     }
 
     public static PendingIntent setAlarm(Context context, long time, Intent intent) {
@@ -142,24 +82,87 @@ public class AlarmManager {
         return pe;
     }
 
-    public void setAlarm(long time, Intent intent) {
-        PendingIntent pe = setAlarm(context, time, intent);
-        checkPost(time, intent, pe);
-    }
-
     public static void cancel(Context context, Intent intent) {
         PendingIntent pe = createPendingIntent(context, intent);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         alarm.cancel(pe);
     }
 
+    public static String checkId(long requestCode, Intent intent) {
+        return requestCode + "_" + intent.getClass().getCanonicalName() + "_" + intent.getAction();
+    }
+
+    public class Check {
+        public long time;
+        public Runnable r;
+        public Intent intent;
+        public PendingIntent pe;
+        PowerManager.WakeLock wlCpu;
+
+        public Check(long time, Runnable r, Intent intent, PendingIntent pe) {
+            this.time = time;
+            this.r = r;
+            this.intent = intent;
+            this.pe = pe;
+        }
+
+        public void close() {
+            wakeClose();
+        }
+
+        public void wakeLock() {
+            if (wlCpu != null)
+                return;
+            Log.d(TAG, "Wake CPU lock " + time);
+            PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            wlCpu = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, AlarmManager.class.getCanonicalName() + "_" + time + "_cpulock");
+            wlCpu.acquire();
+        }
+
+        public void wakeClose() {
+            if (wlCpu == null)
+                return;
+            Log.d(TAG, "Wake CPU lock close " + time);
+            if (wlCpu.isHeld())
+                wlCpu.release();
+            wlCpu = null;
+        }
+    }
+
+    Context context;
+    Handler handler = new Handler();
+    Map<String, Check> check = new HashMap<>();
+
+    public AlarmManager(Context context) {
+        this.context = context;
+    }
+
+    public void close() {
+        for (String s : check.keySet()) {
+            Check old = check.get(s);
+            old.close();
+        }
+        check.clear();
+    }
+
+    public void set(long time, Intent intent) {
+        PendingIntent pe = set(context, time, intent);
+        checkPost(time, intent, pe);
+    }
+
+    public void setExact(long time, Intent intent) {
+        PendingIntent pe = setExact(context, time, intent);
+        checkPost(time, intent, pe);
+    }
+
+    public void setAlarm(long time, Intent intent) {
+        PendingIntent pe = setAlarm(context, time, intent);
+        checkPost(time, intent, pe);
+    }
+
     public void cancel(Intent intent) {
         cancel(context, intent);
         checkCancel(intent);
-    }
-
-    public static String checkId(long requestCode, Intent intent) {
-        return requestCode + "_" + intent.getClass().getCanonicalName() + "_" + intent.getAction();
     }
 
     public void update() {
@@ -198,12 +201,14 @@ public class AlarmManager {
         long delay = time - cur;
         if (delay < 0) // instant?
             delay = 0;
-//        if (delay < MIN15) {
-//            c.wakeLock();
-//        }
+        if (delay < MIN15) {
+            if (OptimizationPreferenceCompat.isHuawei(context)) {
+                c.wakeLock();
+            }
+        }
         int diffMilliseconds = (int) (cur % 1000);
         int diffSeconds = (int) (cur / 1000 % 60);
-        if (delay < 1000) {
+        if (delay < SEC1) {
             ; // nothing
         } else if (delay < SEC10) {
             long step = SEC1;
