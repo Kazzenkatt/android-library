@@ -3,6 +3,7 @@ package com.github.axet.androidlibrary.widgets;
 import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -73,6 +74,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         AlarmManager.cancel(context, intent);
     }
 
+    public static void dontKill(Context context, Class<?> klass) {
+        ComponentName name = new ComponentName(context, klass);
+        PackageManager pm = context.getPackageManager();
+        pm.setComponentEnabledSetting(name, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+    }
+
     // all service related code, for old phones, where AlarmManager will be used to keep app running
     Class<? extends Service> service;
 
@@ -119,6 +126,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         public ServiceReceiver(final Context context, final Class<? extends Service> service) {
             this.context = context;
             this.service = service;
+            dontKill(context, service);
             IntentFilter ff = new IntentFilter();
             ff.addAction(service.getCanonicalName() + PONG);
             context.registerReceiver(this, ff);
@@ -219,11 +227,11 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         create();
     }
 
-    void create() {
+    public void create() {
         onResume();
     }
 
-    static String getUserSerial(Context context) {
+    public static String getUserSerial(Context context) {
         Object userManager = context.getSystemService(Context.USER_SERVICE);
         if (null == userManager)
             return "";
@@ -242,7 +250,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return "";
     }
 
-    static void huaweiProtectedApps(Context context) {
+    public static void huaweiProtectedApps(Context context) {
         try {
             String cmd = "am start -n " + huawei.getComponent().flattenToShortString();
             if (Build.VERSION.SDK_INT >= 17) {
@@ -253,12 +261,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
-    static boolean isCallable(Context context, Intent intent) {
+    public static boolean isCallable(Context context, Intent intent) {
         List<ResolveInfo> list = context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
         return list.size() > 0;
     }
 
-    static boolean isHuawei(Context context) {
+    public static boolean isHuawei(Context context) {
         return isCallable(context, huawei);
     }
 
@@ -274,7 +282,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return builder;
     }
 
-    static AlertDialog.Builder huaweiWarning(Context context) {
+    public static AlertDialog.Builder huaweiWarning(Context context) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("Huawei Settings");
         builder.setMessage("You have to change the power plan to “normal” under settings → power saving to let application be exact on time.");
@@ -286,11 +294,11 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return builder;
     }
 
-    static boolean isSamsung(Context context) {
+    public static boolean isSamsung(Context context) {
         return isCallable(context, samsung);
     }
 
-    static AlertDialog.Builder samsungWarninig(Context context) {
+    public static AlertDialog.Builder samsungWarninig(Context context) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle("Samsung Settings");
         builder.setMessage("Consider disabling Samsung SmartManager to keep application running in background.");
@@ -397,7 +405,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     @TargetApi(23)
-    static void showOptimization(Context context) {
+    public static void showOptimization(Context context) {
         final String n = context.getPackageName();
         if (isIgnoringBatteryOptimizations(context)) {
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
@@ -433,7 +441,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return false;
     }
 
-    static void setPositive(final AlertDialog.Builder builder, DialogInterface.OnClickListener click) {
+    public static void setPositive(final AlertDialog.Builder builder, DialogInterface.OnClickListener click) {
         DialogInterface.OnClickListener opt = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {

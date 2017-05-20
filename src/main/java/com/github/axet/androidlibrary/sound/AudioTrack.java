@@ -1,16 +1,14 @@
-package com.github.axet.androidlibrary.app;
+package com.github.axet.androidlibrary.sound;
 
 import android.os.Handler;
-
-import java.lang.reflect.Method;
 
 public class AudioTrack extends android.media.AudioTrack {
     int markerInFrames = -1;
     int periodInFrames = 1000;
-    Handler handler = new Handler();
-    Runnable playInterval;
-    OnPlaybackPositionUpdateListener listener;
     public long playStart = 0;
+    Handler playbackHandler = new Handler();
+    Runnable playbackUpdate;
+    OnPlaybackPositionUpdateListener playbackListener;
 
     // old phones bug.
     // http://stackoverflow.com/questions/27602492
@@ -28,8 +26,8 @@ public class AudioTrack extends android.media.AudioTrack {
         return b;
     }
 
-    void update() {
-        if (listener == null)
+    void playbackListenerUpdate() {
+        if (playbackListener == null)
             return;
         if (playStart <= 0)
             return;
@@ -41,49 +39,42 @@ public class AudioTrack extends android.media.AudioTrack {
         }
 
         if (mark <= 0 && markerInFrames >= 0) { // some old bugged phones unable to set markers
-            handler.removeCallbacks(playInterval);
-            playInterval = new Runnable() {
+            playbackHandler.removeCallbacks(playbackUpdate);
+            playbackUpdate = new Runnable() {
                 @Override
                 public void run() {
                     long now = System.currentTimeMillis();
                     if (markerInFrames >= 0) {
                         long playEnd = playStart + markerInFrames * 1000 / getSampleRate();
                         if (now >= playEnd) {
-                            listener.onMarkerReached(AudioTrack.this);
+                            playbackListener.onMarkerReached(AudioTrack.this);
                             return;
                         }
                     }
-                    listener.onPeriodicNotification(AudioTrack.this);
+                    playbackListener.onPeriodicNotification(AudioTrack.this);
                     long update = periodInFrames * 1000 / getSampleRate();
 
-                    long end;
-                    try {
-                        Method m = getClass().getDeclaredMethod("getNativeFrameCount");
-                        m.setAccessible(true);
-                        int len = (int) m.invoke(this) * 1000 / getSampleRate();
-                        end = len * 2 - (now - playStart);
-                    } catch (Exception e) { // use 1 sec delay
-                        end = 1000;
-                    }
+                    int len = getNativeFrameCount() * 1000 / getSampleRate(); // getNativeFrameCount() checking stereo fine
+                    long end = len * 2 - (now - playStart);
                     if (update > end)
                         update = end;
 
-                    handler.postDelayed(playInterval, update);
+                    playbackHandler.postDelayed(playbackUpdate, update);
                 }
             };
-            playInterval.run();
+            playbackUpdate.run();
         } else {
-            handler.removeCallbacks(playInterval);
-            playInterval = null;
+            playbackHandler.removeCallbacks(playbackUpdate);
+            playbackUpdate = null;
         }
     }
 
     @Override
     public void release() {
         super.release();
-        if (playInterval != null) {
-            handler.removeCallbacks(playInterval);
-            playInterval = null;
+        if (playbackUpdate != null) {
+            playbackHandler.removeCallbacks(playbackUpdate);
+            playbackUpdate = null;
         }
     }
 
@@ -91,7 +82,7 @@ public class AudioTrack extends android.media.AudioTrack {
     public void play() throws IllegalStateException {
         super.play();
         playStart = System.currentTimeMillis();
-        update();
+        playbackListenerUpdate();
     }
 
     @Override
@@ -108,18 +99,20 @@ public class AudioTrack extends android.media.AudioTrack {
 
     @Override
     public void setPlaybackPositionUpdateListener(OnPlaybackPositionUpdateListener listener) {
-        this.listener = listener;
-        update();
         super.setPlaybackPositionUpdateListener(listener);
+        this.playbackListener = listener;
+        playbackListenerUpdate();
     }
 
     @Override
     public void setPlaybackPositionUpdateListener(OnPlaybackPositionUpdateListener listener, Handler handler) {
-        this.listener = listener;
-        if (handler != null)
-            this.handler = handler;
-        update();
         super.setPlaybackPositionUpdateListener(listener, handler);
+        this.playbackListener = listener;
+        if (handler != null) {
+            this.playbackHandler.removeCallbacks(playbackUpdate);
+            this.playbackHandler = handler;
+        }
+        playbackListenerUpdate();
     }
 
 }
