@@ -399,7 +399,11 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     public static boolean startActivity(Context context, Intent intent) {
         if (isCallable(context, intent)) {
-            context.startActivity(intent);
+            try {
+                context.startActivity(intent);
+            } catch (SecurityException e) {
+                return false;
+            }
             return true;
         }
         return false;
@@ -473,7 +477,9 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             setPositive(builder, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    startActivity(context, samsung);
+                    if (!startActivity(context, samsung)) {
+                        Toast.makeText(context, "Unable to show settings", Toast.LENGTH_SHORT);
+                    }
                 }
             });
             return builder;
@@ -485,7 +491,9 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     setPositive(builder, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            startActivity(context, i);
+                            if (!startActivity(context, i)) {
+                                Toast.makeText(context, "Unable to show settings", Toast.LENGTH_SHORT);
+                            }
                         }
                     });
                     return builder;
