@@ -13,11 +13,14 @@ import android.util.Log;
 import com.github.axet.androidlibrary.R;
 
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainApplication extends Application {
     public static final String TAG = MainApplication.class.getSimpleName();
+
+    public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Override
     protected void attachBaseContext(Context base) {

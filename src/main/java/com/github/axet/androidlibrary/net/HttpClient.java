@@ -1,10 +1,14 @@
 package com.github.axet.androidlibrary.net;
 
+import android.annotation.TargetApi;
 import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
+
+import com.github.axet.androidlibrary.app.AlarmManager;
+import com.github.axet.androidlibrary.app.MainApplication;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -94,7 +98,7 @@ public class HttpClient {
     public static String USER_AGENT = "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5 Build/MOB30Y) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.81 Mobile Safari/537.36";
     public static final String CONTENTTYPE_HTML = "text/html";
 
-    public static int CONNECTION_TIMEOUT = 10 * 1000;
+    public static long CONNECTION_TIMEOUT = AlarmManager.SEC10;
 
     protected CloseableHttpClient httpclient;
     protected HttpClientContext httpClientContext = HttpClientContext.create();
@@ -148,12 +152,12 @@ public class HttpClient {
         return null;
     }
 
+    @TargetApi(11)
     public static class HttpError extends HttpClient.DownloadResponse {
-        static final String UTF8 = "UTF8";
         Throwable e;
 
         public HttpError(String url, Throwable e) {
-            super("text/plain", UTF8, (InputStream) null);
+            super("text/plain", Charset.defaultCharset().name(), (InputStream) null);
             this.e = e;
 
             Uri u = Uri.parse(url);
@@ -195,6 +199,7 @@ public class HttpClient {
             setTemplate(TextUtils.htmlEncode(str));
         }
 
+        @TargetApi(11)
         public void setTemplate(String str) {
             try {
                 String html = "<html>";
@@ -235,6 +240,7 @@ public class HttpClient {
         }
     }
 
+    @TargetApi(11)
     public static class DownloadResponse extends WebResourceResponse {
         public boolean downloaded;
 
@@ -374,7 +380,7 @@ public class HttpClient {
         public String getError() {
             if (status == null) // manually created response
                 return null;
-            if (status.getStatusCode() != 200)
+            if (status.getStatusCode() != 200) // HTTP OK
                 return status.getReasonPhrase();
             return null;
         }
@@ -466,8 +472,8 @@ public class HttpClient {
     }
 
     public RequestConfig build(RequestConfig.Builder builder) {
-        builder.setConnectTimeout(CONNECTION_TIMEOUT);
-        builder.setConnectionRequestTimeout(CONNECTION_TIMEOUT);
+        builder.setConnectTimeout((int) CONNECTION_TIMEOUT); // time in ms == long
+        builder.setConnectionRequestTimeout((int) CONNECTION_TIMEOUT); // time in ms == long
         builder.setProxy(proxy);
         return builder.build();
     }
