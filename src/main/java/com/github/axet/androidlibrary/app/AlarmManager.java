@@ -12,7 +12,6 @@ import android.util.Log;
 
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -33,8 +32,7 @@ public class AlarmManager {
     public static final long DAY1 = 24 * HOUR1;
 
     public static String formatTime(long time) {
-        SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        return s.format(new Date(time));
+        return MainApplication.SIMPLE.format(new Date(time));
     }
 
     public static PendingIntent createPendingIntent(Context context, Intent intent) {

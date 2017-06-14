@@ -51,8 +51,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     static Intent[] ALL = new Intent[]{huawei, samsung, miui, vivo, oppo};
     static Intent[] COMMON = new Intent[]{miui, vivo, oppo};
 
-    public static int REFRESH = 15 * 60 * 1000;
-    public static int CHECK_DELAY = 5 * 1000;
+    public static long REFRESH = AlarmManager.MIN15;
+    public static long CHECK_DELAY = AlarmManager.MIN5;
 
     // checkbox for old phones, which fires 15 minutes event
     public static final String PREFERENCE_OPTIMIZATION_SERVICE = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE";
