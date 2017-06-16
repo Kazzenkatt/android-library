@@ -34,10 +34,13 @@ public class AudioTrack extends android.media.AudioTrack {
         return b;
     }
 
-    public static AudioTrack create(int streamType, int ct, AudioBuffer buffer) {
+    // streamType AudioManager#STREAM_MUSIC
+    // usage AudioAttributes#USAGE_MEDIA
+    // ct AudioAttributes#CONTENT_TYPE_MUSIC
+    public static AudioTrack create(int streamType, int usage, int ct, AudioBuffer buffer) {
         if (Build.VERSION.SDK_INT >= 21) {
             AudioAttributes a = new AudioAttributes.Builder()
-                    .setUsage(streamType)
+                    .setUsage(usage)
                     .setContentType(ct)
                     .build();
             return new AudioTrack(a, buffer);
@@ -66,6 +69,16 @@ public class AudioTrack extends android.media.AudioTrack {
             this.channelConfig = c;
             this.audioFormat = audioFormat;
             this.len = len;
+            this.buffer = new short[len];
+        }
+
+        public AudioBuffer(int sampleRate, int c, int audioFormat) {
+            this.sampleRate = sampleRate;
+            this.channelConfig = c;
+            this.audioFormat = audioFormat;
+            this.len = getMinSize(sampleRate, c, audioFormat, 0);
+            if (len <= 0)
+                throw new RuntimeException("unable to initialize audio");
             this.buffer = new short[len];
         }
 
