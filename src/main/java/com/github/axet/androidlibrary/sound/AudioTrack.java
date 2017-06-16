@@ -1,6 +1,10 @@
 package com.github.axet.androidlibrary.sound;
 
+import android.annotation.TargetApi;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.os.Build;
 import android.os.Handler;
 
 import java.nio.ByteBuffer;
@@ -18,6 +22,9 @@ public class AudioTrack extends android.media.AudioTrack {
     OnPlaybackPositionUpdateListener playbackListener;
     int len; // len in frames (stereo frames = len * 2)
     int frames; // frames written to audiotrack (including zeros, stereo frames = frames)
+    int sampleRate;
+    int audioFormat;
+    int channelConfig;
 
     // AudioTrack unable to play shorter then 'min' size of data, fill it with zeros
     public static int getMinSize(int sampleRate, int c, int audioFormat, int b) {
@@ -25,6 +32,18 @@ public class AudioTrack extends android.media.AudioTrack {
         if (b < min)
             b = min;
         return b;
+    }
+
+    public static AudioTrack create(int streamType, int ct, AudioBuffer buffer) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            AudioAttributes a = new AudioAttributes.Builder()
+                    .setUsage(streamType)
+                    .setContentType(ct)
+                    .build();
+            return new AudioTrack(a, buffer);
+        } else {
+            return new AudioTrack(streamType, buffer);
+        }
     }
 
     public static class AudioBuffer {
@@ -47,13 +66,7 @@ public class AudioTrack extends android.media.AudioTrack {
             this.channelConfig = c;
             this.audioFormat = audioFormat;
             this.len = len;
-
-            int b = len * SHORT_SIZE;
-            b = getMinSize(sampleRate, c, audioFormat, b);
-            if (b <= 0)
-                throw new RuntimeException("unable to get min size");
-            int blen = b / SHORT_SIZE;
-            buffer = new short[blen];
+            this.buffer = new short[len];
         }
 
         public void write(short[] buf, int pos, int len) {
@@ -70,6 +83,14 @@ public class AudioTrack extends android.media.AudioTrack {
                     throw new RuntimeException("unknown mode");
             }
         }
+
+        @TargetApi(21)
+        public AudioFormat getAudioFormat() {
+            AudioFormat.Builder builder = new AudioFormat.Builder();
+            builder.setEncoding(Sound.DEFAULT_AUDIOFORMAT);
+            builder.setSampleRate(sampleRate);
+            return builder.build();
+        }
     }
 
     // old phones bug.
@@ -81,10 +102,21 @@ public class AudioTrack extends android.media.AudioTrack {
     }
 
     public AudioTrack(int streamType, AudioBuffer buffer) throws IllegalArgumentException {
-        super(streamType, buffer.sampleRate, buffer.channelConfig, buffer.audioFormat, buffer.buffer.length * SHORT_SIZE, MODE_STREAM);
+        super(streamType, buffer.sampleRate, buffer.channelConfig, buffer.audioFormat, buffer.buffer.length * SHORT_SIZE, MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
         if (getState() != STATE_INITIALIZED)
             throw new RuntimeException("Unable initialize AudioTrack");
         write(buffer);
+    }
+
+    @TargetApi(21)
+    public AudioTrack(AudioAttributes a, AudioBuffer buffer) throws IllegalArgumentException {
+        super(a, buffer.getAudioFormat(), buffer.buffer.length * SHORT_SIZE, MODE_STREAM, AudioManager.AUDIO_SESSION_ID_GENERATE);
+        if (getState() != STATE_INITIALIZED)
+            throw new RuntimeException("Unable initialize AudioTrack");
+        write(buffer);
+        this.sampleRate = buffer.sampleRate;
+        this.audioFormat = buffer.audioFormat;
+        this.channelConfig = buffer.channelConfig;
     }
 
     void playbackListenerUpdate() {
@@ -139,8 +171,24 @@ public class AudioTrack extends android.media.AudioTrack {
         }
     }
 
+    void fillZeros() {
+        int b = len * SHORT_SIZE;
+        b = getMinSize(sampleRate, channelConfig, audioFormat, b);
+        if (b <= 0)
+            throw new RuntimeException("unable to get min size");
+        int blen = b / SHORT_SIZE;
+        int diff = blen - len;
+        if (diff > 0) {
+            short[] buf = new short[diff];
+            write(buf, 0, buf.length);
+            len += diff / getChannelCount();
+            frames += diff;
+        }
+    }
+
     @Override
     public void play() throws IllegalStateException {
+        fillZeros();
         super.play();
         playStart = System.currentTimeMillis();
         playbackListenerUpdate();
