@@ -33,6 +33,18 @@ public class Native {
         }
     }
 
+    public static void loadLibraries(Context context, String[] libs) {
+        try {
+            for (String l : libs) {
+                System.loadLibrary(l); // API16 failed to find dependencies
+            }
+        } catch (ExceptionInInitializerError | UnsatisfiedLinkError e) { // API15 crash
+            for (String l : libs) {
+                Native.loadLibrary(context, l);
+            }
+        }
+    }
+
     /**
      * API15 crash while loading wrong arch native libraries. We need to find and load them manually.
      * <p>
