@@ -1,10 +1,15 @@
 package com.github.axet.androidlibrary.sound;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.os.Build;
+
+import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
+import com.github.axet.androidlibrary.widgets.SilencePreferenceCompat;
 
 import java.util.Arrays;
 
@@ -63,6 +68,11 @@ public class Sound {
     }
 
     public void silent() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (!SilencePreferenceCompat.isNotificationPolicyAccessGranted(context))
+                return;
+        }
+
         if (soundMode != -1)
             return; // already silensed
 
@@ -80,6 +90,11 @@ public class Sound {
     }
 
     public void unsilent() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (!SilencePreferenceCompat.isNotificationPolicyAccessGranted(context))
+                return;
+        }
+
         if (soundMode == -1)
             return; // already unsilensed
 

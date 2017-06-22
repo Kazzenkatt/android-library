@@ -39,6 +39,14 @@ import java.util.List;
  */
 public class SilencePreferenceCompat extends SwitchPreferenceCompat {
 
+    boolean resume = false;
+
+    @TargetApi(23)
+    public static boolean isNotificationPolicyAccessGranted(Context context) {
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        return notificationManager.isNotificationPolicyAccessGranted();
+    }
+
     @TargetApi(21)
     public SilencePreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
@@ -67,40 +75,30 @@ public class SilencePreferenceCompat extends SwitchPreferenceCompat {
 
     @Override
     public boolean callChangeListener(Object newValue) {
-        if (!super.callChangeListener(newValue))
-            return false;
-        boolean b = (boolean) newValue;
-        if (b) {
-            if (Build.VERSION.SDK_INT >= 23) {
-                NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                if (!notificationManager.isNotificationPolicyAccessGranted()) {
+        if (Build.VERSION.SDK_INT >= 23) {
+            boolean b = (boolean) newValue;
+            if (b) {
+                if (!isNotificationPolicyAccessGranted(getContext())) {
                     Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getContext().startActivity(intent);
-                    return false;
-                }
-            }
-        } else {
-            if (Build.VERSION.SDK_INT >= 23) {
-                NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                if (notificationManager.isNotificationPolicyAccessGranted()) {
-                    Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    getContext().startActivity(intent);
+                    resume = true;
                     return false;
                 }
             }
         }
-        return b;
+        return super.callChangeListener(newValue);
     }
 
     public void onResume() {
         if (Build.VERSION.SDK_INT >= 23) {
-            NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-            if (notificationManager.isNotificationPolicyAccessGranted()) {
-                setChecked(true);
-            } else {
+            if (!isNotificationPolicyAccessGranted(getContext())) {
                 setChecked(false);
+            } else {
+                if (resume) {
+                    setChecked(true);
+                    resume = false;
+                }
             }
         }
     }
