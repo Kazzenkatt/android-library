@@ -39,6 +39,8 @@ import java.util.List;
  */
 public class SilencePreferenceCompat extends SwitchPreferenceCompat {
 
+    boolean resume = false;
+
     @TargetApi(23)
     public static boolean isNotificationPolicyAccessGranted(Context context) {
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -73,31 +75,29 @@ public class SilencePreferenceCompat extends SwitchPreferenceCompat {
 
     @Override
     public boolean callChangeListener(Object newValue) {
-        if (!super.callChangeListener(newValue))
-            return false;
-        boolean b = (boolean) newValue;
-        if (b) {
-            if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23) {
+            boolean b = (boolean) newValue;
+            if (b) {
                 if (!isNotificationPolicyAccessGranted(getContext())) {
                     Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     getContext().startActivity(intent);
+                    resume = true;
                     return false;
                 }
             }
-            return true;
-        } else {
-            return true;
         }
+        return super.callChangeListener(newValue);
     }
 
     public void onResume() {
         if (Build.VERSION.SDK_INT >= 23) {
-            if (isChecked()) {
-                if (isNotificationPolicyAccessGranted(getContext())) {
+            if (!isNotificationPolicyAccessGranted(getContext())) {
+                setChecked(false);
+            } else {
+                if (resume) {
                     setChecked(true);
-                } else {
-                    setChecked(false);
+                    resume = false;
                 }
             }
         }
