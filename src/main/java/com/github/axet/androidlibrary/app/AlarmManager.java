@@ -236,7 +236,7 @@ public class AlarmManager {
             if (delay - step < step) // if 0:11, make step 00:01
                 step = delay - step;
             delay = step - diffMilliseconds;
-        } else if (delay <= MIN5 + MIN1) {
+        } else if (delay <= MIN5 + SEC1) {
             long step = MIN1;
             if (delay - step < step) // if 1:30, make step 00:30
                 step = delay - step;
