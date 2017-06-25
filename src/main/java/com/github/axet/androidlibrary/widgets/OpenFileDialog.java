@@ -181,7 +181,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 if (ff != null) {
                     for (File f : ff) {
                         cache(f);
-                        if (!f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // skip default /storage/.../files
+                        if (ext != null && !f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // skip default /storage/.../files
                             File a = f;
 
                             StatFs stat = new StatFs(f.getPath());
