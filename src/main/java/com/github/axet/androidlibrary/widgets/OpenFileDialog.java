@@ -37,6 +37,8 @@ import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.Storage;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
@@ -57,6 +59,30 @@ public class OpenFileDialog extends AlertDialog.Builder {
         FOLDER_DIALOG,
         BOOTH
     }
+
+    File currentPath;
+    TextView free;
+    TextView title;
+    TextView message;
+    ListView listView;
+    FilenameFilter filenameFilter;
+    int folderIcon;
+    int fileIcon;
+    FileAdapter adapter;
+
+    int paddingLeft;
+    int paddingRight;
+    int paddingBottom;
+    int paddingTop;
+    int iconSize;
+    Runnable changeFolder;
+
+    // file / folder readonly dialog selection or output directory? also shows readonly folder tooltip.
+    boolean readonly = false;
+    // allow select files, or just select directory
+    DIALOG_TYPE type = DIALOG_TYPE.BOOTH;
+
+    Button positive; // enable / disable OK
 
     // cache folders, keep folder visible, when android shows none
     static Map<File, Set<File>> cache = new TreeMap<>();
@@ -131,30 +157,6 @@ public class OpenFileDialog extends AlertDialog.Builder {
         return false;
     }
 
-    File currentPath;
-    TextView free;
-    TextView title;
-    TextView message;
-    ListView listView;
-    FilenameFilter filenameFilter;
-    int folderIcon;
-    int fileIcon;
-    FileAdapter adapter;
-
-    int paddingLeft;
-    int paddingRight;
-    int paddingBottom;
-    int paddingTop;
-    int iconSize;
-    Runnable changeFolder;
-
-    // file / folder readonly dialog selection or output directory? also shows readonly folder tooltip.
-    boolean readonly = false;
-    // allow select files, or just select directory
-    DIALOG_TYPE type = DIALOG_TYPE.BOOTH;
-
-    Button positive; // enable / disable OK
-
     static class SortFiles implements Comparator<File> {
         @Override
         public int compare(File f1, File f2) {
@@ -173,7 +175,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         public StorageAdapter() {
             File ext = Environment.getExternalStorageDirectory();
             cache(ext);
-            if (ext == null || (!readonly && !ext.canWrite()))
+            if (ext == null || (!readonly && !canWrite(ext)))
                 ext = getContext().getFilesDir();
             add(ext);
             if (Build.VERSION.SDK_INT >= 19) {
@@ -206,7 +208,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         void add(File f) {
             if (f == null)
                 return;
-            if (!readonly && !f.canWrite())
+            if (!readonly && !canWrite(f))
                 return;
             for (int i = 0; i < list.size(); i++) {
                 if (list.get(i).getAbsolutePath().equals(f.getAbsolutePath()))
@@ -353,7 +355,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
             return view;
         }
 
-        private void setDrawable(TextView view, Drawable drawable) {
+        protected void setDrawable(TextView view, Drawable drawable) {
             if (view != null) {
                 if (drawable != null) {
                     drawable.setBounds(0, 0, iconSize, iconSize);
@@ -612,7 +614,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 File f = new File(currentPath, builder.getText());
-                                if (!f.mkdirs()) {
+                                if (!mkdirs(f)) {
                                     toast(getContext().getString(R.string.OpenFileDialogUnableCreate, builder.getText()));
                                 } else {
                                     toast(getContext().getString(R.string.OpenFileDialogFolderCreated, builder.getText()));
@@ -668,7 +670,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                             }
                             if (item.getTitle().equals(getContext().getString(R.string.OpenFileDialogDelete))) {
                                 File ff = adapter.getItem(position);
-                                ff.delete();
+                                delete(ff);
                                 toast(getContext().getString(R.string.OpenFileDialogFolderDeleted, ff.getName()));
                                 adapter.scan(currentPath);
                                 return true;
@@ -805,7 +807,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         return this;
     }
 
-    private static Display getDefaultDisplay(Context context) {
+    protected static Display getDefaultDisplay(Context context) {
         return ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
     }
 
@@ -815,7 +817,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         return d;
     }
 
-    private static Point getScreenSize(Context context) {
+    protected static Point getScreenSize(Context context) {
         Display d = getDefaultDisplay(context);
         if (Build.VERSION.SDK_INT < 13) {
             return new Point(d.getWidth(), d.getHeight());
@@ -826,16 +828,16 @@ public class OpenFileDialog extends AlertDialog.Builder {
         }
     }
 
-    private static int getLinearLayoutMinHeight(Context context) {
+    protected static int getLinearLayoutMinHeight(Context context) {
         return getScreenSize(context).y;
     }
 
-    private void rebuildFiles() {
+    protected void rebuildFiles() {
         if (!readonly) { // show readonly directory tooltip
             File p = currentPath;
             while (!p.exists())
                 p = currentPath.getParentFile();
-            if (!p.canWrite()) {
+            if (!canWrite(p)) {
                 message.setText(R.string.readonly_directory);
                 message.setVisibility(View.VISIBLE);
             } else {
@@ -849,5 +851,17 @@ public class OpenFileDialog extends AlertDialog.Builder {
         if (changeFolder != null) {
             changeFolder.run();
         }
+    }
+
+    protected boolean canWrite(File p) {
+        return p.canWrite();
+    }
+
+    protected boolean delete(File f) {
+        return FileUtils.deleteQuietly(f);
+    }
+
+    protected boolean mkdirs(File f) {
+        return f.mkdirs();
     }
 }

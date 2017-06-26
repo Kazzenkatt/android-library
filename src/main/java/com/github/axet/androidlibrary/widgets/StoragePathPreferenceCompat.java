@@ -42,7 +42,16 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
             if (!Storage.permitted(a, ss, code))
                 return;
         }
-        StoragePathPreference.showDialog(getContext(), this);
+        StoragePathPreference.showDialog(getContext(), this, new StoragePathPreference.DialogDelayed() {
+            @Override
+            public OpenFileDialog createDialog() {
+                return StoragePathPreferenceCompat.this.createDialog();
+            }
+        });
+    }
+
+    public OpenFileDialog createDialog() {
+        return new OpenFileDialog(getContext(), OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
     }
 
     @Override
@@ -90,6 +99,11 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     }
 
     public void onRequestPermissionsResult() {
-        StoragePathPreference.showDialog(getContext(), this);
+        StoragePathPreference.showDialog(getContext(), this, new StoragePathPreference.DialogDelayed() {
+            @Override
+            public OpenFileDialog createDialog() {
+                return StoragePathPreferenceCompat.this.createDialog();
+            }
+        });
     }
 }

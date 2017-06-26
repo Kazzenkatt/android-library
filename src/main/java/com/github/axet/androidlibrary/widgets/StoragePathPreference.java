@@ -47,7 +47,6 @@ public class StoragePathPreference extends EditTextPreference {
         throw new RuntimeException("unknown class");
     }
 
-
     public static void setText(Object o, String name) {
         if (o instanceof StoragePathPreference) {
             ((StoragePathPreference) o).setText(name);
@@ -79,7 +78,7 @@ public class StoragePathPreference extends EditTextPreference {
         return p;
     }
 
-    public static void showDialog(Context context, final Object pref) {
+    public static void showDialog(Context context, final Object pref, DialogDelayed delayed) {
         Storage storage = new Storage(context);
         if (!Storage.permitted(context, Storage.PERMISSIONS)) {
             final List<String> ss = new ArrayList<>();
@@ -103,7 +102,7 @@ public class StoragePathPreference extends EditTextPreference {
             Dialog d = builder.create();
             d.show();
         } else {
-            final OpenFileDialog f = new OpenFileDialog(context, OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
+            final OpenFileDialog f = delayed.createDialog();
 
             File p = getPath(pref);
 
@@ -142,6 +141,10 @@ public class StoragePathPreference extends EditTextPreference {
         }
     }
 
+    public interface DialogDelayed {
+        public OpenFileDialog createDialog();
+    }
+
     public StoragePathPreference(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
@@ -156,7 +159,16 @@ public class StoragePathPreference extends EditTextPreference {
 
     @Override
     protected void showDialog(Bundle state) {
-        showDialog(getContext(), this);
+        showDialog(getContext(), this, new DialogDelayed() {
+            @Override
+            public OpenFileDialog createDialog() {
+                return StoragePathPreference.this.createDialog();
+            }
+        });
+    }
+
+    public OpenFileDialog createDialog() {
+        return new OpenFileDialog(getContext(), OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
     }
 
     @Override
