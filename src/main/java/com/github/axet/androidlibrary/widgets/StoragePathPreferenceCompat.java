@@ -99,7 +99,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         return path.getPath();
     }
 
-    void updatePath(String path) {
+    public void updatePath(String path) {
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) {
             String n = getName(getContext(), path);
             setSummary(n);
