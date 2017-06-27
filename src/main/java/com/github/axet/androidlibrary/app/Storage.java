@@ -22,7 +22,9 @@ import android.support.v4.content.ContextCompat;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.StructStatVfs;
+import android.webkit.MimeTypeMap;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedInputStream;
@@ -136,8 +138,11 @@ public class Storage {
     }
 
     public static void move(File f, File to) {
-        if (f.renameTo(to))
+        long last = f.lastModified();
+        if (f.renameTo(to)) {
+            to.setLastModified(last);
             return;
+        }
         try {
             InputStream in = new BufferedInputStream(new FileInputStream(f));
             OutputStream out = new BufferedOutputStream(new FileOutputStream(to));
@@ -145,6 +150,7 @@ public class Storage {
             in.close();
             out.close();
             f.delete();
+            to.setLastModified(last);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -470,4 +476,93 @@ public class Storage {
             throw new RuntimeException("unknown uri");
         }
     }
+
+    @TargetApi(21)
+    public String getTargetName(Uri uri) {
+        String s = uri.getScheme();
+        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
+            ContentResolver contentResolver = context.getContentResolver();
+            Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
+            Cursor docCursor = contentResolver.query(docUri, null, null, null, null);
+            try {
+                if (docCursor.moveToNext()) {
+                    String saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
+                    final List<String> paths = uri.getPathSegments();
+                    if (DocumentsContract.isDocumentUri(context, uri)) {
+                        String parent = DocumentsContract.getTreeDocumentId(uri);
+                        String docId = DocumentsContract.getDocumentId(uri);
+                        docId = docId.substring(parent.length());
+                        saf += docId;
+                    }
+                    return saf;
+                }
+            } finally {
+                docCursor.close();
+            }
+            return null;
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files
+            File f = new File(uri.getPath());
+            return f.getAbsolutePath();
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
+    public Uri move(File f, Uri t) {
+        String s = t.getScheme();
+        if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            String ext = getExt(t);
+            String n = getNameNoExt(t);
+            ContentResolver contentResolver = context.getContentResolver();
+            Uri doc = DocumentsContract.buildTreeDocumentUri(t.getAuthority(), DocumentsContract.getTreeDocumentId(t));
+            Uri to = getNextFile(doc, n, ext);
+            n = getNameNoExt(to); // update (1)
+            String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+            Uri docUri = DocumentsContract.buildDocumentUriUsingTree(t, DocumentsContract.getTreeDocumentId(t));
+            Uri toUri = DocumentsContract.createDocument(contentResolver, docUri, mime, n);
+            try {
+                InputStream is = new FileInputStream(f);
+                OutputStream os = contentResolver.openOutputStream(toUri);
+                IOUtils.copy(is, os);
+                is.close();
+                os.close();
+                f.delete();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return toUri;
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            File parent = f.getParentFile();
+
+            String ext = getExt(t);
+            String n = getNameNoExt(t);
+
+            File tf = new File(t.getPath());
+            File td = tf.getParentFile();
+
+            if (Storage.isSame(parent, td))
+                return null;
+
+            if (!td.exists() && !td.mkdirs())
+                throw new RuntimeException("unable to create: " + td);
+
+            File to = Storage.getNextFile(td, n, ext);
+
+            if (Storage.isSame(f, to))
+                return null;
+
+            Storage.move(f, to);
+
+            return Uri.fromFile(to);
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
+    @TargetApi(21)
+    void takePersistableUriPermission(Uri uri) {
+        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        context.getContentResolver().takePersistableUriPermission(uri, takeFlags);
+    }
+
 }

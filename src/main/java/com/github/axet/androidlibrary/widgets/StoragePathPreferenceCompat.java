@@ -31,26 +31,6 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     Fragment sf;
     public int scode;
 
-    @TargetApi(21)
-    public static String getName(Context context, String to) {
-        Uri uri = Uri.parse(to);
-
-        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-        context.getContentResolver().takePersistableUriPermission(uri, takeFlags);
-
-        ContentResolver contentResolver = context.getContentResolver();
-        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
-        Cursor docCursor = contentResolver.query(docUri, new String[]{DocumentsContract.Document.COLUMN_DISPLAY_NAME}, null, null, null);
-        try {
-            while (docCursor.moveToNext()) {
-                to = docCursor.getString(0);
-            }
-        } finally {
-            docCursor.close();
-        }
-        return "saf://" + to;
-    }
-
     @TargetApi(19)
     public static boolean showStorageAccessFramework(Context context, String path) {
         File ext = Environment.getExternalStorageDirectory();
@@ -129,7 +109,8 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
 
     public void updatePath(String path) {
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            String n = getName(getContext(), path);
+            Uri u = Uri.parse(path);
+            String n = storage.getTargetName(u);
             setSummary(n);
         } else {
             File summ = storage.getStoragePath(new File(path));
