@@ -164,7 +164,9 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         if (resultCode != Activity.RESULT_OK)
             return;
         Uri uri = data.getData();
-        storage.takePersistableUriPermission(uri);
+        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        ContentResolver resolver = getContext().getContentResolver();
+        resolver.takePersistableUriPermission(uri, takeFlags);
         if (callChangeListener(uri.toString())) {
             setText(uri.toString());
         }

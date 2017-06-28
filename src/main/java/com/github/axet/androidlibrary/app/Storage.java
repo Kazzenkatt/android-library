@@ -560,10 +560,4 @@ public class Storage {
         }
     }
 
-    @TargetApi(21)
-    public void takePersistableUriPermission(Uri uri) {
-        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-        context.getContentResolver().takePersistableUriPermission(uri, takeFlags);
-    }
-
 }
