@@ -485,20 +485,22 @@ public class Storage {
             ContentResolver contentResolver = context.getContentResolver();
             Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
             Cursor docCursor = contentResolver.query(docUri, null, null, null, null);
-            try {
-                if (docCursor.moveToNext()) {
-                    String saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-                    final List<String> paths = uri.getPathSegments();
-                    if (DocumentsContract.isDocumentUri(context, uri)) {
-                        String parent = DocumentsContract.getTreeDocumentId(uri);
-                        String docId = DocumentsContract.getDocumentId(uri);
-                        docId = docId.substring(parent.length());
-                        saf += docId;
+            if (docCursor != null) {
+                try {
+                    if (docCursor.moveToNext()) {
+                        String saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
+                        final List<String> paths = uri.getPathSegments();
+                        if (DocumentsContract.isDocumentUri(context, uri)) {
+                            String parent = DocumentsContract.getTreeDocumentId(uri);
+                            String docId = DocumentsContract.getDocumentId(uri);
+                            docId = docId.substring(parent.length());
+                            saf += docId;
+                        }
+                        return saf;
                     }
-                    return saf;
+                } finally {
+                    docCursor.close();
                 }
-            } finally {
-                docCursor.close();
             }
             return null;
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files

@@ -182,6 +182,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 File[] ff = getContext().getExternalFilesDirs("");
                 if (ff != null) {
                     for (File f : ff) {
+                        if (f == null)
+                            continue; // if storage unmounted null file here
                         cache(f);
                         if (ext == null || !f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // skip default /storage/.../files
                             File a = f;
