@@ -39,7 +39,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         File[] ff = context.getExternalFilesDirs("");
         int count = 0;
         for (File f : ff) {
-            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) {
+            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // f can be null, if media unmounted
                 continue;
             }
             count++;
