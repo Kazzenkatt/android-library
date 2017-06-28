@@ -39,7 +39,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         File[] ff = context.getExternalFilesDirs("");
         int count = 0;
         for (File f : ff) {
-            if (f.getAbsolutePath().startsWith(ext.getAbsolutePath())) {
+            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) {
                 continue;
             }
             count++;
@@ -112,7 +112,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
 
     public void updatePath(String path) {
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            Uri u = Uri.parse(path);
+            Uri u = storage.getStoragePath(path);
             String n = storage.getTargetName(u);
             setSummary(n);
         } else {
@@ -169,5 +169,11 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         if (callChangeListener(uri.toString())) {
             setText(uri.toString());
         }
+    }
+
+    public void setStorage(Storage storage) {
+        this.storage = storage;
+        String f = StoragePathPreference.getPath(this);
+        updatePath(f);
     }
 }
