@@ -66,7 +66,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     }
 
     @Override
-    protected void onClick() {
+    public void onClick() {
         if (f != null) {
             if (!Storage.permitted(f, ss, code))
                 return;
@@ -163,9 +163,8 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public void onActivityResult(int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK)
             return;
-        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
         Uri uri = data.getData();
-        getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+        storage.takePersistableUriPermission(uri);
         if (callChangeListener(uri.toString())) {
             setText(uri.toString());
         }
