@@ -1,6 +1,6 @@
 <resources>
     <!--OpenFileDialog-->
-    <string name="OpenFileDialogRename">Renomear</string>
+    <string name="filedialog_rename">Renomear</string>
     <string name="OpenFileDialogDelete">Deletar</string>
     <string name="OpenFileDialogNewFolder">Nova pasta</string>
     <string name="OpenFileDialogFolderName">Nome da pasta</string>
@@ -41,5 +41,8 @@
     <string name="optimization_dialog">Configurações de Otimização</string>
     <string name="optimization_message">Por favor, considere adicionar este aplicativo na lista-branca do seu gerenciador de bateria (se você tiver um) para impedir que ele seja removido da memória.</string>
     <string name="settings">Configurações</string>
+    <string name="about">About</string>
+    <string name="open_browser">Open Browser</string>
+    <string name="are_you_sure">Tem certeza ?</string>
 </resources>
 

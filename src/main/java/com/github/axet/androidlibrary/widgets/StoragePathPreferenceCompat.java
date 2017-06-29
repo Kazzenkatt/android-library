@@ -39,7 +39,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
         File[] ff = context.getExternalFilesDirs("");
         int count = 0;
         for (File f : ff) {
-            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) {
+            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // f can be null, if media unmounted
                 continue;
             }
             count++;
@@ -66,7 +66,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     }
 
     @Override
-    protected void onClick() {
+    public void onClick() {
         if (f != null) {
             if (!Storage.permitted(f, ss, code))
                 return;
@@ -113,7 +113,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public void updatePath(String path) {
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) {
             Uri u = storage.getStoragePath(path);
-            String n = storage.getTargetName(u);
+            String n = storage.getTargetName(u); // can be null
             setSummary(n);
         } else {
             File summ = storage.getStoragePath(new File(path));
@@ -163,9 +163,10 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public void onActivityResult(int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK)
             return;
-        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
         Uri uri = data.getData();
-        getContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
+        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+        ContentResolver resolver = getContext().getContentResolver();
+        resolver.takePersistableUriPermission(uri, takeFlags);
         if (callChangeListener(uri.toString())) {
             setText(uri.toString());
         }

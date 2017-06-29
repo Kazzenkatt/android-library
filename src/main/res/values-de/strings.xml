@@ -1,6 +1,6 @@
 <resources>
     <!--OpenFileDialog-->
-    <string name="OpenFileDialogRename">Umbenennen</string>
+    <string name="filedialog_rename">Umbenennen</string>
     <string name="OpenFileDialogDelete">Löschen</string>
     <string name="OpenFileDialogNewFolder">Neuer Ordner</string>
     <string name="OpenFileDialogFolderName">Ordner Name</string>
@@ -41,4 +41,7 @@
     <string name="optimization_dialog">Optimierungs-Einstellungen</string>
     <string name="optimization_message">Ziehe in Betracht diese App zur Whitelist für den Batterie-Manager hinzuzufügen um das Entfernen aus dem Speicher zu vermeiden.</string>
     <string name="settings">Einstellungen</string>
+    <string name="about">About</string>
+    <string name="open_browser">Open Browser</string>
+    <string name="are_you_sure">"Bist du sicher? "</string>
 </resources>

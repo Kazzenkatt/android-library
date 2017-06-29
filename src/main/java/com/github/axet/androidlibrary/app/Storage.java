@@ -22,6 +22,7 @@ import android.support.v4.content.ContextCompat;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.StructStatVfs;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import org.apache.commons.io.FilenameUtils;
@@ -42,6 +43,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Storage {
+    private static final String TAG = Storage.class.getSimpleName();
+
     public static final String[] PERMISSIONS = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     protected Context context;
@@ -484,25 +487,25 @@ public class Storage {
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
             ContentResolver contentResolver = context.getContentResolver();
             Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
-            Cursor docCursor = contentResolver.query(docUri, null, null, null, null);
-            if (docCursor != null) {
-                try {
+            String saf = null;
+            try {
+                Cursor docCursor = contentResolver.query(docUri, null, null, null, null);
+                if (docCursor != null) {
                     if (docCursor.moveToNext()) {
-                        String saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-                        final List<String> paths = uri.getPathSegments();
+                        saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
                         if (DocumentsContract.isDocumentUri(context, uri)) {
                             String parent = DocumentsContract.getTreeDocumentId(uri);
                             String docId = DocumentsContract.getDocumentId(uri);
                             docId = docId.substring(parent.length());
                             saf += docId;
                         }
-                        return saf;
                     }
-                } finally {
                     docCursor.close();
                 }
+            } catch (SecurityException e) {
+                Log.d(TAG, "Unable to get folder", e);
             }
-            return null;
+            return saf;
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files
             File f = new File(uri.getPath());
             return f.getAbsolutePath();
@@ -558,12 +561,6 @@ public class Storage {
         } else {
             throw new RuntimeException("unknown uri");
         }
-    }
-
-    @TargetApi(21)
-    void takePersistableUriPermission(Uri uri) {
-        final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
-        context.getContentResolver().takePersistableUriPermission(uri, takeFlags);
     }
 
 }
