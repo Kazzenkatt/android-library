@@ -1,6 +1,6 @@
 <resources>
     <!--OpenFileDialog-->
-    <string name="OpenFileDialogRename">Rinomina</string>
+    <string name="filedialog_rename">Rinomina</string>
     <string name="OpenFileDialogDelete">Elimina</string>
     <string name="OpenFileDialogNewFolder">Nuova Cartella</string>
     <string name="OpenFileDialogFolderName">Nome della Cartella</string>
@@ -41,4 +41,7 @@
     <string name="optimization_dialog">Impostazioni di ottimizzazione della batteria</string>
     <string name="optimization_message">Valuta di aggiungere questa applicazione alle eccezioni tra le  impostazioni di gestione della batteria del telefono al fine di evitare che l\'applicazione sia rimossa dalla memoria volatile.</string>
     <string name="settings">Impostazioni</string>
+    <string name="about">About</string>
+    <string name="open_browser">Open Browser</string>
+    <string name="are_you_sure">Sei sicuro ?</string>
 </resources>

@@ -113,7 +113,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public void updatePath(String path) {
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) {
             Uri u = storage.getStoragePath(path);
-            String n = storage.getTargetName(u);
+            String n = storage.getTargetName(u); // can be null
             setSummary(n);
         } else {
             File summ = storage.getStoragePath(new File(path));

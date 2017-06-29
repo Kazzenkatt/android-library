@@ -647,13 +647,13 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
                     final PopupMenu p = new PopupMenu(getContext(), view);
                     if (!readonly) { // show rename / delete
-                        p.getMenu().add(getContext().getString(R.string.OpenFileDialogRename));
+                        p.getMenu().add(getContext().getString(R.string.filedialog_rename));
                         p.getMenu().add(getContext().getString(R.string.OpenFileDialogDelete));
                     }
                     p.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
-                            if (item.getTitle().equals(getContext().getString(R.string.OpenFileDialogRename))) {
+                            if (item.getTitle().equals(getContext().getString(R.string.filedialog_rename))) {
                                 final File ff = adapter.getItem(position);
                                 final EditTextDialog b = new EditTextDialog(getContext());
                                 b.setTitle(getContext().getString(R.string.OpenFileDialogFolderName));
