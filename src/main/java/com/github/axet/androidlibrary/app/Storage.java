@@ -49,6 +49,7 @@ public class Storage {
     public static final String[] PERMISSIONS = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     protected Context context;
+    protected ContentResolver resolver;
 
     public static long getFree(File f) {
         while (!f.exists())
@@ -141,11 +142,11 @@ public class Storage {
         }
     }
 
-    public static void move(File f, File to) {
+    public static File move(File f, File to) {
         long last = f.lastModified();
         if (f.renameTo(to)) {
             to.setLastModified(last);
-            return;
+            return to;
         }
         try {
             InputStream in = new BufferedInputStream(new FileInputStream(f));
@@ -155,6 +156,7 @@ public class Storage {
             out.close();
             f.delete();
             to.setLastModified(last);
+            return to;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -205,6 +207,7 @@ public class Storage {
 
     public Storage(Context context) {
         this.context = context;
+        this.resolver = context.getContentResolver();
     }
 
     public File getLocalInternal() {
@@ -248,12 +251,14 @@ public class Storage {
     public boolean exists(Uri uri) {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver contentResolver = context.getContentResolver();
             Cursor childCursor = null;
             try {
-                childCursor = contentResolver.query(uri, null, null, null, null);
-                if (childCursor.moveToNext()) {
-                    return true;
+                childCursor = resolver.query(uri, null, null, null, null);
+                if (childCursor != null) {
+                    boolean n = childCursor.moveToNext();
+                    childCursor.close();
+                    if (n)
+                        return true;
                 }
             } catch (RuntimeException e) { // not found catched here
                 ;
@@ -287,7 +292,6 @@ public class Storage {
     public void delete(Uri f) {
         String s = f.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver resolver = context.getContentResolver();
             DocumentsContract.deleteDocument(resolver, f);
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File ff = new File(f.getPath());
@@ -322,7 +326,6 @@ public class Storage {
     public Uri rename(Uri f, String t) {
         String s = f.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver resolver = context.getContentResolver();
             return DocumentsContract.renameDocument(resolver, f, t);
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = new File(f.getPath());
@@ -373,7 +376,7 @@ public class Storage {
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             Uri docTreeUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
             try {
-                ParcelFileDescriptor pfd = context.getContentResolver().openFileDescriptor(docTreeUri, "r");
+                ParcelFileDescriptor pfd = resolver.openFileDescriptor(docTreeUri, "r");
                 StructStatVfs stats = Os.fstatvfs(pfd.getFileDescriptor());
                 return stats.f_bavail * stats.f_bsize;
             } catch (FileNotFoundException | ErrnoException e) {
@@ -401,6 +404,23 @@ public class Storage {
     }
 
     @TargetApi(21)
+    public static String getDocumentPath(Uri uri) {
+        String s = uri.getScheme();
+        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            String id = DocumentsContract.getDocumentId(uri);
+            String parent = DocumentsContract.getTreeDocumentId(uri);
+            id = id.substring(parent.length() + 1);
+            File f = new File(id);
+            return f.getPath();
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            File f = new File(uri.getPath());
+            return f.getName();
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
+    @TargetApi(21)
     public static String getDocumentName(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
@@ -416,11 +436,10 @@ public class Storage {
     }
 
     public String getName(Uri uri) {
-        ContentResolver contentResolver = context.getContentResolver();
         Cursor childCursor = null;
         try {
-            childCursor = contentResolver.query(uri, null, null, null, null);
-            if (childCursor.moveToNext()) {
+            childCursor = resolver.query(uri, null, null, null, null);
+            if (childCursor != null && childCursor.moveToNext()) {
                 return childCursor.getString(childCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
             }
         } catch (RuntimeException e) {
@@ -435,11 +454,10 @@ public class Storage {
     public long getLength(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver contentResolver = context.getContentResolver();
             Cursor childCursor = null;
             try {
-                childCursor = contentResolver.query(uri, null, null, null, null);
-                if (childCursor.moveToNext()) {
+                childCursor = resolver.query(uri, null, null, null, null);
+                if (childCursor != null && childCursor.moveToNext()) {
                     return childCursor.getLong(childCursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
                 }
             } catch (RuntimeException e) {
@@ -460,11 +478,10 @@ public class Storage {
     public long getLast(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            ContentResolver contentResolver = context.getContentResolver();
             Cursor childCursor = null;
             try {
-                childCursor = contentResolver.query(uri, null, null, null, null);
-                if (childCursor.moveToNext()) {
+                childCursor = resolver.query(uri, null, null, null, null);
+                if (childCursor != null && childCursor.moveToNext()) {
                     return childCursor.getLong(childCursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
                 }
             } catch (RuntimeException e) {
@@ -486,11 +503,10 @@ public class Storage {
     public String getTargetName(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
-            ContentResolver contentResolver = context.getContentResolver();
             Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
             String saf = null;
             try {
-                Cursor docCursor = contentResolver.query(docUri, null, null, null, null);
+                Cursor docCursor = resolver.query(docUri, null, null, null, null);
                 if (docCursor != null) {
                     if (docCursor.moveToNext()) {
                         saf = "saf://" + docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
@@ -521,13 +537,12 @@ public class Storage {
         if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
             String ext = getExt(t);
             String n = getDocumentName(t);
-            ContentResolver contentResolver = context.getContentResolver();
             String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
             Uri docUri = DocumentsContract.buildDocumentUriUsingTree(t, DocumentsContract.getTreeDocumentId(t));
-            Uri toUri = DocumentsContract.createDocument(contentResolver, docUri, mime, n);
+            Uri toUri = DocumentsContract.createDocument(resolver, docUri, mime, n);
             try {
                 InputStream is = new FileInputStream(f);
-                OutputStream os = contentResolver.openOutputStream(toUri);
+                OutputStream os = resolver.openOutputStream(toUri);
                 IOUtils.copy(is, os);
                 is.close();
                 os.close();
@@ -562,6 +577,46 @@ public class Storage {
         } else {
             throw new RuntimeException("unknown uri");
         }
+    }
+
+    @TargetApi(21)
+    synchronized public Uri createFile(Uri parent, String path) {
+        Uri u = child(parent, path);
+        if (exists(u))
+            return u;
+
+        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
+
+        String p = new File(path).getParent();
+        if (p != null && !p.isEmpty()) {
+            docUri = createFolder(parent, p);
+        }
+
+        Log.d(TAG, "createFile " + path);
+        String ext = getExt(u);
+        String n = getDocumentName(u);
+        String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        return DocumentsContract.createDocument(resolver, docUri, mime, n);
+    }
+
+    @TargetApi(21)
+    synchronized public Uri createFolder(Uri parent, String path) {
+        Uri c = child(parent, path);
+        if (exists(c))
+            return c;
+
+        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(c, DocumentsContract.getTreeDocumentId(c));
+
+        File f = new File(path);
+        String p = f.getParent();
+        if (p != null && !p.isEmpty()) {
+            docUri = createFolder(parent, p);
+        }
+
+        Log.d(TAG, "createFolder " + path);
+
+        String n = f.getName();
+        return DocumentsContract.createDocument(resolver, docUri, DocumentsContract.Document.MIME_TYPE_DIR, n);
     }
 
 }
