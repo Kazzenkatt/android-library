@@ -334,7 +334,7 @@ public class Storage {
             return DocumentsContract.renameDocument(resolver, f, t);
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = new File(f.getPath());
-            File ff = new File(f1.getParent(), s);
+            File ff = new File(f1.getParent(), t);
             if (ff.exists())
                 ff = Storage.getNextFile(ff);
             f1.renameTo(ff);
