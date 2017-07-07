@@ -115,11 +115,17 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
             Uri u = storage.getStoragePath(path);
             String n = storage.getTargetName(u); // can be null
             setSummary(n);
-        } else {
-            File p = storage.getStoragePath(new File(path));
-            File summ = storage.getStoragePath(p);
-            setSummary(summ.toString());
+            return;
         }
+        File f;
+        if (path.startsWith(ContentResolver.SCHEME_FILE)) {
+            Uri u = Uri.parse(path);
+            f = Storage.getFile(u);
+        } else {
+            f = new File(path);
+        }
+        File p = storage.getStoragePath(f);
+        setSummary(p.toString());
     }
 
     @Override
