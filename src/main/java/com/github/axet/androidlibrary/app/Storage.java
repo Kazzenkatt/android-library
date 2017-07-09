@@ -69,13 +69,17 @@ public class Storage {
         return fileName;
     }
 
-    public static String getExt(File f) {
-        String fileName = f.getName();
+    public static String getExt(String fileName) {
         int i = fileName.lastIndexOf('.');
         if (i >= 0) {
             return fileName.substring(i + 1);
         }
         return "";
+    }
+
+    public static String getExt(File f) {
+        String fileName = f.getName();
+        return getExt(fileName);
     }
 
     // "test (1)" --> "test"
@@ -320,9 +324,14 @@ public class Storage {
     public Uri child(Uri uri, String name) {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            String f = DocumentsContract.getTreeDocumentId(uri) + "/" + name;
-            Uri test = DocumentsContract.buildDocumentUriUsingTree(uri, f);
-            return test;
+            File f;
+            if (DocumentsContract.isDocumentUri(context, uri)) {
+                f = new File(DocumentsContract.getDocumentId(uri));
+            } else {
+                f = new File(DocumentsContract.getTreeDocumentId(uri));
+            }
+            f = new File(f, name);
+            return DocumentsContract.buildDocumentUriUsingTree(uri, f.getPath());
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             File f1 = new File(getFile(uri), name);
             return Uri.fromFile(f1);
@@ -643,18 +652,13 @@ public class Storage {
         }
     }
 
-    // move should not call getNextFile()
+    // call getNextFile() on 't'
     public Uri move(File f, Uri t) {
         String s = t.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            String ext = getExt(t);
-            String n = getDocumentName(t);
-            String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
-            Uri docUri = DocumentsContract.buildDocumentUriUsingTree(t, DocumentsContract.getTreeDocumentId(t));
-            Uri toUri = DocumentsContract.createDocument(resolver, docUri, mime, n);
             try {
                 InputStream is = new FileInputStream(f);
-                OutputStream os = resolver.openOutputStream(toUri);
+                OutputStream os = resolver.openOutputStream(t);
                 IOUtils.copy(is, os);
                 is.close();
                 os.close();
@@ -662,7 +666,7 @@ public class Storage {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            return toUri;
+            return t;
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             File parent = f.getParentFile();
 
@@ -691,17 +695,71 @@ public class Storage {
         }
     }
 
+    public Uri migrate(File f, Uri dir) {
+        String s = dir.getScheme();
+        if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            Log.d(TAG, "migrate: " + f + " --> " + getTargetName(dir));
+            String n = getNameNoExt(f);
+            String e = getExt(f);
+            Uri t = getNextFile(dir, n, e);
+            if (f.isDirectory()) {
+                Uri tt = createFolder(dir, getDocumentName(t));
+                File[] files = f.listFiles();
+                if (files != null) {
+                    for (File m : files) {
+                        migrate(m, tt);
+                    }
+                }
+                FileUtils.deleteQuietly(f);
+                return tt;
+            } else {
+                Uri u = createFile(dir, getDocumentName(t));
+                u = move(f, u);
+                return u;
+            }
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            Log.d(TAG, "migrate: " + f + " --> " + dir.getPath());
+            if (f.isDirectory()) {
+                File[] files = f.listFiles();
+                if (files != null) {
+                    for (File ff : files) {
+                        File tt = new File(getFile(dir), ff.getName());
+                        tt.mkdirs();
+                        move(ff, tt);
+                    }
+                }
+                FileUtils.deleteQuietly(f);
+                return dir;
+            } else {
+                File to = new File(dir.getPath());
+                File parent = to.getParentFile();
+                if (!parent.exists() && !parent.mkdirs()) {
+                    throw new RuntimeException("No permissions: " + parent);
+                }
+                return Uri.fromFile(move(f, to));
+            }
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
     @TargetApi(21)
     synchronized public Uri createFile(Uri parent, String path) {
         Uri u = child(parent, path);
         if (exists(u))
             return u;
 
-        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
+        String id;
+        if (DocumentsContract.isDocumentUri(context, parent)) {
+            id = DocumentsContract.getDocumentId(parent);
+        } else {
+            id = DocumentsContract.getTreeDocumentId(parent);
+        }
+        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(parent, id);
 
         String p = new File(path).getParent();
         if (p != null && !p.isEmpty()) {
-            docUri = createFolder(parent, p);
+            docUri = createFolder(docUri, p);
         }
 
         Log.d(TAG, "createFile " + path);
@@ -717,18 +775,22 @@ public class Storage {
         if (exists(c))
             return c;
 
-        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(c, DocumentsContract.getTreeDocumentId(c));
+        String id;
+        if (DocumentsContract.isDocumentUri(context, parent)) {
+            id = DocumentsContract.getDocumentId(parent);
+        } else {
+            id = DocumentsContract.getTreeDocumentId(parent);
+        }
+        Uri docUri = DocumentsContract.buildDocumentUriUsingTree(parent, id);
 
-        File f = new File(path);
-        String p = f.getParent();
-        if (p != null && !p.isEmpty()) {
-            docUri = createFolder(parent, p);
+        File p = new File(path);
+        String n = p.getParent();
+        if (n != null && !n.isEmpty()) {
+            docUri = createFolder(docUri, n);
         }
 
         Log.d(TAG, "createFolder " + path);
-
-        String n = f.getName();
-        return DocumentsContract.createDocument(resolver, docUri, DocumentsContract.Document.MIME_TYPE_DIR, n);
+        return DocumentsContract.createDocument(resolver, docUri, DocumentsContract.Document.MIME_TYPE_DIR, p.getName());
     }
 
 }
