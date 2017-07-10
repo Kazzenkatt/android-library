@@ -25,23 +25,28 @@ function interceptor(e) {
 }
 
 // 3) XMLHttpRequest.prototype.send
-var XMLHttpRequest = function () {
-    this.open = function(method, url, async, user, password) {
-        this.params = {"method" : method, "url" : url, "async" : async, "user" : user, "password" : password};
-    }
-    this.send = function(form) {
-        var params = this.params
-        this.response = interception.customAjax(params.method, params.url, params.user, params.password, this.header['Content-Type'], form);
-        this.responseText = this.response
-        this.responseURL = params.url
-        this.responseXML = this.response
-        this.readyState = 4;
-        this.status = 200;
-        this.statusText = "OK";
-        this.onreadystatechange();
-    }
+XMLHttpRequest.prototype.open = function(method, url, async, user, pass) {
+    this.params = {
+      "method" : method === undefined ? null : method,
+      "url" : url === undefined ? null : url,
+      "async" : async === undefined ? null : async,
+      "user" : user === undefined ? null : user,
+      "password" : pass === undefined ? null : pass
+    };
     this.header = {};
     this.setRequestHeader = function(name, value) {
         this.header[name] = value;
     }
+};
+
+XMLHttpRequest.prototype.send = function(form) {
+    var params = this.params;
+    this.response = interception.customAjax(params.method, params.url, params.user, params.password, JSON.stringify(this.header), form);
+    this.responseText = this.response;
+    this.responseURL = params.url;
+    this.responseXML = this.response;
+    this.readyState = 4;
+    this.status = 200;
+    this.statusText = "OK";
+    this.onreadystatechange && this.onreadystatechange();
 }

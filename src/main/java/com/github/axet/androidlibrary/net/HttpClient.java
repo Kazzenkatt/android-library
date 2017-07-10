@@ -657,7 +657,7 @@ public class HttpClient {
     }
 
     // deal with java.lang.IllegalArgumentException: Illegal character in path at index
-    String safe(String url) {
+    public static String safe(String url) {
         try {
             URL u = new URL(url);
             URI uri = new URI(u.getProtocol(), u.getUserInfo(), u.getHost(), u.getPort(), u.getPath(), u.getQuery(), u.getRef());
@@ -670,8 +670,12 @@ public class HttpClient {
     }
 
     public DownloadResponse getResponse(String base, String url) {
+        HttpGet httpGet = new HttpGet(safe(url));
+        return getResponse(base, httpGet);
+    }
+
+    public DownloadResponse getResponse(String base, HttpGet httpGet) {
         try {
-            HttpGet httpGet = new HttpGet(safe(url));
             CloseableHttpResponse response = execute(base, httpGet);
             return new DownloadResponse(httpClientContext, httpGet, response);
         } finally {
