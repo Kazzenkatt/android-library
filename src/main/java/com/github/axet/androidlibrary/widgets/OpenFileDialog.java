@@ -179,7 +179,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 ext = getContext().getFilesDir();
             add(ext);
             if (Build.VERSION.SDK_INT >= 19) {
-                File[] ff = getContext().getExternalFilesDirs("");
+                File[] ff = ContextCompat.getExternalFilesDirs(getContext(), "");
                 if (ff != null) {
                     for (File f : ff) {
                         if (f == null)

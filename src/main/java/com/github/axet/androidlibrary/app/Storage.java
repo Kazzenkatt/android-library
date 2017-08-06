@@ -213,6 +213,51 @@ public class Storage {
         return new File(p);
     }
 
+    public static boolean ejected(File p) { // check target forlder for RW access if does not exist, and R if exists
+        if (!p.exists()) {
+            while (!p.exists()) {
+                p = p.getParentFile();
+            }
+            if (p.canWrite())
+                return false; // torrent parent folder not exist, but we have write access and can create subdirs
+            else
+                return true; // no write access - ejected
+        }
+        return !p.canRead(); // readonly check
+    }
+
+    @TargetApi(21)
+    public static String getDocumentPath(Uri uri) {
+        String s = uri.getScheme();
+        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            String id = DocumentsContract.getDocumentId(uri);
+            String parent = DocumentsContract.getTreeDocumentId(uri);
+            id = id.substring(parent.length() + 1);
+            File f = new File(id);
+            return f.getPath();
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            File f = getFile(uri);
+            return f.getName();
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
+    @TargetApi(21)
+    public static String getDocumentName(Uri uri) {
+        String s = uri.getScheme();
+        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            String id = DocumentsContract.getDocumentId(uri);
+            File f = new File(id);
+            return f.getName();
+        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+            File f = getFile(uri);
+            return f.getName();
+        } else {
+            throw new RuntimeException("unknown uri");
+        }
+    }
+
     public Storage(Context context) {
         this.context = context;
         this.resolver = context.getContentResolver();
@@ -481,19 +526,6 @@ public class Storage {
         }
     }
 
-    public static boolean ejected(File p) { // check target forlder for RW access if does not exist, and R if exists
-        if (!p.exists()) {
-            while (!p.exists()) {
-                p = p.getParentFile();
-            }
-            if (p.canWrite())
-                return false; // torrent parent folder not exist, but we have write access and can create subdirs
-            else
-                return true; // no write access - ejected
-        }
-        return !p.canRead(); // readonly check
-    }
-
     public Uri getStoragePath(String path) {
         File f;
         if (Build.VERSION.SDK_INT >= 21 && path.startsWith(ContentResolver.SCHEME_CONTENT)) {
@@ -510,38 +542,6 @@ public class Storage {
             return Uri.fromFile(getLocalStorage());
         } else {
             return Uri.fromFile(getStoragePath(f));
-        }
-    }
-
-    @TargetApi(21)
-    public static String getDocumentPath(Uri uri) {
-        String s = uri.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            String id = DocumentsContract.getDocumentId(uri);
-            String parent = DocumentsContract.getTreeDocumentId(uri);
-            id = id.substring(parent.length() + 1);
-            File f = new File(id);
-            return f.getPath();
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            File f = getFile(uri);
-            return f.getName();
-        } else {
-            throw new RuntimeException("unknown uri");
-        }
-    }
-
-    @TargetApi(21)
-    public static String getDocumentName(Uri uri) {
-        String s = uri.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            String id = DocumentsContract.getDocumentId(uri);
-            File f = new File(id);
-            return f.getName();
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            File f = getFile(uri);
-            return f.getName();
-        } else {
-            throw new RuntimeException("unknown uri");
         }
     }
 
