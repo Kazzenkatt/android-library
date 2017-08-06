@@ -13,14 +13,20 @@ import android.os.Environment;
 import android.os.Parcelable;
 import android.provider.DocumentsContract;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.preference.EditTextPreference;
 import android.util.AttributeSet;
 
 import com.github.axet.androidlibrary.app.Storage;
 
 import java.io.File;
+import java.io.FilenameFilter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StoragePathPreferenceCompat extends EditTextPreference {
+    public static String ANDROID_STORAGE = "ANDROID_STORAGE";
+
     public String def;
     public Storage storage = new Storage(getContext());
     public Fragment f;
@@ -31,12 +37,28 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     Fragment sf;
     public int scode;
 
-    @TargetApi(19)
-    public static boolean showStorageAccessFramework(Context context, String path, String[] ss) {
+    public static boolean isExternalSDPortable(Context context) {
+        String path = System.getenv(ANDROID_STORAGE);
+        if (path == null || path.isEmpty())
+            path = "/storage";
+
+        final Pattern p = Pattern.compile("\\w\\w\\w\\w-\\w\\w\\w\\w");
+        File storage = new File(path);
+        File[] ff = storage.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                Matcher m = p.matcher(name);
+                return m.matches();
+            }
+        });
+        if (ff != null && ff.length > 0)
+            return true;
+
         File ext = Environment.getExternalStorageDirectory();
         if (ext == null)
-            return true;
-        File[] ff = context.getExternalFilesDirs("");
+            return false;
+
+        ff = ContextCompat.getExternalFilesDirs(context, ""); // can show no external dir: https://stackoverflow.com/questions/33350250
         int count = 0;
         for (File f : ff) {
             if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // f can be null, if media unmounted
@@ -44,7 +66,18 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
             }
             count++;
         }
-        if (count > 0) // have external drive?
+        if (count > 0) // have external SD formatted as portable?
+            return true;
+
+        return false;
+    }
+
+    @TargetApi(19)
+    public static boolean showStorageAccessFramework(Context context, String path, String[] ss) {
+        File ext = Environment.getExternalStorageDirectory();
+        if (ext == null)
+            return true;
+        if (isExternalSDPortable(context)) // does external SD card formatted as portable?
             return true;
         if (path.startsWith(ContentResolver.SCHEME_CONTENT)) // showed saf before?
             return true;
