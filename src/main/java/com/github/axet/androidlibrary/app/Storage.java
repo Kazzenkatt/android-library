@@ -44,6 +44,7 @@ import java.util.regex.Pattern;
 public class Storage {
     private static final String TAG = Storage.class.getSimpleName();
 
+    private static final String PATH_TREE = "tree";
     public static final String[] PERMISSIONS = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     public static final String SAF = "com.android.externalstorage";
 
@@ -256,6 +257,15 @@ public class Storage {
         } else {
             throw new RuntimeException("unknown uri");
         }
+    }
+
+    // get document folder from document uri
+    @TargetApi(21)
+    public static Uri getDocumentTreeUri(Uri treeUri) {
+        return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT)
+                .authority(treeUri.getAuthority()).appendPath(PATH_TREE)
+                .appendPath(DocumentsContract.getTreeDocumentId(treeUri))
+                .build();
     }
 
     public Storage(Context context) {
