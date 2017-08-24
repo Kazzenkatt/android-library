@@ -628,36 +628,13 @@ public class Storage {
     public String getDisplayName(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
-            String saf = null;
             if (DocumentsContract.isDocumentUri(context, uri)) {
-                try {
-                    Cursor docCursor = resolver.query(uri, null, null, null, null);
-                    if (docCursor != null) {
-                        if (docCursor.moveToNext()) {
-                            saf = "saf://.../";
-                            saf += docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-                        }
-                        docCursor.close();
-                    }
-                } catch (SecurityException e) {
-                    Log.d(TAG, "Unable to get folder", e);
-                }
+                return getDocumentName(uri);
             } else {
-                Uri docUri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
-                try {
-                    Cursor docCursor = resolver.query(docUri, null, null, null, null);
-                    if (docCursor != null) {
-                        if (docCursor.moveToNext()) {
-                            saf = "saf://";
-                            saf += docCursor.getString(docCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-                        }
-                        docCursor.close();
-                    }
-                } catch (SecurityException e) {
-                    Log.d(TAG, "Unable to get folder", e);
-                }
+                String tree = DocumentsContract.getTreeDocumentId(uri);
+                String[] ss = tree.split(":"); // 1D13-0F08:private
+                return "saf://" + ss[1];
             }
-            return saf;
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) { // full destionation for files
             File f = getFile(uri);
             return f.getAbsolutePath();
