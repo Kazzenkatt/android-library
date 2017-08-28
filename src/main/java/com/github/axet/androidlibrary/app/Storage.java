@@ -214,7 +214,7 @@ public class Storage {
         return new File(p);
     }
 
-    public static boolean ejected(File p) { // check target forlder for RW access if does not exist, and R if exists
+    public static boolean ejected(File p) { // check target 'parent RW' access if child does not exist, and 'child R' if exists
         if (!p.exists()) {
             while (!p.exists()) {
                 p = p.getParentFile();
@@ -496,36 +496,39 @@ public class Storage {
     }
 
     @TargetApi(21)
-    public boolean permitted(Uri uri, int takeFlags) {
+    public boolean ejected(Uri uri, int takeFlags) { // check folder existes and childs can be read
         ContentResolver resolver = context.getContentResolver();
         try {
             resolver.takePersistableUriPermission(uri, takeFlags);
             Cursor childCursor = null;
+            Cursor childCursor2 = null;
             try {
                 Uri doc = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
-                childCursor = resolver.query(doc, null, null, null, null);
-                if (childCursor != null) {
-                    boolean n = childCursor.moveToNext();
-                    if (n)
-                        return true;
+                childCursor = resolver.query(doc, null, null, null, null); // check target folder
+                if (childCursor != null && childCursor.moveToNext()) {
+                    Uri childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
+                    childCursor2 = resolver.query(childrenUri, null, null, null, null); // check read directory content
+                    if (childCursor2 != null && childCursor2.moveToNext()) {
+                        return false;
+                    }
                 }
-            } catch (RuntimeException e) { // not found catched here
-                ;
             } finally {
                 if (childCursor != null)
                     childCursor.close();
+                if (childCursor2 != null)
+                    childCursor2.close();
             }
-            return false;
-        } catch (SecurityException e) {
+            return true;
+        } catch (RuntimeException e) {
             Log.d(TAG, "open SAF failed", e);
         }
-        return false;
+        return true;
     }
 
-    public boolean ejected(Uri path) { // check target forlder for RW access if does not exist, and R if exists
+    public boolean ejected(Uri path) { // check target 'parent RW' access if child does not exist, and 'child R' if exists
         String s = path.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            return !permitted(path, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            return ejected(path, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             File p = new File(path.getPath());
             return ejected(p);
@@ -538,7 +541,7 @@ public class Storage {
         File f;
         if (Build.VERSION.SDK_INT >= 21 && path.startsWith(ContentResolver.SCHEME_CONTENT)) {
             Uri u = Uri.parse(path);
-            if (permitted(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
+            if (!ejected(u, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION))
                 return u;
             f = fallbackStorage(); // we need to fallback to local storage internal or exernal
         } else if (path.startsWith(ContentResolver.SCHEME_FILE)) {
@@ -562,7 +565,7 @@ public class Storage {
                 if (childCursor != null && childCursor.moveToNext()) {
                     return childCursor.getString(childCursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
                 }
-            } catch (RuntimeException e) {
+            } catch (RuntimeException e) { // ignore
                 ;
             } finally {
                 if (childCursor != null)
@@ -585,7 +588,7 @@ public class Storage {
                 if (childCursor != null && childCursor.moveToNext()) {
                     return childCursor.getLong(childCursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
                 }
-            } catch (RuntimeException e) {
+            } catch (RuntimeException e) { // ignore
                 ;
             } finally {
                 if (childCursor != null)
