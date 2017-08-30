@@ -230,6 +230,22 @@ public class Storage {
     }
 
     @TargetApi(21)
+    public static String getDocumentStorage(Uri uri) {
+        String id = DocumentsContract.getDocumentId(uri);
+        id = id.substring(0, id.indexOf(":"));
+        return getDocumentStorage(id);
+    }
+
+    public static String getDocumentStorage(String s) {
+        String path;
+        if (s.equals(STORAGE_PRIMARY))
+            path = "SDCARD[internal]";
+        else
+            path = "SDCARD[external]";
+        return path;
+    }
+
+    @TargetApi(21)
     public static String getDocumentPath(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
@@ -634,18 +650,17 @@ public class Storage {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
             if (DocumentsContract.isDocumentUri(context, uri)) {
-                return getDocumentName(uri);
+                String tree = DocumentsContract.getTreeDocumentId(uri);
+                String[] ss = tree.split(":"); // 1D13-0F08:private
+                return "saf://" + getDocumentStorage(ss[0]) + "/" + getDocumentPath(uri);
             } else {
                 String tree = DocumentsContract.getTreeDocumentId(uri);
                 String[] ss = tree.split(":"); // 1D13-0F08:private
                 String path;
                 if (ss.length > 1)
-                    path = ss[1];
+                    path = getDocumentStorage(ss[0]) + "/" + ss[1];
                 else {
-                    if (ss[0].equals(STORAGE_PRIMARY))
-                        path = "SDCARD/internal";
-                    else
-                        path = "SDCARD/external";
+                    path = getDocumentStorage(ss[0]);
                 }
                 return "saf://" + path;
             }
