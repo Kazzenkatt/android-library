@@ -239,9 +239,9 @@ public class Storage {
     public static String getDocumentStorage(String s) {
         String path;
         if (s.equals(STORAGE_PRIMARY))
-            path = "SDCARD[I]";
+            path = "[i]";
         else
-            path = "SDCARD[E]";
+            path = "[e]";
         return path;
     }
 
@@ -657,19 +657,19 @@ public class Storage {
     public String getDisplayName(Uri uri) {
         String s = uri.getScheme();
         if (s.startsWith(ContentResolver.SCHEME_CONTENT)) { // saf folder for content
-            String saf = "saf://";
+            String saf = "sdcard";
             if (DocumentsContract.isDocumentUri(context, uri)) {
                 String id = DocumentsContract.getDocumentId(uri);
                 String[] ss = id.split(":"); // 1D13-0F08:private
-                return saf + getDocumentStorage(ss[0]) + "/" + getDocumentPath(uri);
+                return saf + getDocumentStorage(ss[0]) + "://" + getDocumentPath(uri);
             } else {
                 String tree = DocumentsContract.getTreeDocumentId(uri);
                 String[] ss = tree.split(":"); // 1D13-0F08:private
                 String path;
-                if (ss.length > 1)
-                    path = getDocumentStorage(ss[0]) + "/" + ss[1];
-                else {
-                    path = getDocumentStorage(ss[0]);
+                if (ss.length > 1) {
+                    path = getDocumentStorage(ss[0]) + "://" + ss[1];
+                } else {
+                    path = getDocumentStorage(ss[0]) + "://";
                 }
                 return saf + path;
             }
