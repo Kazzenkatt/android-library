@@ -66,7 +66,10 @@ public class Storage {
     }
 
     public static String getNameNoExt(File f) {
-        String fileName = f.getName();
+        return getNameNoExt(f.getName());
+    }
+
+    public static String getNameNoExt(String fileName) {
         int i = fileName.lastIndexOf('.');
         if (i > 0) {
             fileName = fileName.substring(0, i);
