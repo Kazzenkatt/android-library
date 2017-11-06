@@ -67,7 +67,7 @@ public class StorageProvider extends ContentProvider {
     protected ContentResolver resolver;
 
     public static Intent openFolderIntent(Context context, Uri p) {
-        if (Build.VERSION.SDK_INT >= 25 && context.getApplicationInfo().targetSdkVersion >= 25) { // 25+ failed to open file:// with FileUriExposedException
+        if (Build.VERSION.SDK_INT >= 24 && context.getApplicationInfo().targetSdkVersion >= 24) { // 24+ failed to open file:// with FileUriExposedException
             p = share(context, p);
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setDataAndType(p, "resource/folder");
@@ -111,8 +111,8 @@ public class StorageProvider extends ContentProvider {
             }
         }
         if (s.equals(ContentResolver.SCHEME_FILE)) {
-            if (Build.VERSION.SDK_INT >= 25 && context.getApplicationInfo().targetSdkVersion >= 25)
-                return false; // target sdk 25+ failed to open file:// links
+            if (Build.VERSION.SDK_INT >= 24 && context.getApplicationInfo().targetSdkVersion >= 24)
+                return false; // target sdk 24+ failed to open file:// links
         }
         return OptimizationPreferenceCompat.isCallable(context, intent);
     }
