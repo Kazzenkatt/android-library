@@ -141,10 +141,6 @@ public class StoragePathPreference extends EditTextPreference {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     File path = new File(getDefault(), getDefault(pref));
-                    if (!path.exists() && !path.mkdirs()) { // we can not point to non existen folder, support for "ejected"
-                        Toast.makeText(context, context.getString(R.string.filedialog_unablecreatefolder, path), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
                     f.setCurrentPath(path);
                 }
             });

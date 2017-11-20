@@ -394,7 +394,10 @@ public class Storage {
     }
 
     public File getStoragePath(File file) {
-        if (ejected(file) || !file.canWrite())
+        File p = file.getParentFile();
+        boolean ew = file.exists() && !file.canWrite(); // folder exist and can't write
+        boolean pw = !file.exists() && !p.canWrite(); // folder not exist, and parent cant write
+        if (ejected(file) || ew || pw)
             return getLocalStorage();
         return file;
     }
