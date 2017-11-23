@@ -49,4 +49,6 @@
     <string name="open_browser">Open Browser</string>
     <string name="are_you_sure">Are you sure?</string>
     <string name="default_folder">Default</string>
+
+    <string name="not_permitted">Not permitted</string>
 </resources>

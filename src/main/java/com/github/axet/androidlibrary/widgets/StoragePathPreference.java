@@ -75,9 +75,6 @@ public class StoragePathPreference extends EditTextPreference {
         if (o instanceof StoragePathPreference) {
             return ((StoragePathPreference) o).def;
         }
-        if (o instanceof StoragePathPreferenceCompat) {
-            return ((StoragePathPreferenceCompat) o).def;
-        }
         throw new RuntimeException("unknown class");
     }
 
@@ -89,86 +86,6 @@ public class StoragePathPreference extends EditTextPreference {
         }
 
         return path;
-    }
-
-    public static void showDialog(final Context context, final Storage storage, final Object pref) {
-        if (!Storage.permitted(context, Storage.PERMISSIONS)) {
-            final List<String> ss = new ArrayList<>();
-            ss.add(storage.getLocalInternal().getAbsolutePath());
-            File ext = storage.getLocalExternal();
-            if (ext != null)
-                ss.add(ext.getAbsolutePath());
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(getTitle(pref));
-            Uri u = storage.getStoragePath(getPath(pref));
-            File summ = Storage.getFile(u);
-            builder.setSingleChoiceItems(ss.toArray(new CharSequence[]{}), ss.indexOf(summ.getAbsolutePath()), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    String fileName = ss.get(which);
-                    if (callChangeListener(pref, fileName)) {
-                        setText(pref, fileName);
-                    }
-                    dialog.dismiss();
-                }
-            });
-            Dialog d = builder.create();
-            d.show();
-        } else {
-            final OpenFileDialog f = new OpenFileDialog(context, OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG);
-
-            Uri u = storage.getStoragePath(getPath(pref));
-            File p;
-            if (u == null) // support for 'not selected'
-                p = new File(getDefault());
-            else
-                p = Storage.getFile(u);
-
-            f.setCurrentPath(p);
-            f.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    File ff = f.getCurrentPath();
-                    if (ff.exists() && !ff.isDirectory()) // point to file?
-                        ff = ff.getParentFile(); // use parent
-                    String fileName = ff.getPath();
-                    if (callChangeListener(pref, fileName)) {
-                        setText(pref, fileName);
-                    }
-                }
-            });
-            f.setNeutralButton(R.string.default_folder, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    File path = new File(getDefault(), getDefault(pref));
-                    path = storage.getStoragePath(path);
-                    f.setCurrentPath(path);
-                }
-            });
-            final AlertDialog d = f.create();
-
-            f.setChangeFolderListener(new Runnable() {
-                @Override
-                public void run() {
-                    File ff = f.getCurrentPath();
-                    if (!ff.isDirectory())
-                        ff = ff.getParentFile();
-                    if (!ff.canWrite()) {
-                        Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                        b2.setEnabled(false);
-                    } else {
-                        Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                        b2.setEnabled(true);
-                    }
-                }
-            });
-
-            d.show();
-        }
-    }
-
-    public interface DialogDelayed {
-        OpenFileDialog createDialog();
     }
 
     public StoragePathPreference(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -185,7 +102,19 @@ public class StoragePathPreference extends EditTextPreference {
 
     @Override
     protected void showDialog(Bundle state) {
-        showDialog(getContext(), storage, this);
+        String f = StoragePathPreference.getPath(this);
+        Uri u = storage.getStoragePath(f);
+        OpenStorageChoicer choicer = new OpenStorageChoicer(storage, OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
+            @Override
+            public void onResult(Uri uri) {
+                if (callChangeListener(uri.toString())) {
+                    setText(uri.toString());
+                }
+            }
+        };
+        choicer.def = def;
+        choicer.setTitle(getTitle().toString());
+        choicer.show(u);
     }
 
     @Override

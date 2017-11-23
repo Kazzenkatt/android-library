@@ -227,6 +227,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
                     return m.matches();
                 }
             });
+            if (ff == null)
+                return;
             for (File f : ff) {
                 add(f);
             }
