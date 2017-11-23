@@ -135,4 +135,8 @@ public class OpenStorageChoicer extends OpenChoicer {
     public void setStorage(Storage storage) {
         this.storage = storage;
     }
+
+    public void setDefault(String def) {
+        this.def = def;
+    }
 }
