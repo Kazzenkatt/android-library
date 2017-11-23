@@ -219,7 +219,10 @@ public class OpenChoicer {
         if (Build.VERSION.SDK_INT >= 21) {
             ContentResolver resolver = context.getContentResolver();
             try {
-                resolver.takePersistableUriPermission(u, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                int flags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                if (!readonly)
+                    flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+                resolver.takePersistableUriPermission(u, flags);
                 onResult(u, false);
             } catch (SecurityException e) { // remote SAF?
                 onResult(u, true);
