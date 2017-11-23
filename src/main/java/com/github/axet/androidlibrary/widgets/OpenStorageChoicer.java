@@ -25,20 +25,26 @@ public class OpenStorageChoicer extends OpenChoicer {
     public String def;
     public Storage storage;
 
-    public OpenStorageChoicer(Storage storage, OpenFileDialog.DIALOG_TYPE type, boolean readonly) {
-        super(type, readonly);
-        this.storage = storage;
+    public static String getDefault() {
+        File ext = Environment.getExternalStorageDirectory();
+        if (ext == null) // Android Studio pref editor
+            return "/sdcard";
+        return ext.getPath();
     }
 
     public OpenStorageChoicer(OpenFileDialog.DIALOG_TYPE type, boolean readonly) {
         super(type, readonly);
     }
 
-    public static String getDefault() {
-        File ext = Environment.getExternalStorageDirectory();
-        if (ext == null) // Android Studio pref editor
-            return "/sdcard";
-        return ext.getPath();
+    public OpenStorageChoicer(Storage storage, OpenFileDialog.DIALOG_TYPE type, boolean readonly) {
+        super(type, readonly);
+        this.storage = storage;
+    }
+
+    public OpenStorageChoicer(Storage storage, OpenFileDialog.DIALOG_TYPE type, boolean readonly, String def) {
+        super(type, readonly);
+        this.storage = storage;
+        this.def = def;
     }
 
     public void showFiles() {
