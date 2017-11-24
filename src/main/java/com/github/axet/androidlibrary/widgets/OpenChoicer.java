@@ -266,6 +266,12 @@ public class OpenChoicer {
                 OpenChoicer.this.onCancel();
             }
         });
+        dialog.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                OpenChoicer.this.onCancel();
+            }
+        });
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface d) {
@@ -301,11 +307,11 @@ public class OpenChoicer {
         if (Storage.permitted(context, permissions)) {
             fileDialog();
         } else {
-            onRequestPermissionsFailed();
+            onRequestPermissionsFailed(permissions);
         }
     }
 
-    public void onRequestPermissionsFailed() {
+    public void onRequestPermissionsFailed(String[] permissions) {
         if (showSAF(true))
             return;
         if (type == OpenFileDialog.DIALOG_TYPE.FILE_DIALOG) {
