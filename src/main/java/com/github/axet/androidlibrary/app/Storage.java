@@ -807,11 +807,11 @@ public class Storage {
                 return dir;
             } else {
                 File to = new File(dir.getPath());
-                File parent = to.getParentFile();
-                if (!parent.exists() && !parent.mkdirs()) {
-                    throw new RuntimeException("No permissions: " + parent);
+                if (!to.exists() && !to.mkdirs()) {
+                    throw new RuntimeException("No permissions: " + to);
                 }
-                return Uri.fromFile(move(f, to));
+                File tofile = new File(to, f.getName());
+                return Uri.fromFile(move(f, tofile));
             }
         } else {
             throw new RuntimeException("unknown uri");
