@@ -75,6 +75,7 @@ public class RingtoneChoicer extends OpenChoicer {
             onDismiss();
             return;
         }
+
         Uri u = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
 
         if (u == null) { // user selected none
