@@ -52,7 +52,7 @@ public class OpenChoicer {
         try {
             ActivityInfo info = packageManager.getActivityInfo(a.getComponentName(), 0);
             if ((info.configChanges & CONFIG_ORIENTATION) != CONFIG_ORIENTATION || (info.configChanges & CONFIG_SCREEN_SIZE) != CONFIG_SCREEN_SIZE) {
-                String msg = "Please add 'android:configChanges=\"orientation|screenSize\' to manifest.xml to keep open file dialog"; // since we don't want to deal with save state
+                String msg = "Please add 'android:configChanges=\"orientation|screenSize\' to manifest.xml to keep open file dialog"; // since we don't want to deal with save/load state
                 Log.d(TAG, msg);
             }
             if (info.launchMode == ActivityInfo.LAUNCH_SINGLE_INSTANCE) {
@@ -325,7 +325,7 @@ public class OpenChoicer {
                     flags |= Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
                 resolver.takePersistableUriPermission(u, flags);
                 onResult(u, false);
-            } catch (SecurityException e) { // remote SAF?
+            } catch (SecurityException e) { // remote / sdcard SAF?
                 onResult(u, true);
             }
         }
@@ -341,10 +341,10 @@ public class OpenChoicer {
     }
 
     public void onRequestPermissionsFailed(String[] permissions) {
+        Toast.makeText(context, R.string.not_permitted, Toast.LENGTH_SHORT).show();
         if (showSAF(true))
             return;
         if (type == OpenFileDialog.DIALOG_TYPE.FILE_DIALOG) {
-            Toast.makeText(context, R.string.not_permitted, Toast.LENGTH_SHORT).show();
             onCancel();
             onDismiss();
         } else {
