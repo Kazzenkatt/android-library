@@ -250,7 +250,7 @@ public class OpenChoicer {
     }
 
     public void fileDialog() {
-        if (!readonly && !Storage.permitted(context, Storage.PERMISSIONS) && type != OpenFileDialog.DIALOG_TYPE.FILE_DIALOG) {
+        if (!readonly && !Storage.permitted(context, Storage.PERMISSIONS_RW) && type != OpenFileDialog.DIALOG_TYPE.FILE_DIALOG) {
             showFallbackFolders();
         } else {
             final OpenFileDialog f = fileDialogBuild();
