@@ -73,12 +73,12 @@ public class StorageProvider extends ContentProvider {
             intent.setDataAndType(p, "resource/folder");
             FileProvider.grantPermissions(context, intent, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
             return intent;
-        } else { // 24 can open file://
-            return openFolderIntent24(context, p);
+        } else { // 23 can open file://
+            return openFolderIntent23(context, p);
         }
     }
 
-    public static Intent openFolderIntent24(Context context, Uri p) {
+    public static Intent openFolderIntent23(Context context, Uri p) {
         boolean perms = false;
         String s = p.getScheme();
         if (s.equals(ContentResolver.SCHEME_CONTENT) && Build.VERSION.SDK_INT >= 21) { // convert content:///primary to file://

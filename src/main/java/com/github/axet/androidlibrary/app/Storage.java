@@ -11,7 +11,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.os.StatFs;
 import android.provider.DocumentsContract;
@@ -25,9 +24,7 @@ import android.system.StructStatVfs;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
-import com.github.axet.androidlibrary.services.FileProvider;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
-import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -41,25 +38,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Storage {
     private static final String TAG = Storage.class.getSimpleName();
 
+    protected static boolean permittedForce = false; // bugged phones has no PackageManager.ACTION_REQUEST_PERMISSIONS acitivty allow it all
+
     public static final String PATH_TREE = "tree";
-    public static final String[] PERMISSIONS = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    public static final String[] PERMISSIONS_RW = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     public static final String SAF = "com.android.externalstorage";
 
     public final static String STORAGE_PRIMARY = "primary"; // sdcard name
 
     protected Context context;
     protected ContentResolver resolver;
-    protected static boolean permitted = false; // static bugged phone flag
 
     public static long getFree(File f) {
         while (!f.exists())
@@ -180,7 +174,7 @@ public class Storage {
     }
 
     public static boolean permitted(Context context, String[] ss) {
-        if (permitted)
+        if (permittedForce)
             return true;
         if (Build.VERSION.SDK_INT < 16)
             return true;
@@ -193,7 +187,7 @@ public class Storage {
     }
 
     public static boolean permitted(Activity a, String[] ss, int code) {
-        if (permitted)
+        if (permittedForce)
             return true;
         if (Build.VERSION.SDK_INT < 16)
             return true;
@@ -202,8 +196,8 @@ public class Storage {
                 try {
                     ActivityCompat.requestPermissions(a, ss, code);
                 } catch (ActivityNotFoundException e) {
-                    permitted = true;
-                    return true; // bugged phones has no PackageManager.ACTION_REQUEST_PERMISSIONS acitivty allow it all
+                    permittedForce = true;
+                    return true;
                 }
                 return false;
             }
@@ -212,7 +206,7 @@ public class Storage {
     }
 
     public static boolean permitted(Fragment f, String[] ss, int code) {
-        if (permitted)
+        if (permittedForce)
             return true;
         if (Build.VERSION.SDK_INT < 16)
             return true;
@@ -221,8 +215,8 @@ public class Storage {
                 try {
                     f.requestPermissions(ss, code);
                 } catch (ActivityNotFoundException e) {
-                    permitted = true;
-                    return true; // bugged phones has no PackageManager.ACTION_REQUEST_PERMISSIONS acitivty allow it all
+                    permittedForce = true;
+                    return true;
                 }
                 return false;
             }
@@ -353,7 +347,7 @@ public class Storage {
         // Starting in KITKAT, no permissions are required to read or write to the getExternalFilesDir;
         // it's always accessible to the calling app.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            if (!permitted(context, PERMISSIONS))
+            if (!permitted(context, PERMISSIONS_RW))
                 return null;
         }
 
@@ -395,7 +389,7 @@ public class Storage {
         // Starting in KITKAT, no permissions are required to read or write to the returned path;
         // it's always accessible to the calling app.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            if (!permitted(context, PERMISSIONS))
+            if (!permitted(context, PERMISSIONS_RW))
                 return internal;
         }
 
@@ -555,8 +549,12 @@ public class Storage {
                 return 0;
             }
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
-            File file = getFile(uri);
-            return getFree(file);
+            try {
+                File file = getFile(uri);
+                return getFree(file);
+            } catch (IllegalArgumentException e) {
+                return 0;
+            }
         } else {
             throw new RuntimeException("unknown uri");
         }
@@ -616,7 +614,7 @@ public class Storage {
         } else {
             f = new File(path);
         }
-        if (!permitted(context, PERMISSIONS)) {
+        if (!permitted(context, PERMISSIONS_RW)) {
             return Uri.fromFile(getLocalStorage());
         } else {
             return Uri.fromFile(getStoragePath(f));
