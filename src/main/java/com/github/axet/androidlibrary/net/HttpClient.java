@@ -318,23 +318,25 @@ public class HttpClient {
                 if (entity != null) { // old phones it can be null
                     buf = IOUtils.toByteArray(entity.getContent());
                     Charset enc = contentType.getCharset();
-                    if (enc == null) {
-                        Document doc = Jsoup.parse(new String(buf, Charset.defaultCharset()));
-                        Element e = doc.select("meta[http-equiv=Content-Type]").first();
-                        if (e != null) {
-                            String content = e.attr("content");
-                            try {
-                                contentType = ContentType.parse(content);
-                                enc = contentType.getCharset();
-                            } catch (ParseException ignore) {
-                            }
-                        } else {
-                            e = doc.select("meta[charset]").first();
+                    if (isHtml()) {
+                        if (enc == null) {
+                            Document doc = Jsoup.parse(new String(buf, Charset.defaultCharset()));
+                            Element e = doc.select("meta[http-equiv=Content-Type]").first();
                             if (e != null) {
-                                String content = e.attr("charset");
+                                String content = e.attr("content");
                                 try {
-                                    enc = Charset.forName(content);
-                                } catch (UnsupportedCharsetException ignore) {
+                                    contentType = ContentType.parse(content);
+                                    enc = contentType.getCharset();
+                                } catch (ParseException ignore) {
+                                }
+                            } else {
+                                e = doc.select("meta[charset]").first();
+                                if (e != null) {
+                                    String content = e.attr("charset");
+                                    try {
+                                        enc = Charset.forName(content);
+                                    } catch (UnsupportedCharsetException ignore) {
+                                    }
                                 }
                             }
                         }
