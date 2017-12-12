@@ -7,8 +7,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ProviderInfo;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
@@ -31,7 +29,6 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 // Helps open external urls using local contentprovider and settings storage path. Use share()
 //

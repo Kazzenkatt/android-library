@@ -1,28 +1,17 @@
 package com.github.axet.androidlibrary.widgets;
 
-import android.app.Dialog;
-import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.res.TypedArray;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Parcelable;
 import android.preference.EditTextPreference;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.Preference;
 import android.util.AttributeSet;
-import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
 
-import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.Storage;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class StoragePathPreference extends EditTextPreference {
     public String def;

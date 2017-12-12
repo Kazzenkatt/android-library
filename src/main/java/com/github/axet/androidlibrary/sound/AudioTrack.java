@@ -7,10 +7,6 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Handler;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
-
 public class AudioTrack extends android.media.AudioTrack {
     public static int SHORT_SIZE = Short.SIZE / Byte.SIZE;
 

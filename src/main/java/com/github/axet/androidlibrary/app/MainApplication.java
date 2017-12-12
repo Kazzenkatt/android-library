@@ -1,21 +1,12 @@
 package com.github.axet.androidlibrary.app;
 
-import android.app.Activity;
 import android.app.Application;
-import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
-import android.os.Build;
-import android.os.Handler;
-import android.util.Log;
 
 import com.github.axet.androidlibrary.R;
 
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MainApplication extends Application {
     public static final String TAG = MainApplication.class.getSimpleName();

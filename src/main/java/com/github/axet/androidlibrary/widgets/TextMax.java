@@ -1,24 +1,14 @@
 package com.github.axet.androidlibrary.widgets;
 
 import android.content.Context;
-import android.text.Editable;
-import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.jsoup.helper.StringUtil;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class TextMax extends PathMax {
     // xml call
