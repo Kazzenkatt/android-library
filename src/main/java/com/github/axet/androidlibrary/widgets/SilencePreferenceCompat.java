@@ -2,35 +2,11 @@ package com.github.axet.androidlibrary.widgets;
 
 import android.annotation.TargetApi;
 import android.app.NotificationManager;
-import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.net.Uri;
 import android.os.Build;
-import android.os.Handler;
-import android.os.PowerManager;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.Preference;
 import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.AttributeSet;
-import android.widget.Toast;
-
-import com.github.axet.androidlibrary.R;
-import com.github.axet.androidlibrary.app.AlarmManager;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.List;
 
 /**
  * Add users permission to app manifest:

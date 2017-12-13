@@ -1,19 +1,13 @@
 package com.github.axet.androidlibrary.widgets;
 
-import android.app.Dialog;
 import android.content.DialogInterface;
-import android.net.Uri;
 import android.os.Environment;
-import android.support.v7.app.AlertDialog;
-import android.widget.Button;
 import android.widget.Toast;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.Storage;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class OpenStorageChoicer extends OpenChoicer {
     public String def; // default name (for default location) can be null

@@ -2,10 +2,8 @@ package com.github.axet.androidlibrary.app;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 
 import java.io.File;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

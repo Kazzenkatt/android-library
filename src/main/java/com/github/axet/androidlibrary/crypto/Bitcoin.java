@@ -1,6 +1,5 @@
 package com.github.axet.androidlibrary.crypto;
 
-import android.annotation.TargetApi;
 import android.support.annotation.RequiresApi;
 import android.util.Base64;
 

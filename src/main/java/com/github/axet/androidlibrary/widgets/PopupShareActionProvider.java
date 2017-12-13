@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Build;
 import android.support.v4.view.MenuItemCompat;
-import android.support.v4.widget.ListPopupWindowCompat;
 import android.support.v7.view.menu.ListMenuItemView;
 import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.view.menu.MenuItemImpl;
