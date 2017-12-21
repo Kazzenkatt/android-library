@@ -12,6 +12,7 @@ public class SuperUser {
     public static String TAG = SuperUser.class.getSimpleName();
 
     public static final String SYSTEM = "/system";
+    public static final String ETC = SYSTEM + "/etc";
 
     public static final String BIN_SU = SYSTEM + "/xbin/su";
     public static final String BIN_TRUE = "/usr/bin/true";
