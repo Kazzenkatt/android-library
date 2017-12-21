@@ -20,7 +20,15 @@ public class ThemeUtils {
         TypedValue tv = new TypedValue();
         boolean found = context.getTheme().resolveAttribute(id, tv, true);
         if (found) {
-            return getColor(context, tv.resourceId);
+            switch (tv.type) {
+                case TypedValue.TYPE_INT_COLOR_ARGB4:
+                case TypedValue.TYPE_INT_COLOR_ARGB8:
+                case TypedValue.TYPE_INT_COLOR_RGB4:
+                case TypedValue.TYPE_INT_COLOR_RGB8:
+                    return tv.data;
+                default:
+                    return getColor(context, tv.resourceId);
+            }
         } else {
             throw new RuntimeException("not found");
         }
