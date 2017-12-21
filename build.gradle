@@ -28,8 +28,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 282
-        versionName "1.17.7"
+        versionCode 283
+        versionName "1.17.8"
     }
     buildTypes {
         release {
