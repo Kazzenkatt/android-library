@@ -26,6 +26,7 @@ import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +47,9 @@ import java.util.HashSet;
 // content://com.github.axet.androidlibrary/35470c701a29ef8a9d58fbf8bd89dd83/image.jpg
 public class StorageProvider extends ContentProvider {
     public static long TIMEOUT = 1 * 1000 * 60;
-    public static int MD5_SIZE = 32;
+    public static final int MD5_SIZE = 32;
+
+    public static final String CONTENTTYPE_FOLDER = "resource/folder";
 
     protected static ProviderInfo info;
 
@@ -67,7 +70,7 @@ public class StorageProvider extends ContentProvider {
         if (Build.VERSION.SDK_INT >= 24 && context.getApplicationInfo().targetSdkVersion >= 24) { // 24+ failed to open file:// with FileUriExposedException
             p = share(context, p);
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setDataAndType(p, "resource/folder");
+            intent.setDataAndType(p, CONTENTTYPE_FOLDER);
             FileProvider.grantPermissions(context, intent, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
             return intent;
         } else { // 23 can open file://
@@ -91,7 +94,7 @@ public class StorageProvider extends ContentProvider {
             }
         }
         Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(p, "resource/folder");
+        intent.setDataAndType(p, CONTENTTYPE_FOLDER);
         if (perms)
             FileProvider.grantPermissions(context, intent, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION);
         return intent;
@@ -124,7 +127,7 @@ public class StorageProvider extends ContentProvider {
 
     public static String md5(String str) {
         try {
-            byte[] bytesOfMessage = str.getBytes("UTF-8");
+            byte[] bytesOfMessage = str.getBytes(Charset.defaultCharset());
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] digest = md.digest(bytesOfMessage);
             return toHex(digest);

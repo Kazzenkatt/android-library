@@ -14,9 +14,9 @@ public class SuperUser {
     public static final String SYSTEM = "/system";
     public static final String ETC = SYSTEM + "/etc";
 
-    public static final String BIN_SU = SYSTEM + "/xbin/su";
-    public static final String BIN_TRUE = "/usr/bin/true";
-    public static final String BIN_REBOOT = SYSTEM + "/bin/reboot";
+    public static final String BIN_SU = find(SYSTEM + "/xbin/su", "/sbin/su");
+    public static final String BIN_TRUE = find("/usr/bin/true", "/bin/true");
+    public static final String BIN_REBOOT = find(SYSTEM + "/bin/reboot", "/sbin/reboot", "/bin/reboot");
 
     public static final String SUCAT = "cat << EOF > {0}\n{1}\nEOF";
     public static final String MOUNT = "mount {0}";
@@ -30,6 +30,15 @@ public class SuperUser {
     public static final String EXIT = "exit";
 
     public static final String KILL = " || kill -9 $$"; // some su does not return error codes in scripts, kill it
+
+    public static String find(String... args) {
+        for (String s : args) {
+            File f = new File(s);
+            if (f.exists())
+                return s;
+        }
+        return null;
+    }
 
     public static int su(String pattern, Object... args) {
         return su(MessageFormat.format(pattern, args));
