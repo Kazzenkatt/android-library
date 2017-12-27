@@ -32,7 +32,7 @@ public class SuperUser {
     public static final String BIN_CP = which("cp");
     public static final String BIN_KILL = which("kill");
     public static final String BIN_AM = which("am");
-    public static final String BIN_EXIT = "exit"; // buildin
+    public static final String BIN_EXIT = "exit"; // build-in
 
     public static final String CAT_TO = BIN_CAT + " << EOF > {0}\n{1}\nEOF\n";
     public static final String REMOUNT_SYSTEM = BIN_MOUNT + " -o remount,rw " + SYSTEM;
@@ -42,7 +42,8 @@ public class SuperUser {
     public static final String MV = BIN_MV + " {0} {1} || ( " + BIN_CP + " {0} {1} && " + BIN_RM + " {0} )";
 
     public static final String KILL_SELF = BIN_KILL + " -9 $$";
-    public static final String SU1 = " || " + KILL_SELF;
+    public static final String SU1 = " || " + KILL_SELF; // some su does not return error codes for scripts, kill it if script fails
+
 
     public static String which(String cmd) {
         for (String s : new String[]{SYSTEM + XBIN, SYSTEM + SBIN, SYSTEM + BIN,
