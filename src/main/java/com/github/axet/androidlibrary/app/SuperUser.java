@@ -14,39 +14,37 @@ public class SuperUser {
     public static final String SYSTEM = "/system";
     public static final String ETC = "/etc";
     public static final String USR = "/usr";
+    public static final String XBIN = "/xbin";
     public static final String SBIN = "/sbin";
     public static final String BIN = "/bin";
 
-    public static final String BIN_SU = path("su");
-    public static final String BIN_TRUE = path("true");
-    public static final String BIN_REBOOT = path("reboot");
-    public static final String BIN_MOUNT = path("mount");
-    public static final String BIN_CAT = path("cat");
-    public static final String BIN_TOUCH = path("touch");
-    public static final String BIN_RM = path("rm");
-    public static final String BIN_MKDIR = path("mkdir");
-    public static final String BIN_CHMOD = path("chmod");
-    public static final String BIN_CHOWN = path("chown");
-    public static final String BIN_MV = path("mv");
-    public static final String BIN_CP = path("cp");
-    public static final String BIN_KILL = path("kill");
-    public static final String BIN_AM = path("am");
+    public static final String BIN_SU = which("su");
+    public static final String BIN_TRUE = which("true");
+    public static final String BIN_REBOOT = which("reboot");
+    public static final String BIN_MOUNT = which("mount");
+    public static final String BIN_CAT = which("cat");
+    public static final String BIN_TOUCH = which("touch");
+    public static final String BIN_RM = which("rm");
+    public static final String BIN_MKDIR = which("mkdir");
+    public static final String BIN_CHMOD = which("chmod");
+    public static final String BIN_CHOWN = which("chown");
+    public static final String BIN_MV = which("mv");
+    public static final String BIN_CP = which("cp");
+    public static final String BIN_KILL = which("kill");
+    public static final String BIN_AM = which("am");
+    public static final String BIN_EXIT = "exit";
 
-    public static final String SUCAT = BIN_CAT + " << EOF > {0}\n{1}\nEOF";
-    public static final String MOUNT = BIN_MOUNT + " {0}";
-    public static final String REMOUNT_SYSTEM = MessageFormat.format(MOUNT, "-o remount,rw " + SYSTEM);
+    public static final String CAT_TO = BIN_CAT + " << EOF > {0}\n{1}\nEOF";
+    public static final String REMOUNT_SYSTEM = BIN_MOUNT + " -o remount,rw " + SYSTEM;
     public static final String MKDIRS = BIN_MKDIR + " -p {0}";
     public static final String TOUCH = BIN_TOUCH + " -a {0}";
     public static final String DELETE = BIN_RM + " -rf {0}";
-    public static final String CHMOD = BIN_CHMOD + " {0} {1}";
-    public static final String CHOWN = BIN_CHOWN + "{0} {1}";
     public static final String MV = BIN_MV + " {0} {1} || ( " + BIN_CP + " {0} {1} && " + BIN_RM + " {0} )";
-    public static final String EXIT = "exit";
 
     public static final String KILL_SELF = BIN_KILL + " -9 $$"; // some su does not return error codes in scripts, kill it
 
-    public static String path(String cmd) {
-        for (String s : new String[]{SYSTEM + "/xbin", SYSTEM + SBIN, SYSTEM + BIN,
+    public static String which(String cmd) {
+        for (String s : new String[]{SYSTEM + XBIN, SYSTEM + SBIN, SYSTEM + BIN,
                 SYSTEM + USR + SBIN, SYSTEM + USR + BIN,
                 USR + SBIN, USR + BIN,
                 SBIN, BIN}) {
@@ -66,6 +64,45 @@ public class SuperUser {
         return null;
     }
 
+    // https://stackoverflow.com/questions/28734455/java-converting-file-pattern-to-regular-expression-pattern
+    public static String wildcard(String wildcard) {
+        StringBuilder s = new StringBuilder(wildcard.length());
+        s.append('^');
+        for (int i = 0, is = wildcard.length(); i < is; i++) {
+            char c = wildcard.charAt(i);
+            switch (c) {
+                case '*':
+                    s.append(".*");
+                    break;
+                case '?':
+                    s.append(".");
+                    break;
+                case '^': // escape character in cmd.exe
+                    s.append("\\");
+                    break;
+                // escape special regexp-characters
+                case '(':
+                case ')':
+                case '[':
+                case ']':
+                case '$':
+                case '.':
+                case '{':
+                case '}':
+                case '|':
+                case '\\':
+                    s.append("\\");
+                    s.append(c);
+                    break;
+                default:
+                    s.append(c);
+                    break;
+            }
+        }
+        s.append('$');
+        return (s.toString());
+    }
+
     public static int su(String pattern, Object... args) {
         return su(MessageFormat.format(pattern, args));
     }
@@ -76,7 +113,7 @@ public class SuperUser {
             DataOutputStream os = new DataOutputStream(su.getOutputStream());
             os.writeBytes(cmd + " || " + KILL_SELF + "\n");
             os.flush();
-            os.writeBytes(EXIT + "\n");
+            os.writeBytes(BIN_EXIT + "\n");
             os.flush();
             su.waitFor();
             return su.exitValue();
