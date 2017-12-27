@@ -104,6 +104,12 @@ public class SuperUser {
         return (s.toString());
     }
 
+    public static String escape(String p) {
+        p = p.replaceAll(" ", "\\ "); // ' ' -> '\'
+        p = p.replaceAll("\"", "\\\""); // '"' -> '\"'
+        return p;
+    }
+
     public static int su(String pattern, Object... args) {
         return su1(MessageFormat.format(pattern, args));
     }
@@ -169,28 +175,22 @@ public class SuperUser {
         return isRooted() && f2.exists();
     }
 
-    public static String escapePath(String p) {
-        p = p.replaceAll(" ", "\\ "); // ' ' -> '\'
-        p = p.replaceAll("\"", "\\\""); // '"' -> '\"'
-        return p;
-    }
-
     public static boolean touch(File f) {
         String p = f.getAbsolutePath();
-        return su(TOUCH, escapePath(p)) == 0;
+        return su(TOUCH, escape(p)) == 0;
     }
 
     public static boolean mkdirs(File f) {
         String p = f.getAbsolutePath();
-        return su(MKDIRS, escapePath(p)) == 0;
+        return su(MKDIRS, escape(p)) == 0;
     }
 
     public static boolean delete(File f) {
         String p = f.getAbsolutePath();
-        return su(DELETE, escapePath(p)) == 0;
+        return su(DELETE, escape(p)) == 0;
     }
 
     public static boolean mv(File f, File to) {
-        return su(MV, escapePath(f.getAbsolutePath()), escapePath(to.getAbsolutePath())) == 0;
+        return su(MV, escape(f.getAbsolutePath()), escape(to.getAbsolutePath())) == 0;
     }
 }
