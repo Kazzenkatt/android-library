@@ -39,6 +39,8 @@ android {
     }
 }
 
+// http://central.sonatype.org/pages/gradle.html
+
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(project.android.getBootClasspath().join(File.pathSeparator))
