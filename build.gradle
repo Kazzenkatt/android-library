@@ -28,8 +28,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 286
-        versionName "1.17.11"
+        versionCode 287
+        versionName "1.17.12"
     }
     buildTypes {
         release {
@@ -38,6 +38,8 @@ android {
         }
     }
 }
+
+// http://central.sonatype.org/pages/gradle.html
 
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs

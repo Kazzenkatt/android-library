@@ -2,10 +2,14 @@ package com.github.axet.androidlibrary.app;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.util.Log;
+
+import org.apache.commons.io.IOUtils;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 
 public class SuperUser {
@@ -18,6 +22,7 @@ public class SuperUser {
     public static final String SBIN = "/sbin";
     public static final String BIN = "/bin";
 
+    public static final String BIN_SH = which("sh");
     public static final String BIN_SU = which("su");
     public static final String BIN_TRUE = which("true");
     public static final String BIN_REBOOT = which("reboot");
@@ -32,9 +37,11 @@ public class SuperUser {
     public static final String BIN_CP = which("cp");
     public static final String BIN_KILL = which("kill");
     public static final String BIN_AM = which("am");
-    public static final String BIN_EXIT = "exit"; // buildin
+    public static final String BIN_EXIT = "exit"; // build-in
+    public static final String BIN_SET = "set"; // build-in
 
-    public static final String CAT_TO = BIN_CAT + " << EOF > {0}\n{1}\nEOF\n";
+    public static final String SETE = BIN_SET + " -e";
+    public static final String CAT_TO = BIN_CAT + " << EOF > {0}\n{1}\nEOF";
     public static final String REMOUNT_SYSTEM = BIN_MOUNT + " -o remount,rw " + SYSTEM;
     public static final String MKDIRS = BIN_MKDIR + " -p {0}";
     public static final String TOUCH = BIN_TOUCH + " -a {0}";
@@ -42,7 +49,111 @@ public class SuperUser {
     public static final String MV = BIN_MV + " {0} {1} || ( " + BIN_CP + " {0} {1} && " + BIN_RM + " {0} )";
 
     public static final String KILL_SELF = BIN_KILL + " -9 $$";
-    public static final String SU1 = " || " + KILL_SELF;
+    public static final String SU1 = " || " + KILL_SELF; // some su does not return error codes for pipe scripts, kill it from inside pipe if script fails
+
+    public static final String EOL = "\n";
+
+    public static class Commands {
+        public StringBuilder sb = new StringBuilder();
+        public boolean sete = true;
+        public boolean stdout = false;
+        public Boolean stderr = null; // null means get error only on error
+
+        public Commands() {
+        }
+
+        public Commands(String cmd) {
+            add(cmd);
+        }
+
+        public Commands sete(boolean b) {
+            this.sete = b;
+            return this;
+        }
+
+        public Commands stdout(boolean b) {
+            stdout = b;
+            return this;
+        }
+
+        public Commands stderr(boolean b) {
+            stderr = b;
+            return this;
+        }
+
+        public Commands add(String cmd) {
+            sb.append(cmd);
+            sb.append(EOL);
+            return this;
+        }
+
+        public String build() {
+            return sb.toString();
+        }
+    }
+
+    public static class Result {
+        public int res;
+        public String stdout;
+        public String stderr;
+        public Throwable e;
+
+        public Result(Commands cmd, Process p) {
+            res = p.exitValue();
+            captureOutputs(cmd, p);
+        }
+
+        public Result(Commands cmd, Process p, Exception e) {
+            if (p == null) {
+                this.res = 1;
+                this.e = e;
+                return;
+            }
+
+            this.res = p.exitValue();
+            this.e = e;
+            captureOutputs(cmd, p);
+        }
+
+        public void captureOutputs(Commands cmd, Process p) {
+            if (cmd.stdout) {
+                try {
+                    stdout = IOUtils.toString(p.getInputStream(), Charset.defaultCharset());
+                } catch (IOException e1) {
+                    Log.d(TAG, "unable to get error", e1);
+                }
+            }
+            if ((cmd.stderr != null && cmd.stderr) || (cmd.stderr == null && !ok())) {
+                try {
+                    stderr = IOUtils.toString(p.getErrorStream(), Charset.defaultCharset());
+                } catch (IOException e) {
+                    Log.d(TAG, "unable to get error", e);
+                }
+            }
+        }
+
+        public boolean ok() {
+            return res == 0 && e == null;
+        }
+
+        public void must() {
+            if (!ok())
+                throw new RuntimeException(message());
+        }
+
+        public String message() {
+            if (e != null) {
+                while (e.getCause() != null)
+                    e = e.getCause();
+                if (e.getMessage() == null)
+                    return e.getClass().getSimpleName();
+                return e.getMessage();
+            }
+            if (stderr != null && !stderr.isEmpty())
+                return stderr;
+            return "error: " + res;
+        }
+    }
 
     public static String which(String cmd) {
         for (String s : new String[]{SYSTEM + XBIN, SYSTEM + SBIN, SYSTEM + BIN,
@@ -110,34 +221,39 @@ public class SuperUser {
         return p;
     }
 
-    public static int su(String pattern, Object... args) {
-        return su1(MessageFormat.format(pattern, args));
+    public static Result su(String pattern, Object... args) {
+        return su(MessageFormat.format(pattern, args));
     }
 
-    public static int su1(String cmd) {
-        return su(cmd + SU1);
+    public static Result su(String cmd) {
+        return su(new Commands(cmd));
     }
 
-    public static int su(String cmd) {
+    public static Result su(Commands cmd) {
+        Process su = null;
         try {
-            Process su = Runtime.getRuntime().exec(BIN_SU);
+            su = Runtime.getRuntime().exec(BIN_SU);
             DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            os.writeBytes(cmd + "\n");
+            if (cmd.sete) {
+                os.writeBytes(SETE + EOL);
+                os.flush();
+            }
+            os.writeBytes(cmd.build());
             os.flush();
-            os.writeBytes(BIN_EXIT + "\n");
+            os.writeBytes(BIN_EXIT + EOL);
             os.flush();
             su.waitFor();
-            return su.exitValue();
+            return new Result(cmd, su);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            return new Result(cmd, su, e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return new Result(cmd, su, e);
         }
-        return -1;
     }
 
-    public static void reboot() {
-        su1(BIN_REBOOT);
+    public static Result reboot() {
+        return su(BIN_REBOOT);
     }
 
     public static boolean isRooted() {
@@ -146,28 +262,24 @@ public class SuperUser {
     }
 
     public static boolean rootTest() {
-        try {
-            su1(BIN_TRUE);
-            return true;
-        } catch (RuntimeException e) {
-            return false;
-        }
+        Result r = su(BIN_TRUE);
+        return r.ok();
     }
 
-    public static void startService(Intent intent) {
-        startService(intent.getComponent());
+    public static Result startService(Intent intent) {
+        return startService(intent.getComponent());
     }
 
-    public static void startService(ComponentName name) {
-        su1(BIN_AM + " startservice -n " + name.flattenToShortString());
+    public static Result startService(ComponentName name) {
+        return su(BIN_AM + " startservice -n " + name.flattenToShortString());
     }
 
-    public static void stopService(Intent intent) {
-        stopService(intent.getComponent());
+    public static Result stopService(Intent intent) {
+        return stopService(intent.getComponent());
     }
 
-    public static void stopService(ComponentName name) {
-        su1(BIN_AM + " stopservice -n " + name.flattenToShortString());
+    public static Result stopService(ComponentName name) {
+        return su(BIN_AM + " stopservice -n " + name.flattenToShortString());
     }
 
     public static boolean isReboot() {
@@ -175,22 +287,22 @@ public class SuperUser {
         return isRooted() && f2.exists();
     }
 
-    public static boolean touch(File f) {
+    public static Result touch(File f) {
         String p = f.getAbsolutePath();
-        return su(TOUCH, escape(p)) == 0;
+        return su(TOUCH, escape(p));
     }
 
-    public static boolean mkdirs(File f) {
+    public static Result mkdirs(File f) {
         String p = f.getAbsolutePath();
-        return su(MKDIRS, escape(p)) == 0;
+        return su(MKDIRS, escape(p));
     }
 
-    public static boolean delete(File f) {
+    public static Result delete(File f) {
         String p = f.getAbsolutePath();
-        return su(DELETE, escape(p)) == 0;
+        return su(DELETE, escape(p));
     }
 
-    public static boolean mv(File f, File to) {
-        return su(MV, escape(f.getAbsolutePath()), escape(to.getAbsolutePath())) == 0;
+    public static Result mv(File f, File to) {
+        return su(MV, escape(f.getAbsolutePath()), escape(to.getAbsolutePath()));
     }
 }
