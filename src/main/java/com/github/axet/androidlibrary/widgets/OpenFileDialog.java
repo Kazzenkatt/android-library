@@ -214,28 +214,54 @@ public class OpenFileDialog extends AlertDialog.Builder {
             if (ext == null || (!readonly && !canWrite(ext)))
                 ext = getLocalInternal(getContext());
             add(ext);
+            File data = new File(getContext().getApplicationInfo().dataDir);
+            File datae = getContext().getExternalCacheDir();
+            if (datae != null)
+                datae = datae.getParentFile();
             if (Build.VERSION.SDK_INT >= 19) {
                 File[] ff = getLocalExternals(getContext(), readonly);
                 if (ff != null) {
                     for (File f : ff) {
                         if (f == null)
                             continue; // if storage unmounted null file here
-                        cache(f);
-                        if (ext == null || !f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // skip default /storage/.../files
-                            File a = f;
 
+                        cache(f);
+
+                        {
+                            ArrayList<File> pp = new ArrayList<>();
+                            File a = f;
                             StatFs stat = new StatFs(f.getPath());
                             File p = f;
                             while (f != null) {
+                                pp.add(f);
                                 StatFs fs = new StatFs(f.getPath());
                                 if (fs.getTotalBytes() != stat.getTotalBytes()) {
                                     add(p); // add sdcard root
-                                    break;
                                 }
                                 p = f;
                                 f = f.getParentFile();
                             }
-
+                            if (!readonly) { // help user find writable root if algorithm above failed
+                                for (int i = pp.size() - 1; i >= 0; i--) {
+                                    p = pp.get(i);
+                                    if (canWrite(p)) {
+                                        if (data != null && p.getAbsolutePath().startsWith(data.getAbsolutePath())) { // skip default /storage/.../data
+                                            continue;
+                                        }
+                                        if (datae != null && p.getAbsolutePath().startsWith(datae.getAbsolutePath())) { // skip default /storage/.../data
+                                            continue;
+                                        }
+                                        if (add(p))
+                                            break; // add first root
+                                    }
+                                }
+                            }
+                            if (data != null && a.getAbsolutePath().startsWith(data.getAbsolutePath())) { // skip default /storage/.../files
+                                continue;
+                            }
+                            if (datae != null && a.getAbsolutePath().startsWith(datae.getAbsolutePath())) { // skip default /storage/.../files
+                                continue;
+                            }
                             add(a);
                         }
                     }
@@ -260,16 +286,17 @@ public class OpenFileDialog extends AlertDialog.Builder {
             }
         }
 
-        void add(File f) {
+        boolean add(File f) {
             if (f == null)
-                return;
+                return false;
             if (!readonly && !canWrite(f))
-                return;
+                return false;
             for (int i = 0; i < list.size(); i++) {
                 if (list.get(i).getAbsolutePath().equals(f.getAbsolutePath()))
-                    return;
+                    return true;
             }
             list.add(f);
+            return true;
         }
 
         public int find(File c) {
