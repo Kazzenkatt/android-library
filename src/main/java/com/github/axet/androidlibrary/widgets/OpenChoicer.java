@@ -178,7 +178,7 @@ public class OpenChoicer {
     }
 
     @TargetApi(21)
-    boolean showSAF(boolean force) {
+    public boolean showSAF(boolean force) {
         Intent intent;
         if (type == OpenFileDialog.DIALOG_TYPE.FILE_DIALOG) {
             intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
