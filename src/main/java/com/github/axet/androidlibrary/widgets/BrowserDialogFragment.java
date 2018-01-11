@@ -139,7 +139,7 @@ public class BrowserDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog d = new AlertDialog.Builder(getActivity())
-                .setNeutralButton(getContext().getString(android.R.string.ok),
+                .setNeutralButton(getContext().getString(R.string.close),
                         new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int whichButton) {
                                 dialog.dismiss();
@@ -400,7 +400,6 @@ public class BrowserDialogFragment extends DialogFragment {
     public void onPageLoaded(String html) {
         result.html = html;
     }
-
 
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
         return false;
