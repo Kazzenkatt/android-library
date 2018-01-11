@@ -577,14 +577,14 @@ public class Storage {
                 ParcelFileDescriptor pfd = resolver.openFileDescriptor(docTreeUri, "r");
                 StructStatVfs stats = Os.fstatvfs(pfd.getFileDescriptor());
                 return stats.f_bavail * stats.f_bsize;
-            } catch (IllegalArgumentException | FileNotFoundException | ErrnoException e) {
+            } catch (Exception e) { // IllegalArgumentException | FileNotFoundException | ErrnoException | NullPointerException (readExceptionWithFileNotFoundExceptionFromParcel)
                 return 0;
             }
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             try {
                 File file = getFile(uri);
                 return getFree(file);
-            } catch (IllegalArgumentException e) {
+            } catch (Exception e) { // IllegalArgumentException
                 return 0;
             }
         } else {
