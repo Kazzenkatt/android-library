@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 
 public class PathMax extends ViewGroup {
     public static final String ROOT = "/";
-    public static final String MID = "...";
+    public static final String MID = "…"; // &#8230;
 
     String s = ROOT;
 
