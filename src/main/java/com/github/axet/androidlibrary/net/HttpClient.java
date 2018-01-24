@@ -256,6 +256,7 @@ public class HttpClient {
         HttpEntity entity;
         StatusLine status;
         ContentType contentType;
+        InputStream is;
 
         static boolean download(String mimetype) {
             String[] types = new String[]{CONTENTTYPE_XBITTORRENT, "audio", "video"};
@@ -280,6 +281,7 @@ public class HttpClient {
 
         public DownloadResponse(String mimeType, String encoding, InputStream data) {
             super(mimeType, encoding, data);
+            is = data;
             downloaded = true;
         }
 
@@ -402,7 +404,7 @@ public class HttpClient {
             if (entity != null)
                 return entity.getContent();
             else
-                return null;
+                return is;
         }
     }
 
