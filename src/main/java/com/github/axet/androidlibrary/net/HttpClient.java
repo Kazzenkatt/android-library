@@ -274,6 +274,8 @@ public class HttpClient {
             url = HttpClient.getUrl(context);
             if (url == null)
                 url = request.getURI().toString();
+            status = response.getStatusLine();
+            setMimeType(contentType.getMimeType());
         }
 
         public DownloadResponse(String mimeType, String encoding, InputStream data) {
@@ -314,8 +316,6 @@ public class HttpClient {
 
         public void download() {
             try {
-                status = response.getStatusLine();
-                setMimeType(contentType.getMimeType());
                 if (entity != null) { // old phones it can be null
                     buf = IOUtils.toByteArray(entity.getContent());
                     Charset enc = contentType.getCharset();
@@ -365,8 +365,6 @@ public class HttpClient {
 
         public void attachment() {
             try {
-                status = response.getStatusLine();
-                setMimeType(contentType.getMimeType());
                 Header ct = response.getFirstHeader("Content-Disposition");
                 if (ct != null)
                     contentDisposition = ct.getValue();
