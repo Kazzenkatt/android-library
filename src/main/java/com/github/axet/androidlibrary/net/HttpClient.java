@@ -358,12 +358,12 @@ public class HttpClient {
         public boolean isAttachment() {
             if (contentDisposition != null)
                 return true;
-            String[] types = new String[]{CONTENTTYPE_XBITTORRENT, "audio", "video"};
-            for (String t : types) {
+            String[] tt = new String[]{"text", "application/javascript", "application/x-javascript", "application/json", "image", "font"};
+            for (String t : tt) {
                 if (contentType.getMimeType().startsWith(t))
-                    return true;
+                    return false;
             }
-            return false;
+            return true;
         }
 
         public void downloadText() {
