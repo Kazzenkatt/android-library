@@ -528,8 +528,6 @@ public class WebViewCustom extends WebView {
 
     public void postUrl(String url, Map<String, String> postData) {
         if (http != null) {
-            base = url;
-
             String hist = url;
 
             HttpClient.DownloadResponse r = post(url, postData);
@@ -538,8 +536,11 @@ public class WebViewCustom extends WebView {
                 // so getBase() works fine. only postUrl() sholud do the trick.
                 url = ABOUT_ERROR;
                 // keep history url points to original url, so WebView.reload() keep working properly
+            } else if (r.getBuf().length == 0) { // inside page post's do not reload page
+                return;
             }
 
+            base = url;
             load(url, hist, r);
         } else
             super.postUrl(url, HttpClient.encode(postData).getBytes(Charset.defaultCharset()));
