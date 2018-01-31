@@ -1,15 +1,10 @@
 package com.github.axet.androidlibrary.widgets;
 
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
 
-import com.github.axet.androidlibrary.R;
-
-public class AppCompatSettingsThemeActivity extends AppCompatThemeActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,12 +21,12 @@ public class AppCompatSettingsThemeActivity extends AppCompatThemeActivity imple
         shared.unregisterOnSharedPreferenceChangeListener(this);
     }
 
+    public abstract String getAppThemeKey();
+
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(themeKey)) {
-            finish();
-            startActivity(new Intent(this, getClass()));
-            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        if (key.equals(getAppThemeKey())) {
+            restartActivity();
         }
     }
 
