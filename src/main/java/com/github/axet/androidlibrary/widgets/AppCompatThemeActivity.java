@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -28,21 +29,22 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
 
     public abstract int getAppTheme();
 
+    @SuppressLint("RestrictedApi")
     public int getAppThemeBar(Toolbar toolbar) { // old api, need to set theme excplitly for toolbar
         ViewParent parent = toolbar.getParent();
         if (parent instanceof ViewGroup) { // AppBarLayout
             Context t = ((ViewGroup) parent).getContext();
             if (t instanceof ContextThemeWrapper) {
                 try {
-                    Class<?> clazz = ContextThemeWrapper.class;
+                    Class<?> clazz = t.getClass();
                     Method method = clazz.getMethod("getThemeResId");
-                    method.setAccessible(true);
                     return (Integer) method.invoke(t);
-                } catch (RuntimeException e) {
-                    throw e;
                 } catch (Exception e) {
                     Log.d(TAG, "unable to get parent theme", e);
                 }
+            }
+            if (t instanceof android.support.v7.view.ContextThemeWrapper) {
+                return ((android.support.v7.view.ContextThemeWrapper) t).getThemeResId();
             }
         }
         return 0;
