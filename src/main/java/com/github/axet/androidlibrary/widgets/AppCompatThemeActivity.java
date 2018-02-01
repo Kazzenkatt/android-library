@@ -2,11 +2,19 @@ package com.github.axet.androidlibrary.widgets;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public static String TAG = AppCompatThemeActivity.class.getSimpleName();
@@ -20,7 +28,23 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
 
     public abstract int getAppTheme();
 
-    public int getAppThemeBar() {
+    public int getAppThemeBar(Toolbar toolbar) { // old api, need to set theme excplitly for toolbar
+        ViewParent parent = toolbar.getParent();
+        if (parent instanceof ViewGroup) { // AppBarLayout
+            Context t = ((ViewGroup) parent).getContext();
+            if (t instanceof ContextThemeWrapper) {
+                try {
+                    Class<?> clazz = ContextThemeWrapper.class;
+                    Method method = clazz.getMethod("getThemeResId");
+                    method.setAccessible(true);
+                    return (Integer) method.invoke(t);
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    Log.d(TAG, "unable to get parent theme", e);
+                }
+            }
+        }
         return 0;
     }
 
@@ -63,8 +87,9 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public void setSupportActionBar(@Nullable Toolbar toolbar) {
         super.setSupportActionBar(toolbar);
         Context theme = getSupportActionBar().getThemedContext();
-        if (theme != null && getAppThemeBar() != 0)
-            theme.setTheme(getAppThemeBar());
+        int id = getAppThemeBar(toolbar);
+        if (theme != null && id != 0)
+            theme.setTheme(id);
         toolbar.setPopupTheme(getAppThemePopup());
     }
 }
