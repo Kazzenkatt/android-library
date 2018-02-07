@@ -36,7 +36,7 @@ public class TreeListView extends ListView {
         }
 
         public TreeNode(TreeNode p, Object tag) {
-            this.parent = p;
+            this(p);
             this.tag = tag;
         }
     }
