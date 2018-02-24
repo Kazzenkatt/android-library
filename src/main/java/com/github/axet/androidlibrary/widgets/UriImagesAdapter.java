@@ -63,10 +63,10 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         public HashSet<Object> views = new HashSet<>(); // one task can set multiple ImageView's, except reused ones;
         public boolean start; // start download thread
         public boolean done; // done downloading (may be failed)
-        UriImagesAdapter p;
+        UriImagesAdapter a;
 
-        public DownloadImageTask(UriImagesAdapter p, Object item, Object v) {
-            this.p = p;
+        public DownloadImageTask(UriImagesAdapter a, Object item, Object v) {
+            this.a = a;
             this.item = item;
             views.add(v);
         }
@@ -77,14 +77,16 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         }
 
         protected Bitmap doInBackground(Object... urls) {
-            return p.downloadImageTask(this);
+            return a.downloadImageTask(this);
         }
 
         protected void onPostExecute(Bitmap result) {
+            if (isCancelled())
+                return;
             done = true;
             if (result != null)
                 bm = result;
-            p.downloadTaskDone(this);
+            a.downloadTaskDone(this);
         }
     }
 
@@ -92,10 +94,6 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         super(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
         allowCoreThreadTimeOut(true);
         this.context = context;
-    }
-
-    public Uri getCover(int position) {
-        return null;
     }
 
     public void refresh() {
@@ -185,25 +183,30 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         return null;
     }
 
-    public void getView(Object item, Object view) {
+    public void downloadTaskClean(Object view) {
         DownloadImageTask task = downloadViews.get(view);
         if (task != null) { // reuse image
             task.views.remove(view);
+            downloadViews.remove(view);
             synchronized (task.lock) {
                 if (!task.start && task.views.size() == 0 && !task.done) {
                     cancel(task);
-                    downloadViews.remove(view);
                     downloadItems.remove(task.item);
                 }
             }
         }
-        task = downloadItems.get(item);
+    }
+
+    public void downloadTask(Object item, Object view) {
+        downloadTaskClean(view);
+        DownloadImageTask task = downloadItems.get(item);
         if (task != null) { // add new ImageView to populate on finish
             if (task.done) {
-                updateView(task, item, view);
+                downloadTaskUpdate(task, item, view);
                 return;
             }
             task.views.add(view);
+            downloadViews.put(view, task);
         }
         if (task == null) {
             task = new DownloadImageTask(this, item, view);
@@ -211,7 +214,19 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
             downloadItems.put(item, task);
             execute(task);
         }
-        updateView(task, item, view);
+        downloadTaskUpdate(task, item, view);
+    }
+
+    public void downloadTaskDone(DownloadImageTask task) {
+        for (Object o : task.views)
+            downloadTaskUpdate(task, task.item, o);
+    }
+
+    public void downloadTaskUpdate(DownloadImageTask task, Object item, Object view) {
+    }
+
+    public Bitmap downloadImageTask(DownloadImageTask task) {
+        return null;
     }
 
     @Override
@@ -269,17 +284,5 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
             image.setImageResource(R.drawable.ic_image_black_24dp);
         }
         progress.setVisibility((task == null || task.done) ? View.GONE : View.VISIBLE);
-    }
-
-    public Bitmap downloadImageTask(DownloadImageTask task) {
-        return null;
-    }
-
-    public void downloadTaskDone(DownloadImageTask task) {
-        for (Object o : task.views)
-            updateView(task, task.item, o);
-    }
-
-    public void updateView(DownloadImageTask task, Object item, Object view) {
     }
 }
