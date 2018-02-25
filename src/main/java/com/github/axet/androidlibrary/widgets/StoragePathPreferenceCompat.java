@@ -22,17 +22,24 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public Storage storage = new Storage(getContext());
     public OpenStorageChoicer choicer;
 
+    public StoragePathPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        create();
+    }
+
     public StoragePathPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         create();
     }
 
     public StoragePathPreferenceCompat(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
+        super(context, attrs);
+        create();
     }
 
     public StoragePathPreferenceCompat(Context context) {
-        this(context, null);
+        super(context);
+        create();
     }
 
     public void create() {
