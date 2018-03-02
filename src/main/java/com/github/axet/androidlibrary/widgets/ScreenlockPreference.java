@@ -63,7 +63,7 @@ public class ScreenlockPreference extends ListPreference {
             public void run() {
                 KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
                 if (myKM.inKeyguardRestrictedInputMode()) {
-                    activity.moveTaskToBack(true);
+                    AppCompatThemeActivity.moveTaskToBack(activity);
                 } else {
                     keepScreenOn(false, window, key);
                 }
@@ -73,7 +73,7 @@ public class ScreenlockPreference extends ListPreference {
     }
 
     public static void onUserInteractionRemove() {
-        handler.removeCallbacks(null);
+        handler.removeCallbacksAndMessages(null);
     }
 
     public static void onPause(Activity a, String key) {
