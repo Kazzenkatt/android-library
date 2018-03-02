@@ -47,25 +47,38 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         }
     }
 
+    public static void startHome(Activity a) {
+        Intent main = new Intent(Intent.ACTION_MAIN);
+        main.addCategory(Intent.CATEGORY_HOME);
+        main.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        a.startActivity(main);
+        a.overridePendingTransition(0, 0);
+    }
+
+    public static void moveTaskToBack(Activity a) {
+        a.moveTaskToBack(true);
+        a.overridePendingTransition(0, 0);
+    }
+
     public static class ScreenReceiver extends BroadcastReceiver {
         public Activity a;
         public Runnable off = new Runnable() {
             @Override
             public void run() { // call once after boot (some phones ignores moveTaskToBack first call after boot)
                 try {
-                    startHome();
+                    startHome(a);
                 } catch (SecurityException e) { // hueway phones
                     Log.d(TAG, "startHome failed", e);
-                    moveTaskToBack();
+                    moveTaskToBack(a);
                 }
                 off = new Runnable() {
                     @Override
                     public void run() {
                         try {
-                            moveTaskToBack();
+                            moveTaskToBack(a);
                         } catch (Exception e) { // NullPointerException on some 7.0 phones
                             Log.d(TAG, "moveTaskToBack failed", e);
-                            startHome();
+                            startHome(a);
                         }
                     }
                 };
@@ -81,19 +94,6 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         public void registerReceiver(Activity a) {
             this.a = a;
             this.a.registerReceiver(this, filter);
-        }
-
-        public void startHome() {
-            Intent main = new Intent(Intent.ACTION_MAIN);
-            main.addCategory(Intent.CATEGORY_HOME);
-            main.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            a.startActivity(main);
-            a.overridePendingTransition(0, 0);
-        }
-
-        public void moveTaskToBack() {
-            a.moveTaskToBack(true);
-            a.overridePendingTransition(0, 0);
         }
 
         public void close() {
