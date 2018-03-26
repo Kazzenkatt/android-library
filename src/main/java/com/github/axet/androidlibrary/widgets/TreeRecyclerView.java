@@ -80,8 +80,11 @@ public class TreeRecyclerView extends RecyclerView {
                 notifyItemInserted(pos);
                 pos++;
                 count++;
-                if (t.expanded)
-                    pos += expand(t);
+                if (t.expanded) {
+                    int e = expand(t);
+                    pos += e;
+                    count += e;
+                }
             }
             return count;
         }
@@ -164,8 +167,6 @@ public class TreeRecyclerView extends RecyclerView {
     public boolean onInterceptTouchEvent(MotionEvent e) {
         if (super.onInterceptTouchEvent(e))
             return true;
-        if (toggleListener == null)
-            return false;
         View child = findChildViewUnder((int) e.getX(), (int) e.getY());
         if (child != null) {
             ViewHolder h = findContainingViewHolder(child);

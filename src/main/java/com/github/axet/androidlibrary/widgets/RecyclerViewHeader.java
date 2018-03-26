@@ -2,18 +2,49 @@ package com.github.axet.androidlibrary.widgets;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
+import android.view.MotionEvent;
 import android.view.View;
 
 public class RecyclerViewHeader extends RecyclerView.ItemDecoration {
     public View header;
+    public RecyclerView r;
+    public RecyclerView.OnItemTouchListener touch = new RecyclerView.OnItemTouchListener() {
+        @Override
+        public boolean onInterceptTouchEvent(RecyclerView r, MotionEvent e) {
+            RecyclerView.ViewHolder h = r.findViewHolderForAdapterPosition(0);
+            if (h != null && header.getVisibility() == View.VISIBLE) {
+                if (e.getY() < h.itemView.getTop()) {
+                    header.dispatchTouchEvent(e);
+                    return true;
+                }
+            }
+            return false;
+        }
 
-    public RecyclerViewHeader(View h) {
+        @Override
+        public void onTouchEvent(RecyclerView r, MotionEvent e) {
+            if (header.getVisibility() == View.VISIBLE) {
+                header.onTouchEvent(e);
+            }
+        }
+
+        @Override
+        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+        }
+    };
+
+    public RecyclerViewHeader(RecyclerView r, View h) {
         header = h;
+        this.r = r;
+        r.addOnItemTouchListener(touch);
     }
 
     @Override
     public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+        if (header.getVisibility() != View.VISIBLE)
+            return;
         header.layout(parent.getLeft(), 0, parent.getRight(), header.getMeasuredHeight());
         for (int i = 0; i < parent.getChildCount(); i++) {
             View view = parent.getChildAt(i);
@@ -25,6 +56,7 @@ public class RecyclerViewHeader extends RecyclerView.ItemDecoration {
                 c.translate(0, top);
                 header.draw(c);
                 c.restore();
+                ViewCompat.postInvalidateOnAnimation(parent); // TODO detect header has animation elements (like progres bar)
             }
         }
     }
