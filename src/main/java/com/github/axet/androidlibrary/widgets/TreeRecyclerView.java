@@ -16,33 +16,6 @@ public class TreeRecyclerView extends RecyclerView {
     public OnToggleListener toggleListener;
     public MotionEvent last;
 
-    public static class TreeNode {
-        public TreeNode parent;
-        public boolean selected = false;
-        public boolean expanded = false;
-        public Object tag;
-        public int level;
-        public ArrayList<TreeNode> nodes = new ArrayList<>();
-
-        public TreeNode() {
-            level = -1;
-        }
-
-        public TreeNode(TreeNode p) {
-            parent = p;
-            level = p.level + 1;
-        }
-
-        public TreeNode(Object tag) {
-            this.tag = tag;
-        }
-
-        public TreeNode(TreeNode p, Object tag) {
-            this(p);
-            this.tag = tag;
-        }
-    }
-
     public static class TreeHolder extends ViewHolder {
         public TreeHolder(View itemView) {
             super(itemView);
@@ -50,8 +23,8 @@ public class TreeRecyclerView extends RecyclerView {
     }
 
     public static class TreeAdapter<T extends TreeHolder> extends Adapter<T> {
-        public TreeNode root = new TreeNode();
-        public ArrayList<TreeNode> items = new ArrayList<>();
+        public TreeListView.TreeNode root = new TreeListView.TreeNode();
+        public ArrayList<TreeListView.TreeNode> items = new ArrayList<>();
 
         public TreeAdapter() {
         }
@@ -62,20 +35,20 @@ public class TreeRecyclerView extends RecyclerView {
             notifyDataSetChanged();
         }
 
-        public void load(TreeNode tt) {
-            for (TreeNode t : tt.nodes) {
+        public void load(TreeListView.TreeNode tt) {
+            for (TreeListView.TreeNode t : tt.nodes) {
                 items.add(t);
                 if (t.expanded)
                     load(t);
             }
         }
 
-        public int expand(TreeNode n) {
+        public int expand(TreeListView.TreeNode n) {
             int count = 0;
             int pos = items.indexOf(n);
             notifyItemChanged(pos); // update expand / collaps icons
             pos = pos + 1;
-            for (TreeNode t : n.nodes) {
+            for (TreeListView.TreeNode t : n.nodes) {
                 items.add(pos, t);
                 notifyItemInserted(pos);
                 pos++;
@@ -89,11 +62,11 @@ public class TreeRecyclerView extends RecyclerView {
             return count;
         }
 
-        public void collapse(TreeNode n) {
+        public void collapse(TreeListView.TreeNode n) {
             int pos = items.indexOf(n);
             notifyItemChanged(pos); // update expand / collaps icons
             pos = pos + 1;
-            for (TreeNode t : n.nodes) {
+            for (TreeListView.TreeNode t : n.nodes) {
                 if (t.expanded) // if item were expanded, collapse it
                     collapse(t);
                 items.remove(pos);
@@ -106,7 +79,7 @@ public class TreeRecyclerView extends RecyclerView {
             return items.size();
         }
 
-        public TreeNode getItem(int position) {
+        public TreeListView.TreeNode getItem(int position) {
             return items.get(position);
         }
 
@@ -149,7 +122,7 @@ public class TreeRecyclerView extends RecyclerView {
 
     public boolean performItemClick(View view, ViewHolder h) {
         TreeAdapter a = (TreeAdapter) getAdapter();
-        TreeNode n = a.getItem(h.getAdapterPosition());
+        TreeListView.TreeNode n = a.getItem(h.getAdapterPosition());
         if (!n.nodes.isEmpty()) { // is folder
             n.expanded = !n.expanded;
             if (n.expanded)
@@ -168,10 +141,10 @@ public class TreeRecyclerView extends RecyclerView {
         if (super.onInterceptTouchEvent(e))
             return true;
         View child = findChildViewUnder((int) e.getX(), (int) e.getY());
-        if (child != null && !child.hasFocusable()) {
+        if (child != null && child.hasFocusable()) { // TODO do not intercept checkbox clicks
             ViewHolder h = findContainingViewHolder(child);
             TreeAdapter a = (TreeAdapter) getAdapter();
-            TreeNode n = a.getItem(h.getAdapterPosition());
+            TreeListView.TreeNode n = a.getItem(h.getAdapterPosition());
             if (!n.nodes.isEmpty()) // is folder
                 return true;
         }
@@ -189,7 +162,7 @@ public class TreeRecyclerView extends RecyclerView {
             case MotionEvent.ACTION_UP:
                 if (last != null && ev.getX() == last.getX() && ev.getY() == last.getY()) {
                     View child = findChildViewUnder((int) ev.getX(), (int) ev.getY());
-                    if (child != null && !child.hasFocusable()) { // hasFocusable prevent intercept checkbox clicks
+                    if (child != null && child.hasFocusable()) { // TODO prevent intercept checkbox clicks
                         ViewHolder h = findContainingViewHolder(child);
                         performItemClick(child, h);
                         return true;

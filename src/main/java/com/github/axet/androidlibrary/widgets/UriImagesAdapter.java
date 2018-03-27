@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class UriImagesAdapter {
+public class UriImagesAdapter {
     public static final String TAG = UriImagesAdapter.class.getSimpleName();
 
     public static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
