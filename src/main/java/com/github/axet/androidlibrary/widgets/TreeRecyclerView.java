@@ -168,7 +168,7 @@ public class TreeRecyclerView extends RecyclerView {
         if (super.onInterceptTouchEvent(e))
             return true;
         View child = findChildViewUnder((int) e.getX(), (int) e.getY());
-        if (child != null) {
+        if (child != null && !child.hasFocusable()) {
             ViewHolder h = findContainingViewHolder(child);
             TreeAdapter a = (TreeAdapter) getAdapter();
             TreeNode n = a.getItem(h.getAdapterPosition());
@@ -180,7 +180,6 @@ public class TreeRecyclerView extends RecyclerView {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        boolean b = super.onTouchEvent(ev);
         switch (ev.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 last = MotionEvent.obtain(ev);
@@ -190,7 +189,7 @@ public class TreeRecyclerView extends RecyclerView {
             case MotionEvent.ACTION_UP:
                 if (last != null && ev.getX() == last.getX() && ev.getY() == last.getY()) {
                     View child = findChildViewUnder((int) ev.getX(), (int) ev.getY());
-                    if (child != null) {
+                    if (child != null && !child.hasFocusable()) { // hasFocusable prevent intercept checkbox clicks
                         ViewHolder h = findContainingViewHolder(child);
                         performItemClick(child, h);
                         return true;
@@ -198,6 +197,6 @@ public class TreeRecyclerView extends RecyclerView {
                 }
                 break;
         }
-        return b;
+        return super.onTouchEvent(ev);
     }
 }
