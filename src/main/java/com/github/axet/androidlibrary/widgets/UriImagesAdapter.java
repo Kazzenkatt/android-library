@@ -1,7 +1,5 @@
 package com.github.axet.androidlibrary.widgets;
 
-import android.content.Context;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -9,9 +7,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
 import android.widget.ProgressBar;
 
 import com.github.axet.androidlibrary.R;
@@ -21,7 +17,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,13 +25,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class UriImagesAdapter extends ThreadPoolExecutor implements ListAdapter {
-    private static final String TAG = UriImagesAdapter.class.getSimpleName();
+public class UriImagesAdapter {
+    public static final String TAG = UriImagesAdapter.class.getSimpleName();
 
-    private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
-    private static final int CORE_POOL_SIZE = Math.max(2, Math.min(CPU_COUNT - 1, 4));
-    private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
-    private static final int KEEP_ALIVE_SECONDS = 30;
+    public static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
+    public static final int CORE_POOL_SIZE = Math.max(2, Math.min(CPU_COUNT - 1, 4));
+    public static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
+    public static final int KEEP_ALIVE_SECONDS = 30;
 
     public static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<Runnable>(128);
 
@@ -50,11 +45,61 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
 
     public Map<Object, DownloadImageTask> downloadViews = new HashMap<>();
     public Map<Object, DownloadImageTask> downloadItems = new HashMap<>();
-    public DataSetObserver listener;
-    public Context context;
     public Map<DownloadImageTask, Runnable> tasks = new ConcurrentHashMap<>();
     public Map<Runnable, DownloadImageTask> runs = new ConcurrentHashMap<>();
     protected DownloadImageTask current;
+    public UriImagesExecutor executor = new UriImagesExecutor();
+
+    public class UriImagesExecutor extends ThreadPoolExecutor {
+        public UriImagesExecutor() {
+            super(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
+            allowCoreThreadTimeOut(true);
+        }
+
+        @Override
+        protected void beforeExecute(Thread t, Runnable r) {
+            super.beforeExecute(t, r);
+            DownloadImageTask task = runs.get(r);
+            if (task != null) {
+                synchronized (task.lock) {
+                    task.start = true;
+                }
+            }
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            tasks.put(current, command);
+            runs.put(command, current);
+            super.execute(command);
+            current = null;
+        }
+
+        @Override
+        protected void afterExecute(Runnable r, Throwable t) {
+            super.afterExecute(r, t);
+            DownloadImageTask task = runs.remove(r);
+            if (task != null)
+                tasks.remove(task);
+        }
+
+        public void execute(DownloadImageTask task) {
+            current = task;
+            if (Build.VERSION.SDK_INT < 11)
+                task.execute();
+            else
+                task.executeOnExecutor(this);
+        }
+
+        public void cancel(DownloadImageTask task) {
+            task.cancel(true);
+            Runnable r = tasks.remove(task);
+            if (r != null) {
+                sPoolWorkQueue.remove(r);
+                runs.remove(r);
+            }
+        }
+    }
 
     public static class DownloadImageTask extends AsyncTask<Object, Void, Bitmap> {
         public final Object lock = new Object();
@@ -90,97 +135,10 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         }
     }
 
-    public UriImagesAdapter(Context context) {
-        super(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
-        allowCoreThreadTimeOut(true);
-        this.context = context;
+    public UriImagesAdapter() {
     }
 
     public void refresh() {
-    }
-
-    public void notifyDataSetChanged() {
-        if (listener != null)
-            listener.onChanged();
-    }
-
-    @Override
-    protected void beforeExecute(Thread t, Runnable r) {
-        super.beforeExecute(t, r);
-        DownloadImageTask task = runs.get(r);
-        if (task != null) {
-            synchronized (task.lock) {
-                task.start = true;
-            }
-        }
-    }
-
-    @Override
-    public void execute(Runnable command) {
-        tasks.put(current, command);
-        runs.put(command, current);
-        super.execute(command);
-        current = null;
-    }
-
-    @Override
-    protected void afterExecute(Runnable r, Throwable t) {
-        super.afterExecute(r, t);
-        DownloadImageTask task = runs.remove(r);
-        if (task != null)
-            tasks.remove(task);
-    }
-
-    public void execute(DownloadImageTask task) {
-        current = task;
-        if (Build.VERSION.SDK_INT < 11)
-            task.execute();
-        else
-            task.executeOnExecutor(this);
-    }
-
-    public void cancel(DownloadImageTask task) {
-        task.cancel(true);
-        Runnable r = tasks.remove(task);
-        if (r != null) {
-            sPoolWorkQueue.remove(r);
-            runs.remove(r);
-        }
-    }
-
-    @Override
-    public boolean areAllItemsEnabled() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled(int position) {
-        return true;
-    }
-
-    @Override
-    public void registerDataSetObserver(DataSetObserver observer) {
-        listener = observer;
-    }
-
-    @Override
-    public void unregisterDataSetObserver(DataSetObserver observer) {
-        listener = null;
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return position;
-    }
-
-    @Override
-    public boolean hasStableIds() {
-        return true;
-    }
-
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        return null;
     }
 
     public void downloadTaskClean(Object view) {
@@ -190,7 +148,7 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
             downloadViews.remove(view);
             synchronized (task.lock) {
                 if (!task.start && task.views.size() == 0 && !task.done) {
-                    cancel(task);
+                    executor.cancel(task);
                     downloadItems.remove(task.item);
                 }
             }
@@ -212,7 +170,7 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
             task = new DownloadImageTask(this, item, view);
             downloadViews.put(view, task);
             downloadItems.put(item, task);
-            execute(task);
+            executor.execute(task);
         }
         downloadTaskUpdate(task, item, view);
     }
@@ -229,31 +187,16 @@ public abstract class UriImagesAdapter extends ThreadPoolExecutor implements Lis
         return null;
     }
 
-    @Override
-    public int getItemViewType(int position) {
-        return 0;
-    }
-
-    @Override
-    public int getViewTypeCount() {
-        return 1;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return getCount() == 0;
-    }
-
     public void clearTasks() {
         for (Object item : downloadViews.keySet()) {
             DownloadImageTask t = downloadViews.get(item);
-            cancel(t);
+            executor.cancel(t);
         }
         downloadViews.clear();
 
         for (Object item : downloadItems.keySet()) {
             DownloadImageTask t = downloadItems.get(item);
-            cancel(t);
+            executor.cancel(t);
         }
         downloadItems.clear();
 

@@ -7,8 +7,11 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.BaseAdapter;
+import android.widget.HeaderViewListAdapter;
 import android.widget.ListView;
+import android.widget.WrapperListAdapter;
 
 import java.util.ArrayList;
 
@@ -123,11 +126,22 @@ public class TreeListView extends ListView {
 
     @Override
     public boolean performItemClick(View view, int position, long id) {
-        TreeAdapter a = (TreeAdapter) getAdapter();
-        TreeNode n = a.getItem(position);
+        Adapter a = getAdapter();
+        if (a instanceof HeaderViewListAdapter) {
+            int start = ((HeaderViewListAdapter) a).getHeadersCount();
+            int end = a.getCount() - ((HeaderViewListAdapter) a).getFootersCount();
+            if (position < start)
+                return false;
+            if (position >= end)
+                return false;
+            position -= start;
+            a = ((HeaderViewListAdapter) a).getWrappedAdapter();
+        }
+        TreeAdapter t = (TreeAdapter) a;
+        TreeNode n = t.getItem(position);
         if (!n.nodes.isEmpty()) {
             n.expanded = !n.expanded;
-            a.load();
+            t.load();
             if (toggleListener != null)
                 toggleListener.onItemToggled(view, position, id);
         }
