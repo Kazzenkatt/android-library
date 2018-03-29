@@ -16,9 +16,15 @@ public interface WrapperRecyclerAdapter<T extends RecyclerView.ViewHolder> {
             int pos = getAdapterPosition();
             if (adapter == null)
                 return pos;
-            if (a instanceof WrapperRecyclerAdapter)
-                return pos;
-            return adapter.getWrappedPosition(pos);
+            RecyclerView.Adapter child = (RecyclerView.Adapter) adapter;
+            while (child instanceof WrapperRecyclerAdapter) {
+                WrapperRecyclerAdapter parent = (WrapperRecyclerAdapter) child;
+                child = parent.getWrappedAdapter(); // child
+                if (child == a) {
+                    pos = parent.getWrappedPosition(pos);
+                }
+            }
+            return pos;
         }
     }
 
