@@ -23,7 +23,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CacheImagesAdapter {
     public static final String TAG = CacheImagesAdapter.class.getSimpleName();
 
+    public static int CACHE_MB = 30;
     public static int CACHE_DAYS = 30;
 
     public static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
@@ -46,6 +49,13 @@ public class CacheImagesAdapter {
     public static final int KEEP_ALIVE_SECONDS = 30;
 
     public static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<Runnable>(128);
+
+    public static class SortDate implements Comparator<File> {
+        @Override
+        public int compare(File o1, File o2) {
+            return Long.valueOf(o1.lastModified()).compareTo(o2.lastModified());
+        }
+    }
 
     public static final ThreadFactory sThreadFactory = new ThreadFactory() {
         private final AtomicInteger mCount = new AtomicInteger(1);
@@ -150,26 +160,42 @@ public class CacheImagesAdapter {
     }
 
     public CacheImagesAdapter(Context context) {
+        this.context = context;
         cache = new File(context.getCacheDir(), "images");
         if (!cache.exists() && !cache.mkdirs())
             throw new RuntimeException("unable to create cache");
         cacheClear();
     }
 
+    public Context getContext() {
+        return context;
+    }
+
     public File cacheUri(Uri u) {
         return new File(cache, MD5.digest(u.toString()));
     }
 
-    public void cacheClear() {
+    synchronized public void cacheClear() {
         File[] ff = cache.listFiles();
         if (ff == null)
             return;
         Calendar c = Calendar.getInstance();
         c.add(Calendar.DAY_OF_MONTH, -CACHE_DAYS);
+        long total = 0;
         for (File f : ff) {
             long last = f.lastModified();
-            if (last < c.getTimeInMillis())
+            if (last < c.getTimeInMillis()) {
                 f.delete();
+            } else {
+                total += f.length();
+            }
+        }
+        Arrays.sort(ff, new SortDate());
+        for (int i = 0; i < ff.length && total > CACHE_MB * 1024 * 1024; i++) {
+            File f = ff[i];
+            long size = f.length();
+            f.delete();
+            total -= size;
         }
     }
 
@@ -250,6 +276,7 @@ public class CacheImagesAdapter {
 
     public Bitmap downloadImage(Uri cover) {
         try {
+            cacheClear();
             String s = cover.getScheme();
             if (s.startsWith(WebViewCustom.SCHEME_HTTP)) {
                 File f = cacheUri(cover);
