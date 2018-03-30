@@ -14,11 +14,17 @@ public interface WrapperRecyclerAdapter<T extends RecyclerView.ViewHolder> {
 
         public int getAdapterPosition(RecyclerView.Adapter a) { // position may vary depends on who is calling
             int pos = getAdapterPosition();
-            if (adapter == null)
-                return pos;
-            if (a instanceof WrapperRecyclerAdapter)
-                return pos;
-            return adapter.getWrappedPosition(pos);
+            if (adapter != null && adapter != a) {
+                RecyclerView.Adapter child = (RecyclerView.Adapter) adapter;
+                while (child instanceof WrapperRecyclerAdapter) {
+                    WrapperRecyclerAdapter parent = (WrapperRecyclerAdapter) child;
+                    child = parent.getWrappedAdapter(); // child
+                    if (child == a) {
+                        pos = parent.getWrappedPosition(pos);
+                    }
+                }
+            }
+            return pos;
         }
     }
 
