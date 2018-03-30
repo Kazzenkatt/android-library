@@ -63,13 +63,20 @@ public class HeaderRecyclerAdapter extends RecyclerView.Adapter implements Wrapp
         updateEmpty();
     }
 
-    void updateEmpty() {
+    public void updateEmpty() {
         if (empty == null)
             return;
-        if (wrapped.getItemCount() == 0)
-            empty.setVisibility(View.VISIBLE);
-        else
-            empty.setVisibility(View.GONE);
+        if (wrapped.getItemCount() == 0) {
+            if (empty.getVisibility() == View.GONE)
+                updateEmpty(true);
+        } else {
+            if (empty.getVisibility() == View.VISIBLE)
+                updateEmpty(false);
+        }
+    }
+
+    public void updateEmpty(boolean b) {
+        empty.setVisibility(b ? View.VISIBLE : View.GONE);
     }
 
     void updateGridHeaderFooter(RecyclerView.LayoutManager layoutManager) {
