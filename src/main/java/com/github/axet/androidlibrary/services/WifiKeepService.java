@@ -22,7 +22,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 /**
- * <service android:name="com.github.axet.androidlibrary.services.WifiKeepService"/>
+ * &lt;service android:name="com.github.axet.androidlibrary.services.WifiKeepService"/&gt;
  * <p>
  * &lt;uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /&gt;
  * &lt;uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /&gt;
