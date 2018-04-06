@@ -79,26 +79,33 @@ public class Sound {
         return log1(v, 2);
     }
 
+    boolean delaying(Runnable r) {
+        long next = last + LAST;
+        long last = System.currentTimeMillis();
+        if (next > last) {
+            handler.removeCallbacks(delayed);
+            delayed = r;
+            handler.postDelayed(delayed, next - last);
+            return true;
+        }
+        this.last = last;
+        return false;
+    }
+
     public void silent() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (!SilencePreferenceCompat.isNotificationPolicyAccessGranted(context))
                 return;
         }
 
-        long next = last + LAST;
-        long last = System.currentTimeMillis();
-        if(next > last) {
-            handler.removeCallbacks(delayed);
-            delayed = new Runnable() {
-                @Override
-                public void run() {
-                    silent();
-                }
-            };
-            handler.postDelayed(delayed, next - last);
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                silent();
+            }
+        };
+        if (delaying(r))
             return;
-        }
-        this.last = last;
 
         if (soundMode != -1)
             return; // already silensed
@@ -121,20 +128,14 @@ public class Sound {
                 return;
         }
 
-        long next = last + LAST;
-        long last = System.currentTimeMillis();
-        if(next > last) {
-            handler.removeCallbacks(delayed);
-            delayed = new Runnable() {
-                @Override
-                public void run() {
-                    unsilent();
-                }
-            };
-            handler.postDelayed(delayed, next - last);
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                unsilent();
+            }
+        };
+        if (delaying(r))
             return;
-        }
-        this.last = last;
 
         if (soundMode == -1)
             return; // already unsilensed
