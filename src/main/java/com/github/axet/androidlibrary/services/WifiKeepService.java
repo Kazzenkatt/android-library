@@ -160,10 +160,12 @@ public class WifiKeepService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String action = intent.getAction();
-        if (action != null) {
-            if (action.equals(WIFI)) {
-                t = wifi(this, true);
+        if (intent != null) {
+            String action = intent.getAction();
+            if (action != null) {
+                if (action.equals(WIFI)) {
+                    t = wifi(this, true);
+                }
             }
         }
         return super.onStartCommand(intent, flags, startId);

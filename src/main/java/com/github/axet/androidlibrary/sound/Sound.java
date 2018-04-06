@@ -8,6 +8,7 @@ import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.Settings;
 
 import com.github.axet.androidlibrary.widgets.SilencePreferenceCompat;
@@ -26,6 +27,14 @@ public class Sound {
     public static final int ZEN_MODE_IMPORTANT_INTERRUPTIONS = 1;
     public static final int ZEN_MODE_NO_INTERRUPTIONS = 2;
     public static final int ZEN_MODE_ALARMS = 3;
+
+    public static final long LAST = 1000; // last delay
+
+    public Context context;
+    public Handler handler = new Handler();
+    public int soundMode = -1;
+    public long last; // last change, prevent spam
+    public Runnable delayed;
 
     public static int getValidRecordRate(int in, int rate) {
         int i = Arrays.binarySearch(RATES, rate);
@@ -57,9 +66,6 @@ public class Sound {
         return -1;
     }
 
-    protected Context context;
-    protected int soundMode = -1;
-
     public Sound(Context context) {
         this.context = context;
     }
@@ -73,11 +79,33 @@ public class Sound {
         return log1(v, 2);
     }
 
+    boolean delaying(Runnable r) {
+        long next = last + LAST;
+        long last = System.currentTimeMillis();
+        if (next > last) {
+            handler.removeCallbacks(delayed);
+            delayed = r;
+            handler.postDelayed(delayed, next - last);
+            return true;
+        }
+        this.last = last;
+        return false;
+    }
+
     public void silent() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (!SilencePreferenceCompat.isNotificationPolicyAccessGranted(context))
                 return;
         }
+
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                silent();
+            }
+        };
+        if (delaying(r))
+            return;
 
         if (soundMode != -1)
             return; // already silensed
@@ -99,6 +127,15 @@ public class Sound {
             if (!SilencePreferenceCompat.isNotificationPolicyAccessGranted(context))
                 return;
         }
+
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                unsilent();
+            }
+        };
+        if (delaying(r))
+            return;
 
         if (soundMode == -1)
             return; // already unsilensed
