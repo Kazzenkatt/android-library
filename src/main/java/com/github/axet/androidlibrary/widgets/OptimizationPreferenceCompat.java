@@ -552,9 +552,14 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         SharedPreferences shared = android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences(context);
         long next = shared.getLong(key, 0);
         long time = System.currentTimeMillis();
-        if (next != 0 && next < time) {
-            return true;
-        }
-        return false;
+        if (next == 0)
+            return false; // no missed alarm
+        if (next > time)
+            return false; // alarm in the future
+        long boot = SystemClock.elapsedRealtime(); // milliseconds since boot, including time spent in sleep
+        long last = time - boot; // boot time
+        if (next < last)
+            return false; // we did reboot device recently, skip warning
+        return true;
     }
 }
