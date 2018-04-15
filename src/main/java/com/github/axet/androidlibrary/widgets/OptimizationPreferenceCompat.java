@@ -80,7 +80,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     // all service related code, for old phones, where AlarmManager will be used to keep app running
     protected Class<? extends Service> service;
-    protected String key;
+    protected String warning;
 
     public static class ApplicationReceiver extends BroadcastReceiver {
         protected Context context;
@@ -229,7 +229,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     public void create() {
-        onResume();
     }
 
     @TargetApi(19)
@@ -312,10 +311,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return builder;
     }
 
-    public void enable(Class<? extends Service> service, String key) {
+    public void enable(Class<? extends Service> service) {
         this.service = service;
-        this.key = key;
-        onResume();
     }
 
     @TargetApi(23)
@@ -325,14 +322,18 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return pm.isIgnoringBatteryOptimizations(n);
     }
 
-    public void onResume() {
+    public void onCreate(final String warning) {
+        onResume(warning);
+    }
+
+    public void onResume(final String warning) {
         if (Build.VERSION.SDK_INT < 23) {
             for (Intent intent : ALL) {
                 if (isCallable(getContext(), intent)) {
                     setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                         @Override
                         public boolean onPreferenceChange(Preference preference, Object newValue) {
-                            showWarning(getContext(), key); // show commons
+                            showWarning(getContext(), warning); // show commons
                             return false;
                         }
                     });
@@ -342,7 +343,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             }
             if (service != null) {
                 final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-                boolean b = shared.getBoolean(key, false);
+                boolean b = shared.getBoolean(getKey(), false);
                 setChecked(b);
                 setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                     @Override
@@ -356,17 +357,17 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                                     enable(getContext(), System.currentTimeMillis(), service);
                                     final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
                                     SharedPreferences.Editor edit = shared.edit();
-                                    edit.putBoolean(key, true);
+                                    edit.putBoolean(getKey(), true);
                                     edit.commit();
                                     setChecked(true);
                                 }
                             });
-                            showWarning(getContext(), builder, key); // show commons
+                            showWarning(getContext(), builder, warning); // show commons
                         } else {
                             disable(getContext(), service);
                             final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
                             SharedPreferences.Editor edit = shared.edit();
-                            edit.putBoolean(key, false);
+                            edit.putBoolean(getKey(), false);
                             edit.commit();
                             setChecked(false);
                         }
@@ -392,7 +393,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 @TargetApi(23)
                 public boolean onPreferenceChange(Preference preference, Object o) {
                     AlertDialog.Builder builder = buildWarning(getContext(), !isIgnoringBatteryOptimizations(getContext()));  // hide commons
-                    showWarning(getContext(), builder, key);
+                    showWarning(getContext(), builder, warning);
                     return false;
                 }
             });
@@ -462,6 +463,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         } else {
             builder.setPositiveButton(android.R.string.yes, click);
         }
+    }
+
+    public static AlertDialog.Builder buildKilledWarning(final Context context, boolean showCommons) {
+        AlertDialog.Builder b = buildWarning(context, showCommons);
+        b.setMessage(R.string.optimization_killed);
+        return b;
     }
 
     public static AlertDialog.Builder buildWarning(final Context context, boolean showCommons) {
@@ -535,5 +542,23 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         if (Build.VERSION.SDK_INT >= 23) {
             showOptimization(context);
         }
+    }
+
+
+    public static void setCheck(Context context, long time, String key) {
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor edit = shared.edit();
+        edit.putLong(key, time);
+        edit.commit();
+    }
+
+    public static boolean getCheck(Context context, String key) {
+        SharedPreferences shared = android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        long next = shared.getLong(key, 0);
+        long time = System.currentTimeMillis();
+        if (next != 0 && next < time) {
+            return true;
+        }
+        return false;
     }
 }
