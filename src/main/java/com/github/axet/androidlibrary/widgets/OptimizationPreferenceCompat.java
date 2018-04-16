@@ -144,7 +144,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         public boolean onStartCommand(Intent intent, int flags, int startId) {
             register();
             if (intent == null)
-                return true;
+                return true; // null if service were restarted by system after crash / low memory
             String a = intent.getAction();
             if (a == null)
                 return false;
@@ -157,7 +157,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             return false;
         }
 
-        public void check() {
+        public void check() { // disable when here is no ApplicationReceiver
             handler.postDelayed(check, CHECK_DELAY);
             Intent i = new Intent(service.getCanonicalName() + PING);
             context.sendBroadcast(i);
