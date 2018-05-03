@@ -545,13 +545,26 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     public static void setKillCheck(Context context, long time, String key) {
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor edit = shared.edit();
-        edit.putLong(key, time);
+        edit.putString(key, System.currentTimeMillis() + ";" + time);
         edit.commit();
     }
 
     public static boolean needKillWarning(Context context, String key) { // true - need show warning dialog
         SharedPreferences shared = android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences(context);
-        long next = shared.getLong(key, 0);
+        Object n = shared.getAll().get(key);
+        long set; // alarm set time
+        long next; // alarm next time
+        if (n == null) {
+            set = System.currentTimeMillis();
+            next = 0;
+        } else if (n instanceof Long) { // old version
+            set = System.currentTimeMillis();
+            next = (Long) n;
+        } else {
+            String[] nn = ((String) n).split(";");
+            set = Long.valueOf(nn[0]);
+            next = Long.valueOf(nn[1]);
+        }
         if (next == 0)
             return false; // no missed alarm
         long time = System.currentTimeMillis();
@@ -560,7 +573,9 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         long uptime = SystemClock.elapsedRealtime(); // milliseconds since boot, including time spent in sleep
         long boot = time - uptime; // boot time
         if (next < boot)
-            return false; // we did reboot device recently, skip warning
+            return false; // we lost alarm, while device were offline, skip warning
+        if (set < boot)
+            return false; // we did reboot device between set alarm and boot time, skip warning
         return true;
     }
 }
