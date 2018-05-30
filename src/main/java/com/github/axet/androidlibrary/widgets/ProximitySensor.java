@@ -35,8 +35,6 @@ import java.util.TreeSet;
 
 public class ProximitySensor implements SensorEventListener {
     SensorManager sm;
-    Sensor proximity;
-    Window w;
     Dialog d;
     Context context;
 
@@ -63,29 +61,18 @@ public class ProximitySensor implements SensorEventListener {
         }
     }
 
-    public static class Windows {
-        public HashSet<Window> list = new HashSet<>();
-        public HashMap<Window, WindowManager.LayoutParams> olds = new HashMap<>();
-
-        public void add(Window w) {
-            list.add(w);
-        }
-
-        public void remove(Window w) {
-            list.remove(w);
-            olds.remove(w);
-        }
-    }
-
     public ProximitySensor(Context context) {
         this.context = context;
         sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        if (sm != null)
-            proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
     }
 
     public void setContext(Context context) {
         this.context = context;
+    }
+
+    public void closeSystemDialogs() {
+        Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+        context.sendBroadcast(it);
     }
 
     public void turnScreenOff() {
@@ -94,21 +81,21 @@ public class ProximitySensor implements SensorEventListener {
         if (d != null) // already hidded
             return;
 
-        Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-        context.sendBroadcast(it);
-        
+        closeSystemDialogs();
+
         final View anchor = new View(context);
         anchor.setBackgroundColor(Color.BLACK);
 
         d = new Dialog(context);
         d.setCancelable(false);
-        w = d.getWindow();
+        Window w = d.getWindow();
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
         d.setContentView(anchor);
         if (Build.VERSION.SDK_INT >= 11) {
             w.getDecorView().setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
                 @Override
                 public void onSystemUiVisibilityChange(int visibility) {
+                    closeSystemDialogs();
                     hideSystemUI();
                 }
             });
@@ -122,34 +109,40 @@ public class ProximitySensor implements SensorEventListener {
         w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         d.show();
 
-        hideSystemUI();
+        hideSystemUI(w);
     }
 
     public void turnScreenOn() {
         if (d != null) {
+            showSystemUI(d.getWindow());
             d.dismiss();
             d = null;
-        }
-        if (w != null) {
-            showSystemUI();
-            w = null;
         }
     }
 
     public void create() {
-        if (sm != null && proximity != null)
-            sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_NORMAL);
+        if (sm != null) {
+            Sensor proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+            if (proximity != null)
+                sm.registerListener(this, proximity, SensorManager.SENSOR_DELAY_NORMAL);
+            else
+                sm = null;
+        }
     }
 
     public void close() {
         turnScreenOn();
 
-        if (sm != null && proximity != null)
+        if (sm != null) {
             sm.unregisterListener(this);
+            sm = null;
+        }
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (sm == null) // seems like onSensorChanged can be called after unregisterListener for unhandled events
+            return;
         float distance = event.values[0];
         if (distance <= 0) { // always 0 or 5 on my device (cm)
             onNear();
@@ -168,13 +161,13 @@ public class ProximitySensor implements SensorEventListener {
     public void onFar() {
     }
 
-    void showSystemUI() {
+    void showSystemUI(Window w) {
         if (Build.VERSION.SDK_INT >= 11) {
             w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         }
     }
 
-    void hideSystemUI() {
+    void hideSystemUI(Window w) {
         // Set the IMMERSIVE flag.
         // Set the content to appear under the system bars so that the content
         // doesn't resize when the system bars hide and show.
