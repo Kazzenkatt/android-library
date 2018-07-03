@@ -23,13 +23,13 @@ import android.widget.PopupWindow;
 import java.lang.reflect.Method;
 
 public class ProximityShader implements SensorEventListener {
-    public static int PROXIMITY_DELAY = 1000;
+    public static int PROXIMITY_READY = 1000;
 
     public Dialog d;
     public Sensor proximity;
     public Context context;
     public Handler handler = new Handler();
-    public boolean delayed = true; // delayed proximity detection, user can not click on screen when proximity == 0 (broken proximity sensor?)
+    public boolean ready = false; // delayed proximity detection, user can not click on screen when proximity == 0 (broken proximity sensor?)
 
     public void clearFlags(WindowManager.LayoutParams attrs, int flags) {
         setFlags(attrs, 0, flags);
@@ -138,9 +138,9 @@ public class ProximityShader implements SensorEventListener {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                delayed = false;
+                ready = true;
             }
-        }, PROXIMITY_DELAY);
+        }, PROXIMITY_READY);
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         if (sm != null) {
             proximity = sm.getDefaultSensor(Sensor.TYPE_PROXIMITY);
@@ -165,7 +165,7 @@ public class ProximityShader implements SensorEventListener {
             return;
         float distance = event.values[0];
         if (distance <= 0) { // always 0 or 5 on my device (cm)
-            if (delayed) { // proximity called exactly after sharer created - broken proximity sensor
+            if (!ready) { // proximity called exactly after sharer created - broken proximity sensor
                 close();
                 return;
             }
