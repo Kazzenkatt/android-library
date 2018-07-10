@@ -2,7 +2,11 @@ package com.github.axet.androidlibrary.widgets;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
 
+import java.lang.reflect.Field;
 import java.text.Normalizer;
 import java.util.Locale;
 
@@ -30,10 +34,23 @@ import java.util.Locale;
 // -keep class com.github.axet.androidlibrary.widgets.SearchView {*;}
 //
 public class SearchView extends android.support.v7.widget.SearchView {
-    public OnCloseListener listener;
+    public static String TAG = SearchView.class.getSimpleName();
+
+    public OnCollapsedListener collapsedListener;
+    public OnCloseButtonListener closeButtonListener;
+    ImageView mCloseButton;
+    SearchAutoComplete mSearchSrcTextView;
+
+    public interface OnCollapsedListener {
+        void onCollapsed();
+    }
+
+    public interface OnCloseButtonListener {
+        void onClosed();
+    }
 
     public static boolean filter(String filter, String text) {
-        filter = Normalizer.normalize(filter, Normalizer.Form.NFC).toLowerCase(Locale.US); // й composed to two chars sometime.
+        filter = Normalizer.normalize(filter, Normalizer.Form.NFC).toLowerCase(Locale.US); // й composed as two chars sometimes.
         text = Normalizer.normalize(text, Normalizer.Form.NFC).toLowerCase(Locale.US);
         boolean all = true;
         for (String f : filter.split("\\s+"))
@@ -43,25 +60,53 @@ public class SearchView extends android.support.v7.widget.SearchView {
 
     public SearchView(Context context) {
         super(context);
+        create();
     }
 
     public SearchView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        create();
     }
 
     public SearchView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        create();
     }
 
-    @Override
-    public void setOnCloseListener(OnCloseListener listener) {
-        this.listener = listener;
+    public void create() {
+        mSearchSrcTextView = (SearchAutoComplete) findViewById(android.support.v7.appcompat.R.id.search_src_text);
+        mCloseButton = (ImageView) findViewById(android.support.v7.appcompat.R.id.search_close_btn);
+    }
+
+    public void setOnCollapsedListener(OnCollapsedListener listener) {
+        this.collapsedListener = listener;
+    }
+
+    public void setOnCloseButtonListener(OnCloseButtonListener listener) {
+        this.closeButtonListener = listener;
+        try {
+            Class k = getClass().getSuperclass();
+            Field f = k.getDeclaredField("mOnClickListener");
+            f.setAccessible(true);
+            final OnClickListener l = (OnClickListener) f.get(this);
+            mCloseButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    l.onClick(v);
+                    if (closeButtonListener != null)
+                        closeButtonListener.onClosed();
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Unable to handle on close", e);
+        }
     }
 
     @Override
     public void onActionViewCollapsed() {
         super.onActionViewCollapsed();
-        if (listener != null)
-            listener.onClose();
+        if (collapsedListener != null)
+            collapsedListener.onCollapsed();
     }
+
 }
