@@ -90,7 +90,14 @@ public class AboutPreferenceCompat extends DialogPreference {
         b.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface d, int which) {
-                openUrl(context, url);
+                try {
+                    openUrl(context, url);
+                } catch (Exception e) {
+                    AlertDialog.Builder b = new AlertDialog.Builder(context);
+                    b.setTitle("Error");
+                    b.setMessage(e.getMessage());
+                    b.show();
+                }
                 d.cancel();
             }
         });
