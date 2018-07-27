@@ -39,7 +39,7 @@ public class AlarmManager {
 
     public static PendingIntent createPendingIntent(Context context, Intent intent) {
         try {
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_ONE_SHOT;
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             ComponentName c = intent.getComponent();
             if (c == null) // broadcast
                 return PendingIntent.getBroadcast(context, 0, intent, flags);
