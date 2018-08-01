@@ -67,7 +67,7 @@ public class AlarmManager {
         PendingIntent pe = createPendingIntent(context, intent);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= 23) {
-            alarm.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pe);
+            alarm.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pe); // 15 min interval
         } else if (Build.VERSION.SDK_INT >= 19) {
             alarm.setExact(android.app.AlarmManager.RTC_WAKEUP, time, pe);
         } else {
@@ -77,10 +77,14 @@ public class AlarmManager {
     }
 
     public static PendingIntent setAlarm(Context context, long time, Intent intent, Intent showIntent) {
+        return setAlarm(context, time, intent, time, showIntent);
+    }
+
+    public static PendingIntent setAlarm(Context context, long time, Intent intent, long showTime, Intent showIntent) {
         PendingIntent pe = createPendingIntent(context, intent);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (Build.VERSION.SDK_INT >= 21) {
-            alarm.setAlarmClock(new android.app.AlarmManager.AlarmClockInfo(time, createPendingIntent(context, showIntent)), pe);
+            alarm.setAlarmClock(new android.app.AlarmManager.AlarmClockInfo(showTime, createPendingIntent(context, showIntent)), pe);
         } else if (Build.VERSION.SDK_INT >= 19) {
             alarm.setExact(android.app.AlarmManager.RTC_WAKEUP, time, pe);
         } else {
@@ -176,7 +180,11 @@ public class AlarmManager {
     }
 
     public Alarm setAlarm(long time, Intent intent, Intent showIntent) {
-        PendingIntent pe = setAlarm(context, time, intent, showIntent);
+        return setAlarm(time, intent, time, showIntent);
+    }
+
+    public Alarm setAlarm(long time, Intent intent, long showTime, Intent showIntent) {
+        PendingIntent pe = setAlarm(context, time, intent, showTime, showIntent);
         return checkPost(time, intent, pe);
     }
 
