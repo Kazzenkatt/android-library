@@ -80,6 +80,20 @@ public class Storage {
         }
     }
 
+    public static String formatNextFile(String name, int i, String ext) {
+        if (i == 0) {
+            if (ext == null || ext.isEmpty())
+                return name;
+            else
+                return String.format("%s.%s", name, ext);
+        } else {
+            if (ext == null || ext.isEmpty())
+                return String.format("%s (%d)", name, i);
+            else
+                return String.format("%s (%d).%s", name, i, ext);
+        }
+    }
+
     // https://stackoverflow.com/questions/28734455/java-converting-file-pattern-to-regular-expression-pattern
     public static String wildcard(String wildcard) {
         StringBuilder s = new StringBuilder(wildcard.length());
@@ -187,20 +201,18 @@ public class Storage {
     }
 
     public static File getNextFile(File parent, String name, String ext) {
+        return getNextFile(parent, name, 0, ext);
+    }
+
+    public static File getNextFile(File parent, String name, int i, String ext) {
         String fileName;
-        if (ext == null || ext.isEmpty())
-            fileName = name;
-        else
-            fileName = String.format("%s.%s", name, ext);
+        fileName = formatNextFile(name, i, ext);
 
         File file = new File(parent, fileName);
 
-        int i = 1;
+        i++;
         while (file.exists()) {
-            if (ext == null || ext.isEmpty())
-                fileName = String.format("%s (%d)", name, i);
-            else
-                fileName = String.format("%s (%d).%s", name, i, ext);
+            fileName = formatNextFile(name, i, ext);
             fileName = fileName.trim(); // if filename is empty
             file = new File(parent, fileName);
             i++;
@@ -621,22 +633,19 @@ public class Storage {
 
     // parent = DocumentsContract.buildTreeDocumentUri(t.getAuthority(), DocumentsContract.getTreeDocumentId(t));
     public Uri getNextFile(Uri parent, String name, String ext) {
+        return getNextFile(parent, name, 0, ext);
+    }
+
+    public Uri getNextFile(Uri parent, String name, int i, String ext) {
         String s = parent.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            String fileName;
-            if (ext == null || ext.isEmpty())
-                fileName = name;
-            else
-                fileName = String.format("%s.%s", name, ext);
+            String fileName = formatNextFile(name, i, ext);
 
             Uri uri = child(parent, fileName);
 
-            int i = 1;
+            i++;
             while (exists(uri)) {
-                if (ext == null || ext.isEmpty())
-                    fileName = String.format("%s (%d)", name, i);
-                else
-                    fileName = String.format("%s (%d).%s", name, i, ext);
+                fileName = formatNextFile(name, i, ext);
                 fileName = fileName.trim(); // if filename is empty
                 uri = child(parent, fileName);
                 i++;
@@ -645,7 +654,7 @@ public class Storage {
             return uri;
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             File f1 = getFile(parent);
-            return Uri.fromFile(getNextFile(f1, name, ext));
+            return Uri.fromFile(getNextFile(f1, name, i, ext));
         } else {
             throw new UnknownUri();
         }
