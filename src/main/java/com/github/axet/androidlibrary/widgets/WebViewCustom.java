@@ -90,7 +90,7 @@ public class WebViewCustom extends WebView {
     protected Thread thread;
     protected Handler handler = new Handler();
     protected HttpClient http;
-    protected String base; // since we can't call getUrl from Chrome IO Thread keep it here
+    protected String base; // since we can't call getUrl() from Chrome IO Thread keep it here
     protected DownloadListener listener;
     protected ArrayList<String> injects = new ArrayList<>();
     protected String html;
@@ -252,12 +252,6 @@ public class WebViewCustom extends WebView {
     }
 
     public void create() {
-        try {
-            inject = IOUtils.toString(getContext().getResources().openRawResource(R.raw.inject), Charset.defaultCharset());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
         getSettings().setSupportMultipleWindows(true);
         getSettings().setDomStorageEnabled(true);
         getSettings().setJavaScriptEnabled(true);
@@ -358,7 +352,16 @@ public class WebViewCustom extends WebView {
                 return WebViewCustom.this.shouldInterceptRequest(view, url);
             }
         });
+    }
 
+    public void setInterceptionEnable() {
+        if (inject != null)
+            return;
+        try {
+            inject = IOUtils.toString(getContext().getResources().openRawResource(R.raw.inject), Charset.defaultCharset());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         addJavascriptInterface(new Interceptor(), "interception");
     }
 
@@ -374,6 +377,7 @@ public class WebViewCustom extends WebView {
 
     public void setHttpClient(HttpClient http) {
         this.http = http;
+        setInterceptionEnable();
     }
 
     public void loadUrlJavaScript(String js) {
@@ -467,7 +471,7 @@ public class WebViewCustom extends WebView {
     @Override
     public void stopLoading() {
         super.stopLoading();
-        if (http.getRequest() != null) {
+        if (http != null && http.getRequest() != null) {
             if (thread != null) {
                 thread.interrupt();
             }
@@ -497,9 +501,8 @@ public class WebViewCustom extends WebView {
         String url = super.getOriginalUrl();
         if (url == null)
             return null;
-        if (url.startsWith(SCHEME_DATA)) { // bug, it suppose to be normal url
+        if (url.startsWith(SCHEME_DATA)) // bug, it suppose to be normal url
             return getUrl();
-        }
         return url;
     }
 
@@ -542,12 +545,12 @@ public class WebViewCustom extends WebView {
 
             base = url;
             load(url, hist, r);
-        } else
+        } else {
             super.postUrl(url, HttpClient.encode(postData).getBytes(Charset.defaultCharset()));
+        }
     }
 
-    // Network on main Thread
-    public void load(String url, final HttpClient.DownloadResponse r) {
+    public void load(String url, final HttpClient.DownloadResponse r) { // Network on main Thread
         load(url, url, r);
     }
 
@@ -589,9 +592,8 @@ public class WebViewCustom extends WebView {
     }
 
     public void loadHtmlWithBaseURL(String baseUrl, HttpClient.DownloadResponse html, String historyUrl) {
-        if (html.getError() != null) { // on errors do not call loadBase
+        if (html.getError() != null) // on errors do not call loadBase
             base = baseUrl;
-        }
         loadHtmlWithBaseURL(baseUrl, html.getHtml(), historyUrl);
     }
 
@@ -627,7 +629,8 @@ public class WebViewCustom extends WebView {
         if (head != null) {
             if (this.head != null)
                 head.prepend(this.head);
-            head.prepend(addInject(inject));
+            if (inject != null)
+                head.prepend(addInject(inject));
         }
         if (js != null) {
             Element body = doc.getElementsByTag(HTML_BODY).first();
@@ -759,8 +762,10 @@ public class WebViewCustom extends WebView {
                 WebViewCustom.this.loadUrl(url);
             }
         };
-        newWebView.setHttpClient(http);
-        newWebView.setDownloadListener(listener);
+        if (http != null)
+            newWebView.setHttpClient(http);
+        if (listener != null)
+            newWebView.setDownloadListener(listener);
         popups.add(newWebView);
         WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
         transport.setWebView(newWebView);
@@ -803,9 +808,8 @@ public class WebViewCustom extends WebView {
 
     public void onPageFinished(WebView view, String url) {
         Log.d(TAG, "onPageFinished");
-        if (js_post != null) {
+        if (js_post != null)
             loadUrlJavaScript(js_post);
-        }
     }
 
     public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
@@ -908,9 +912,8 @@ public class WebViewCustom extends WebView {
 
     public static boolean setCookies2Apache(String url, HttpClient apacheStore) {
         String cookies = CookieManager.getInstance().getCookie(url); // longer url better, domain only can return null
-        if (cookies == null || cookies.isEmpty()) {
+        if (cookies == null || cookies.isEmpty())
             return false;
-        }
 
         String[] cc = cookies.split(";");
 
@@ -973,9 +976,8 @@ public class WebViewCustom extends WebView {
             }
         }
 
-        for (HttpCookie c : webviewStore) { // add remaining cookies from WebView store to Apache store
+        for (HttpCookie c : webviewStore) // add remaining cookies from WebView store to Apache store
             apacheStore.addCookie(c);
-        }
 
         // since we have duplicates, (same cookies with different path. one set by setCookies2WebView
         // another set by WebView server call. drop them all.
@@ -1030,9 +1032,8 @@ public class WebViewCustom extends WebView {
     public void destroy() {
         super.destroy();
         destroyed = true;
-        for (WebViewCustom w : popups) {
+        for (WebViewCustom w : popups)
             w.destroy();
-        }
         popups.clear();
     }
 }
