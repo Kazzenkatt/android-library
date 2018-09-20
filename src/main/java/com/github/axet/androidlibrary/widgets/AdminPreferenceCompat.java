@@ -7,6 +7,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.support.v4.app.Fragment;
@@ -15,24 +17,33 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.services.DeviceAdmin;
 
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class AdminPreferenceCompat extends SwitchPreferenceCompat {
-    public static final String TITLE = "Enable device admin access";
-    public static final String ENABLED = "(Device Owner enabled)";
+    public static final String TAG = AdminPreferenceCompat.class.getSimpleName();
 
-    public static final String ERASE_ALL_DATA = "ERASE_ALL_DATA";
-    public static final String LOCK_SCREEN = "LOCK_SCREEN";
+    public static String TITLE = "Enable device admin access";
+    public static String ENABLED = "(Device Owner enabled)";
+    public static String MISSING = "MISSING";
+
+    public static final String ERASE_ALL_DATA = "wipe-data";
+    public static final String LOCK_SCREEN = "force-lock";
+    public static final String USES_POLICIES = "uses-policies";
 
     public Activity a;
     public Fragment f;
     public int code;
-    public String m;
+    public String m; // description
     public String[] mm; // messages
 
     @TargetApi(21)
@@ -72,30 +83,53 @@ public class AdminPreferenceCompat extends SwitchPreferenceCompat {
         this.mm = mm;
     }
 
-    public void setMessages(Object... oo) {
-        int i = 0;
-        Object m = oo[i];
-        if (m instanceof Integer) {
-            this.m = getContext().getString((int) m);
+    public void setMessages(String m, Object... oo) {
+        this.m = m;
+
+        ArrayList<String> items = new ArrayList<>();
+        try {
+            ComponentName c = new ComponentName(getContext(), DeviceAdmin.class);
+            ActivityInfo ai = getContext().getPackageManager().getReceiverInfo(c, PackageManager.GET_META_DATA);
+            int res = (int) ai.metaData.get(DeviceAdmin.DEVICE_ADMIN);
+            XmlPullParser xpp = getContext().getResources().getXml(res);
+            boolean usesPolicies = false;
+            while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
+                if (xpp.getEventType() == XmlPullParser.START_TAG) {
+                    if (usesPolicies)
+                        items.add(xpp.getName());
+                    if (xpp.getName().equals(USES_POLICIES))
+                        usesPolicies = true;
+                }
+                if (xpp.getEventType() == XmlPullParser.END_TAG) {
+                    if (xpp.getName().equals(USES_POLICIES))
+                        usesPolicies = false;
+                }
+                xpp.next();
+            }
+        } catch (PackageManager.NameNotFoundException | IOException | XmlPullParserException e) {
+            Log.d(TAG, "Unable to read meta", e);
         }
-        if (m instanceof String) {
-            this.m = (String) m;
-        }
-        i++;
+
         ArrayList<String> mm = new ArrayList<>();
-        for (; i < oo.length; i += 2) {
+        for (int i = 0; i < oo.length; i += 2) {
             String k = (String) oo[i];
             Object v = oo[i + 1];
-            if (v instanceof Integer) {
-                mm.add(k);
+            mm.add(k);
+            if (v instanceof Integer)
                 mm.add(getContext().getString((int) v));
-            }
-            if (v instanceof String) {
-                mm.add(k);
+            if (v instanceof String)
                 mm.add((String) v);
-            }
+            items.remove(k);
+        }
+        for (String k : items) {
+            mm.add(k);
+            mm.add(MISSING);
         }
         this.mm = mm.toArray(new String[]{});
+    }
+
+    public void setMessages(int m, Object... oo) {
+        setMessages(getContext().getString(m), oo);
     }
 
     public void onResume() {
