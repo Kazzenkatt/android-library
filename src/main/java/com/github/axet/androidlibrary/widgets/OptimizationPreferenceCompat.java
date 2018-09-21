@@ -77,6 +77,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     public static final String PONG = OptimizationPreferenceCompat.class.getCanonicalName() + ".PONG";
     public static final String SERVICE_CHECK = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE_CHECK";
     public static final String SERVICE_RESTART = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE_RESTART";
+    public static final String SERVICE_UPDATE = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE_UPDATE";
     public static final String ICON_UPDATE = OptimizationPreferenceCompat.class.getCanonicalName() + ".ICON_UPDATE";
 
     // all service related code, for old phones, where AlarmManager will be used to keep app running
@@ -571,6 +572,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             this.service = service;
             disableKill(context, service);
             IntentFilter ff = new IntentFilter();
+            ff.addAction(SERVICE_UPDATE);
             ff.addAction(service.getCanonicalName() + PONG);
             context.registerReceiver(this, ff);
             register();
@@ -616,9 +618,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     return;
                 }
             } else {
-                final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
-                boolean b = shared.getBoolean(key, false);
-                if (!b) {
+                State23 state = getState23(context, key);
+                if (!state.service) {
                     unregister();
                     return;
                 }
@@ -638,6 +639,9 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             String a = intent.getAction();
             if (a.equals(service.getCanonicalName() + PONG)) {
                 handler.removeCallbacks(check);
+            }
+            if(a.equals(SERVICE_UPDATE)) {
+                register();
             }
         }
     }
@@ -742,21 +746,21 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                         final Runnable enable = new Runnable() {
                             @Override
                             public void run() {
-                                enable(getContext(), System.currentTimeMillis(), service);
                                 State23 state = getState23(getContext(), getKey());
                                 state.service = true;
                                 saveState(getContext(), state, getKey());
                                 setChecked(true);
+                                getContext().sendBroadcast(new Intent(SERVICE_UPDATE));
                             }
                         };
                         Runnable disable = new Runnable() {
                             @Override
                             public void run() {
-                                disable(getContext(), service);
                                 State23 state = getState23(getContext(), getKey());
                                 state.service = false;
                                 saveState(getContext(), state, getKey());
                                 setChecked(false);
+                                getContext().sendBroadcast(new Intent(SERVICE_UPDATE));
                             }
                         };
                         if (ICON) {
@@ -818,13 +822,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             setVisible(false);
         } else { // 5) getKey() icon boolean stored
             boolean b = isIgnoringBatteryOptimizations(getContext());
-            if (service != null) {
-                if (b) {
-                    enable(getContext(), System.currentTimeMillis(), service);
-                } else {
-                    disable(getContext(), service);
-                }
-            }
             if (ICON) {
                 State state = getState(getContext(), getKey());
                 b |= state.icon;
