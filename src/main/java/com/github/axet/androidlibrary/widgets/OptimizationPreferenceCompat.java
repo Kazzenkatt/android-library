@@ -1,6 +1,7 @@
 package com.github.axet.androidlibrary.widgets;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -12,21 +13,39 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.annotation.Nullable;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.internal.widget.PreferenceImageView;
 import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceViewHolder;
 import android.support.v7.preference.SwitchPreferenceCompat;
+import android.support.v7.view.WindowCallbackWrapper;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -56,12 +75,14 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     public static int REFRESH = 15 * AlarmManager.MIN1;
     public static int CHECK_DELAY = 5 * AlarmManager.MIN1;
+    public static boolean ICON = false; // default no persistent icon option
 
     // checkbox for old phones, which fires 15 minutes event
     public static final String PING = OptimizationPreferenceCompat.class.getCanonicalName() + ".PING";
     public static final String PONG = OptimizationPreferenceCompat.class.getCanonicalName() + ".PONG";
     public static final String SERVICE_CHECK = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE_CHECK";
     public static final String SERVICE_RESTART = OptimizationPreferenceCompat.class.getCanonicalName() + ".SERVICE_RESTART";
+    public static final String ICON_UPDATE = OptimizationPreferenceCompat.class.getCanonicalName() + ".ICON_UPDATE";
 
     // all service related code, for old phones, where AlarmManager will be used to keep app running
     protected Class<? extends Service> service;
@@ -171,37 +192,131 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
-    public static void build(final AlertDialog.Builder builder, String msg, DialogInterface.OnClickListener click) {
-        builder.setTitle(R.string.optimization_dialog);
-        builder.setMessage(msg);
-        builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+    @SuppressLint("RestrictedApi")
+    public static PreferenceViewHolder inflate(Preference p) {
+        LayoutInflater inflater = LayoutInflater.from(p.getContext());
+        View pref = inflater.inflate(p.getLayoutResource(), null);
+        ViewGroup widgetFrame = (ViewGroup) pref.findViewById(android.R.id.widget_frame);
+        if (widgetFrame != null) {
+            if (p.getWidgetLayoutResource() != 0) {
+                inflater.inflate(p.getWidgetLayoutResource(), widgetFrame);
+            } else {
+                widgetFrame.setVisibility(View.GONE);
             }
-        });
-        DialogInterface.OnClickListener opt = new DialogInterface.OnClickListener() {
+        }
+        PreferenceViewHolder h = new PreferenceViewHolder(pref);
+        p.onBindViewHolder(h);
+        return h;
+    }
+
+    public static void build(final WarningBuilder builder, String msg, DialogInterface.OnClickListener click) {
+        builder.builder.setTitle(R.string.optimization_dialog);
+        final DialogInterface.OnClickListener opt = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 showOptimization(builder.getContext());
             }
         };
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (ICON) {
             if (click != null)
-                builder.setNeutralButton(R.string.menu_settings, click);
-            builder.setPositiveButton(android.R.string.yes, opt);
+                builder.builder.setNeutralButton(R.string.menu_settings, click);
+            LinearLayout ll = new LinearLayout(builder.getContext());
+            ll.setOrientation(LinearLayout.VERTICAL);
+            builder.icon = new SwitchPreferenceCompat(builder.getContext());
+            builder.icon.setTitle("Persistent Icon");
+            builder.icon.setSummary("Requires on some devices when application constantly get removed");
+            builder.iconHolder = inflate(builder.icon);
+            builder.icon.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    if (Build.VERSION.SDK_INT < 23) {
+                        State23 state = getState23(builder.getContext(), builder.key);
+                        state.icon = (boolean) newValue;
+                        saveState(builder.getContext(), state, builder.key);
+                    } else {
+                        State state = getState(builder.getContext(), builder.key);
+                        state.icon = (boolean) newValue;
+                        saveState(builder.getContext(), state, builder.key);
+                    }
+                    builder.updateIcon();
+                    Intent intent = new Intent(ICON_UPDATE);
+                    builder.getContext().sendBroadcast(intent);
+                    return false;
+                }
+            });
+            builder.updateIcon();
+            ll.addView(builder.iconHolder.itemView);
+            if (Build.VERSION.SDK_INT >= 23) {
+                builder.optimization = new SwitchPreferenceCompat(builder.getContext());
+                builder.optimization.setTitle("Battery Optimization");
+                builder.optimization.setSummary("Open system battery optimization dialog");
+                builder.optimization.setIcon(R.drawable.ic_open_in_new_black_24dp);
+                builder.optimizationHolder = inflate(builder.optimization);
+                builder.optimization.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        opt.onClick(null, 0);
+                        return false;
+                    }
+                });
+                builder.updateOptimization();
+                ll.addView(builder.optimizationHolder.itemView);
+            } else {
+                final SwitchPreferenceCompat alive = new SwitchPreferenceCompat(builder.getContext());
+                alive.setTitle("Keep Alive Service");
+                alive.setSummary("Background service keep application running");
+                State23 state = getState23(builder.context, builder.key);
+                alive.setChecked(state.service);
+                final PreferenceViewHolder h = inflate(alive);
+                alive.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+                    @Override
+                    public boolean onPreferenceChange(Preference preference, Object newValue) {
+                        boolean b = (boolean) newValue;
+                        if (b) {
+                            builder.enable.run();
+                            alive.setChecked(true);
+                            alive.onBindViewHolder(h);
+                        } else {
+                            builder.disable.run();
+                            alive.setChecked(false);
+                            alive.onBindViewHolder(h);
+                        }
+                        return false;
+                    }
+                });
+                ll.addView(h.itemView);
+            }
+            builder.builder.setView(ll);
+            builder.builder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
         } else {
-            builder.setPositiveButton(android.R.string.yes, click);
+            builder.builder.setMessage(msg);
+            builder.builder.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (click != null)
+                    builder.builder.setNeutralButton(R.string.menu_settings, click);
+                builder.builder.setPositiveButton(android.R.string.yes, opt);
+            } else {
+                builder.builder.setPositiveButton(android.R.string.yes, click);
+            }
         }
     }
 
-    public static AlertDialog.Builder buildKilledWarning(final Context context, boolean showCommons) {
-        AlertDialog.Builder b = buildWarning(context, showCommons);
-        b.setMessage(R.string.optimization_killed);
+    public static WarningBuilder buildKilledWarning(final Context context, boolean showCommons, String key) {
+        WarningBuilder b = buildWarning(context, showCommons, key);
+        b.builder.setMessage(R.string.optimization_killed);
         return b;
     }
 
-    public static AlertDialog.Builder buildWarning(final Context context, boolean showCommons) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    public static WarningBuilder buildWarning(final Context context, boolean showCommons, String key) {
+        WarningBuilder builder = new WarningBuilder(context, key);
         if (isHuawei(context)) {
             build(builder, "You have to change the power plan to “normal” under settings → power saving to let application be exact on time.", new DialogInterface.OnClickListener() {
                 @Override
@@ -236,7 +351,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 }
             }
         }
-        if (showCommons) {
+        if (showCommons || ICON) {
             build(builder, context.getString(R.string.optimization_message), null);
             return builder;
         } else {
@@ -244,26 +359,25 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
-    public static void showWarning(Context context) {
-        AlertDialog.Builder builder = buildWarning(context, true);
+    public static void showWarning(Context context, String key) {
+        WarningBuilder builder = buildWarning(context, true, key);
         showWarning(context, builder);
     }
 
-    public static void showWarning(Context context, AlertDialog.Builder builder) {
+    public static void showWarning(Context context, WarningBuilder builder) {
         if (builder != null)
             showWarning(context, builder.create());
         else
             showWarning(context, (AlertDialog) null);
     }
 
-    public static void showWarning(Context context, AlertDialog d) {
+    public static void showWarning(Context context, final AlertDialog d) {
         if (d != null) {
             d.show();
             return;
         }
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23)
             showOptimization(context);
-        }
     }
 
     public static void setKillCheck(Context context, long time, String key) {
@@ -301,6 +415,110 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         if (set < boot)
             return false; // we did reboot device between set alarm and boot time, skip warning
         return true;
+    }
+
+    public static State23 getState23(Context context, String key) {
+        final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        try {
+            String json = shared.getString(key, "");
+            return new State23(json);
+        } catch (ClassCastException | JSONException e) {
+            boolean b = shared.getBoolean(key, false);
+            return new State23(b);
+        }
+    }
+
+    public static State getState(Context context, String key) {
+        final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        try {
+            String json = shared.getString(key, "");
+            return new State(json);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void saveState(Context context, State state, String key) {
+        final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor edit = shared.edit();
+        try {
+            edit.putString(key, state.save().toString());
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        edit.commit();
+    }
+
+    public static class WarningBuilder {
+        public String key;
+        public Context context;
+        public AlertDialog.Builder builder;
+        public AlertDialog dialog;
+        public SwitchPreferenceCompat icon;
+        public PreferenceViewHolder iconHolder;
+        public SwitchPreferenceCompat optimization;
+        public PreferenceViewHolder optimizationHolder;
+        public Runnable enable;
+        public Runnable disable;
+
+        public WarningBuilder(Context context, String key) {
+            this.key = key;
+            this.context = context;
+            this.builder = new AlertDialog.Builder(context);
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public AlertDialog create() {
+            dialog = builder.create();
+            dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(DialogInterface dialog) {
+                    WarningBuilder.this.onShow();
+                }
+            });
+            return dialog;
+        }
+
+        public void updateIcon() {
+            State state = getState(builder.getContext(), key);
+            icon.setChecked(state.icon);
+            icon.onBindViewHolder(iconHolder);
+        }
+
+        public void updateOptimization() {
+            boolean b = isIgnoringBatteryOptimizations(builder.getContext());
+            optimization.setChecked(b);
+            optimization.onBindViewHolder(optimizationHolder);
+        }
+
+        public void show() {
+            if (dialog == null)
+                create();
+            dialog.show();
+        }
+
+        public void onShow() {
+            Window w = dialog.getWindow();
+            w.setCallback(new WindowCallbackWrapper(w.getCallback()) {
+                @SuppressLint("RestrictedApi")
+                @Override
+                public void onWindowFocusChanged(boolean hasFocus) {
+                    super.onWindowFocusChanged(hasFocus);
+                    WarningBuilder.this.onWindowFocusChanged(hasFocus);
+                }
+            });
+        }
+
+        public void onWindowFocusChanged(boolean hasFocus) {
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (ICON) {
+                    updateOptimization();
+                }
+            }
+        }
     }
 
     public static class ApplicationReceiver extends BroadcastReceiver {
@@ -421,29 +639,75 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
+    public static class State23 extends State { // API23<
+        public boolean service;
+
+        public State23() {
+        }
+
+        public State23(boolean b) {
+            service = b;
+        }
+
+        public State23(String json) throws JSONException {
+            load(json);
+        }
+
+        public JSONObject save() throws JSONException {
+            JSONObject j = super.save();
+            j.put("service", service);
+            return j;
+        }
+
+        public void load(JSONObject json) throws JSONException {
+            super.load(json);
+            service = json.optBoolean("service", false);
+        }
+    }
+
+    public static class State { // state API23+
+        public boolean icon;
+
+        public State() {
+        }
+
+        public State(String json) throws JSONException {
+            load(json);
+        }
+
+        public JSONObject save() throws JSONException {
+            JSONObject j = new JSONObject();
+            j.put("icon", icon);
+            return j;
+        }
+
+        public void load(JSONObject json) throws JSONException {
+            icon = json.optBoolean("icon", false);
+        }
+
+        public void load(String json) throws JSONException {
+            if (json == null || json.isEmpty())
+                return;
+            load(new JSONObject(json));
+        }
+    }
+
     @TargetApi(21)
     public OptimizationPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        create();
     }
 
     @TargetApi(21)
     public OptimizationPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        create();
     }
 
     public OptimizationPreferenceCompat(Context context, AttributeSet attrs) {
         super(context, attrs);
-        create();
     }
 
     public OptimizationPreferenceCompat(Context context) {
         super(context);
-        create();
-    }
-
-    public void create() {
     }
 
     public void enable(Class<? extends Service> service) {
@@ -451,13 +715,13 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     public void onResume() {
-        if (Build.VERSION.SDK_INT < 23) {
+        if (Build.VERSION.SDK_INT < 23) { // 1) devices below 23
             for (Intent intent : ALL) {
-                if (isCallable(getContext(), intent)) {
+                if (isCallable(getContext(), intent)) { // 2) devices in special supported list below 23
                     setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                         @Override
                         public boolean onPreferenceChange(Preference preference, Object newValue) {
-                            showWarning(getContext()); // show commons
+                            showWarning(getContext(), getKey()); // show commons
                             return false;
                         }
                     });
@@ -465,34 +729,81 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     return;
                 }
             }
-            if (service != null) {
-                final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-                boolean b = shared.getBoolean(getKey(), false);
-                setChecked(b);
+            if (service != null) { // 3) apps with service/ping mechanics below 23 getKey() used to store service and icon booleans
+                State23 state = getState23(getContext(), getKey());
+                setChecked(state.service);
+                setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+                    @Override
+                    public boolean onPreferenceChange(Preference preference, Object newValue) {
+                        boolean b = (boolean) newValue;
+                        final Runnable enable = new Runnable() {
+                            @Override
+                            public void run() {
+                                enable(getContext(), System.currentTimeMillis(), service);
+                                State23 state = getState23(getContext(), getKey());
+                                state.service = true;
+                                saveState(getContext(), state, getKey());
+                                setChecked(true);
+                            }
+                        };
+                        Runnable disable = new Runnable() {
+                            @Override
+                            public void run() {
+                                disable(getContext(), service);
+                                State23 state = getState23(getContext(), getKey());
+                                state.service = false;
+                                saveState(getContext(), state, getKey());
+                                setChecked(false);
+                            }
+                        };
+                        if (ICON) {
+                            WarningBuilder builder = buildWarning(getContext(), true, getKey());
+                            builder.enable = enable;
+                            builder.disable = disable;
+                            showWarning(getContext(), builder); // show commons
+                            return false;
+                        }
+                        if (b) {
+                            WarningBuilder builder = buildWarning(getContext(), true, getKey());
+                            builder.builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    enable.run();
+                                }
+                            });
+                            showWarning(getContext(), builder); // show commons
+                        } else {
+                            disable.run();
+                        }
+                        return false;
+                    }
+                });
+                setVisible(true);
+                return;
+            }
+            if (ICON) { // 4) apps with persistent icon and no service settings below 23
+                State state = getState(getContext(), getKey());
+                setChecked(state.icon);
                 setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
                     @Override
                     public boolean onPreferenceChange(Preference preference, Object newValue) {
                         boolean b = (boolean) newValue;
                         if (b) {
-                            AlertDialog.Builder builder = buildWarning(getContext(), true);
-                            builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            WarningBuilder builder = buildWarning(getContext(), true, getKey());
+                            builder.builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    enable(getContext(), System.currentTimeMillis(), service);
-                                    final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-                                    SharedPreferences.Editor edit = shared.edit();
-                                    edit.putBoolean(getKey(), true);
-                                    edit.commit();
+                                    State state = getState(getContext(), getKey());
+                                    state.icon = true;
+                                    saveState(getContext(), state, getKey());
                                     setChecked(true);
                                 }
                             });
                             showWarning(getContext(), builder); // show commons
                         } else {
-                            disable(getContext(), service);
-                            final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(getContext());
-                            SharedPreferences.Editor edit = shared.edit();
-                            edit.putBoolean(getKey(), false);
-                            edit.commit();
+                            State state = getState(getContext(), getKey());
+                            state.icon = false;
+                            saveState(getContext(), state, getKey());
                             setChecked(false);
                         }
                         return false;
@@ -502,7 +813,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 return;
             }
             setVisible(false);
-        } else {
+        } else { // 5) getKey() icon boolean stored
             boolean b = isIgnoringBatteryOptimizations(getContext());
             if (service != null) {
                 if (b) {
@@ -511,12 +822,16 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                     disable(getContext(), service);
                 }
             }
+            if (ICON) {
+                State state = getState(getContext(), getKey());
+                b |= state.icon;
+            }
             setChecked(b);
             setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
                 @TargetApi(23)
                 public boolean onPreferenceChange(Preference preference, Object o) {
-                    AlertDialog.Builder builder = buildWarning(getContext(), !isIgnoringBatteryOptimizations(getContext()));  // hide commons
+                    WarningBuilder builder = buildWarning(getContext(), !isIgnoringBatteryOptimizations(getContext()), getKey());  // hide commons
                     showWarning(getContext(), builder);
                     return false;
                 }

@@ -38,6 +38,7 @@ public class AdminPreferenceCompat extends SwitchPreferenceCompat {
 
     public static final String ERASE_ALL_DATA = "wipe-data";
     public static final String LOCK_SCREEN = "force-lock";
+
     public static final String USES_POLICIES = "uses-policies";
 
     public Activity a;
@@ -92,17 +93,20 @@ public class AdminPreferenceCompat extends SwitchPreferenceCompat {
             ActivityInfo ai = getContext().getPackageManager().getReceiverInfo(c, PackageManager.GET_META_DATA);
             int res = (int) ai.metaData.get(DeviceAdmin.DEVICE_ADMIN);
             XmlPullParser xpp = getContext().getResources().getXml(res);
-            boolean usesPolicies = false;
+            int level = 0;
+            int usesPolicies = 0;
             while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
                 if (xpp.getEventType() == XmlPullParser.START_TAG) {
-                    if (usesPolicies)
+                    if (usesPolicies == 1 && level == 2)
                         items.add(xpp.getName());
                     if (xpp.getName().equals(USES_POLICIES))
-                        usesPolicies = true;
+                        usesPolicies++;
+                    level++;
                 }
                 if (xpp.getEventType() == XmlPullParser.END_TAG) {
                     if (xpp.getName().equals(USES_POLICIES))
-                        usesPolicies = false;
+                        usesPolicies--;
+                    level--;
                 }
                 xpp.next();
             }
