@@ -32,13 +32,15 @@ public class RemoteNotificationCompat extends NotificationCompat {
 
         public Builder setChannel(NotificationChannelCompat channel) {
             this.channel = channel;
-            channel.applyDefaults(this);
+            channel.apply(this);
             return this;
         }
 
         @SuppressLint("RestrictedApi")
         public Builder setTheme(int id) {
             theme = new ContextThemeWrapper(mContext, id);
+            if (Build.VERSION.SDK_INT < 21)
+                RemoteViewsCompat.applyTheme(theme, view);
             return this;
         }
 
@@ -79,18 +81,6 @@ public class RemoteNotificationCompat extends NotificationCompat {
         public Builder setIcon(int id) {
             view.setImageViewResource(R.id.icon, id);
             return this;
-        }
-
-        @Override
-        public Notification build() {
-            Notification n = super.build();
-            if (Build.VERSION.SDK_INT < 21) {
-                if (theme != null)
-                    RemoteViewsCompat.applyTheme(theme, view);
-            }
-            if (channel != null)
-                channel.apply(n);
-            return n;
         }
     }
 }
