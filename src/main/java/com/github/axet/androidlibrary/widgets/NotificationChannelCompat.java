@@ -140,6 +140,19 @@ public class NotificationChannelCompat {
         return false;
     }
 
+    public void enableVibration(boolean b) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            try {
+                Method m = NotificationChannelClass.getDeclaredMethod("enableVibration", boolean.class);
+                m.invoke(channel, b);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public long[] getVibrationPattern() {
         if (Build.VERSION.SDK_INT >= 26) {
             try {
@@ -166,6 +179,19 @@ public class NotificationChannelCompat {
             }
         }
         return false;
+    }
+
+    public void enableLights(boolean b) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            try {
+                Method m = NotificationChannelClass.getDeclaredMethod("enableLights", boolean.class);
+                m.invoke(channel, b);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public int getLightColor() {
@@ -210,24 +236,37 @@ public class NotificationChannelCompat {
         return null;
     }
 
-    public void apply(Notification n) {
-        NotificationChannelCompat.setChannelId(n, channelId);
+    public void setGroup(String groupId) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            try {
+                Method m = NotificationChannelClass.getDeclaredMethod("setGroup", String.class);
+                m.invoke(channel, groupId);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
-    public void applyDefaults(NotificationCompat.Builder builder) {
+    public void apply(NotificationCompat.Builder builder) {
         int defaults = 0;
+        Uri sound = null;
         switch (getImportance()) {
             case NotificationManagerCompat.IMPORTANCE_MAX:
                 builder.setPriority(NotificationCompat.PRIORITY_MAX);
                 defaults |= NotificationCompat.DEFAULT_ALL;
+                sound = getSound();
                 break;
             case NotificationManagerCompat.IMPORTANCE_HIGH:
                 builder.setPriority(NotificationCompat.PRIORITY_HIGH);
                 defaults |= NotificationCompat.DEFAULT_ALL;
+                sound = getSound();
                 break;
             case NotificationManagerCompat.IMPORTANCE_DEFAULT:
                 builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
                 defaults |= NotificationCompat.DEFAULT_SOUND;
+                sound = getSound();
                 break;
             case NotificationManagerCompat.IMPORTANCE_LOW:
                 builder.setPriority(NotificationCompat.PRIORITY_LOW);
@@ -236,9 +275,8 @@ public class NotificationChannelCompat {
                 builder.setPriority(NotificationCompat.PRIORITY_MIN);
                 break;
         }
-        Uri uri = getSound();
-        if (uri != null)
-            builder.setSound(uri);
+        if (sound != null)
+            builder.setSound(sound);
         if (shouldVibrate()) {
             long[] p = getVibrationPattern();
             if (p == null)
@@ -249,8 +287,11 @@ public class NotificationChannelCompat {
         if (shouldShowLights())
             builder.setLights(getLightColor(), 1000, 500);
         builder.setDefaults(defaults);
+
         String group = getGroup();
         if (group != null)
             builder.setGroup(group);
+
+        NotificationChannelCompat.setChannelId(builder.mNotification, channelId);
     }
 }
