@@ -1,15 +1,22 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.os.Build;
+import android.support.v7.view.ContextThemeWrapper;
+import android.support.v7.widget.AppCompatImageButton;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+
+import com.github.axet.androidlibrary.R;
 
 public class RemoteViewsCompat {
     public static final String TAG = RemoteViewsCompat.class.getSimpleName();
@@ -73,12 +80,15 @@ public class RemoteViewsCompat {
         return false;
     }
 
-    public static void applyTheme(Context context, final RemoteViews view) {
+    @SuppressLint("RestrictedApi")
+    public static void applyTheme(final Context context, final RemoteViews view) {
         LayoutInflater inflater = LayoutInflater.from(context);
         inflater = inflater.cloneInContext(context);
         inflater.setFactory(new LayoutInflater.Factory() {
             @Override
-            public View onCreateView(String name, Context context, AttributeSet attrs) {
+            public View onCreateView(String name, Context context2, AttributeSet attrs) {
+                if (Build.VERSION.SDK_INT >= 21 && context != context2) // API21+ and 'android:theme' applied = ignore
+                    return null;
                 int[] attrsArray = new int[]{
                         android.R.attr.id, // 0
                         android.R.attr.background, // 1
@@ -87,7 +97,7 @@ public class RemoteViewsCompat {
                         android.R.attr.textAppearance, // 4
                         android.R.attr.theme, // 5
                 };
-                Resources.Theme theme = context.getTheme();
+                Resources.Theme theme = context2.getTheme();
                 TypedArray ta = theme.obtainStyledAttributes(attrs, attrsArray, 0, 0);
                 TypedValue out = new TypedValue();
                 if (ta.getValue(0, out)) {
@@ -95,16 +105,38 @@ public class RemoteViewsCompat {
                     if (ta.getValue(1, out))
                         setBackgroundColor(view, id, out.data);
                     if (name.equals("TextView")) {
-                        TextView t = new TextView(context, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
+                        TextView t = new TextView(context2, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
                         view.setTextColor(id, t.getCurrentTextColor());
                     }
                     if (name.equals("Button")) {
-                        Button t = new Button(context, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
+                        Button t = new Button(context2, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
                         view.setTextColor(id, t.getCurrentTextColor());
                     }
-                    if (name.equals("ImageButton") || name.equals("ImageView")) {
+                    if (name.equals("ImageView")) {
                         if (ta.getValue(2, out))
                             setImageViewTint(view, id, out.data);
+                    }
+                    if (name.equals("ImageButton")) {
+                        if (ta.getValue(2, out))
+                            setImageViewTint(view, id, out.data);
+                        if (!ta.getValue(1, out)) { // no background set
+                            if (theme.resolveAttribute(android.R.attr.imageButtonStyle, out, true)) {
+                                switch (out.resourceId) {
+                                    case android.R.style.Widget_DeviceDefault_ImageButton:
+                                    case android.R.style.Widget_Material_ImageButton:
+                                        out.resourceId = android.R.style.Widget_Holo_ImageButton; // Holo has individual resource file per theme
+                                        break;
+                                    case android.R.style.Widget_DeviceDefault_Light_ImageButton:
+                                    case android.R.style.Widget_Material_Light_ImageButton:
+                                        out.resourceId = android.R.style.Widget_Holo_Light_ImageButton; // Holo has individual resource file per theme
+                                        break;
+                                }
+                                ContextThemeWrapper w = new ContextThemeWrapper(context2, out.resourceId);
+                                Resources.Theme t = w.getTheme();
+                                if (t.resolveAttribute(android.R.attr.background, out, true))
+                                    setBackgroundResource(view, id, out.resourceId);
+                            }
+                        }
                     }
                 }
                 ta.recycle();
