@@ -22,8 +22,8 @@ public class RemoteViewsCompat {
     public static final String TAG = RemoteViewsCompat.class.getSimpleName();
 
     public static class ThemeFactory implements LayoutInflater.Factory {
-        Context context;
-        RemoteViews view;
+        public Context context;
+        public RemoteViews view;
 
         public ThemeFactory(Context context, RemoteViews view) {
             this.context = context;
@@ -121,12 +121,6 @@ public class RemoteViewsCompat {
                 case android.R.style.Widget_Material_Light_ImageButton:
                     return R.drawable.btn_default_material_light;
                 case 0:
-                    if (theme.resolveAttribute(R.attr.imageButtonStyle, out, true)) {
-                        ContextThemeWrapper w = new ContextThemeWrapper(context, out.resourceId);
-                        Resources.Theme t = w.getTheme();
-                        if (t.resolveAttribute(android.R.attr.background, out, true))
-                            return out.resourceId;
-                    }
                     break;
                 default:
                     ContextThemeWrapper w = new ContextThemeWrapper(context, style);
