@@ -91,6 +91,21 @@ public class RemoteNotificationCompat extends NotificationCompat {
             return this;
         }
 
+        public Builder setViewVisibility(int id, int v) {
+            view.setViewVisibility(id, v);
+            return this;
+        }
+
+        public Builder setImageViewResource(int id, int res) {
+            view.setImageViewResource(id, res);
+            return this;
+        }
+
+        public Builder setOnClickPendingIntent(int id, PendingIntent pe) {
+            view.setOnClickPendingIntent(id, pe);
+            return this;
+        }
+
         @Override
         public Notification build() {
             Notification n = super.build();
@@ -100,9 +115,27 @@ public class RemoteNotificationCompat extends NotificationCompat {
     }
 
     public static class Compact extends Builder {
+        public RemoteViews big;
+
         public Compact(Context context) {
             super(context, R.layout.remoteview_compact);
             view.setTextViewText(R.id.app_name_text, getApplicationName(context));
+        }
+
+        public Compact(Context context, int layoutId) {
+            super(context, Build.VERSION.SDK_INT >= 26 ? R.layout.remoteview_compact : layoutId);
+            view.setTextViewText(R.id.app_name_text, getApplicationName(context));
+            if (Build.VERSION.SDK_INT >= 26) {
+                big = new RemoteViews(mContext.getPackageName(), layoutId);
+                setCustomBigContentView(big);
+            }
+        }
+
+        @Override
+        public Builder setTitle(String title, String ticker) {
+            if (big != null)
+                big.setTextViewText(R.id.title, title);
+            return super.setTitle(title, ticker);
         }
 
         @Override
@@ -110,7 +143,56 @@ public class RemoteNotificationCompat extends NotificationCompat {
             view.setViewVisibility(R.id.header_text_divider, View.VISIBLE);
             view.setTextViewText(R.id.header_text, text);
             view.setViewVisibility(R.id.header_text, View.VISIBLE);
+            if (big != null)
+                big.setTextViewText(R.id.text, text);
             return super.setText(text);
+        }
+
+        @Override
+        public Builder setTheme(int id) {
+            super.setTheme(id);
+            if (big != null)
+                RemoteViewsCompat.applyTheme(theme, big);
+            return this;
+        }
+
+        @Override
+        public Builder setImageViewTint(int id, int attr) {
+            if (big != null)
+                RemoteViewsCompat.setImageViewTint(big, id, ThemeUtils.getThemeColor(theme, attr));
+            return super.setImageViewTint(id, attr);
+        }
+
+        @Override
+        public Builder setMainIntent(PendingIntent main) {
+            if (big != null)
+                big.setOnClickPendingIntent(R.id.status_bar_latest_event_content, main);
+            return super.setMainIntent(main);
+        }
+
+        @Override
+        public Builder setIcon(int id) {
+            if (big != null)
+                big.setImageViewResource(R.id.icon, id);
+            return super.setIcon(id);
+        }
+
+        public Builder setViewVisibility(int id, int v) {
+            if (big != null)
+                big.setViewVisibility(id, v);
+            return super.setViewVisibility(id, v);
+        }
+
+        public Builder setImageViewResource(int id, int res) {
+            if (big != null)
+                big.setImageViewResource(id, res);
+            return super.setImageViewResource(id, res);
+        }
+
+        public Builder setOnClickPendingIntent(int id, PendingIntent pe) {
+            if (big != null)
+                big.setOnClickPendingIntent(id, pe);
+            return super.setOnClickPendingIntent(id, pe);
         }
 
         @Override
