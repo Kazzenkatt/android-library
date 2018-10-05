@@ -120,19 +120,35 @@ public class RemoteViewsCompat {
                         if (ta.getValue(2, out))
                             setImageViewTint(view, id, out.data);
                         if (!ta.getValue(1, out)) { // no background set
-                            if (theme.resolveAttribute(android.R.attr.imageButtonStyle, out, true)) {
-                                switch (out.resourceId) {
-                                    case android.R.style.Widget_Material_ImageButton:
-                                        setBackgroundResource(view, id, R.drawable.btn_default_material_dark);
-                                        break;
-                                    case android.R.style.Widget_Material_Light_ImageButton:
-                                        setBackgroundResource(view, id, R.drawable.btn_default_material_light);
-                                        break;
-                                    default:
-                                        ContextThemeWrapper w = new ContextThemeWrapper(context2, out.resourceId);
-                                        Resources.Theme t = w.getTheme();
-                                        if (t.resolveAttribute(android.R.attr.background, out, true))
-                                            setBackgroundResource(view, id, out.resourceId);
+                            if (theme.resolveAttribute(R.attr.imageButtonStyle, out, true)) {
+                                if (out.resourceId == R.style.Widget_AppCompat_ImageButton) {
+                                    ContextThemeWrapper w = new ContextThemeWrapper(context2, out.resourceId);
+                                    Resources.Theme t = w.getTheme();
+                                    if (t.resolveAttribute(android.R.attr.background, out, true)) {
+                                        if (out.string != null && out.string.equals("res/drawable/abc_btn_default_mtrl_shape.xml")) { // AppCompat material button
+                                            if (t.resolveAttribute(android.R.attr.imageButtonStyle, out, true)) {
+                                                switch (out.resourceId) {
+                                                    case android.R.style.Widget_Holo_ImageButton:
+                                                    case android.R.style.Widget_Material_ImageButton:
+                                                        setBackgroundResource(view, id, R.drawable.btn_default_material_dark);
+                                                        break;
+                                                    case android.R.style.Widget_Holo_Light_ImageButton:
+                                                    case android.R.style.Widget_Material_Light_ImageButton:
+                                                        setBackgroundResource(view, id, R.drawable.btn_default_material_light);
+                                                        break;
+                                                    default:
+                                                        if (t.resolveAttribute(android.R.attr.background, out, true))
+                                                            setBackgroundResource(view, id, out.resourceId);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (out.resourceId == android.R.style.Widget_Material_ImageButton) {
+                                    setBackgroundResource(view, id, R.drawable.btn_default_material_dark);
+                                }
+                                if (out.resourceId == android.R.style.Widget_Material_Light_ImageButton) {
+                                    setBackgroundResource(view, id, R.drawable.btn_default_material_light);
                                 }
                             }
                         }
