@@ -62,7 +62,7 @@ public class RemoteViewsCompat {
                 if (ta.getValue(TINT, out))
                     setImageViewTint(view, id, getColor(context, out));
                 if (name.equals(ImageButton.class.getSimpleName())) {
-                    if (!ta.getValue(BACKGROUND, out)) { // no background set
+                    if (!ta.hasValue(BACKGROUND)) { // no background set
                         int res = getImageButtonBackground(theme, context);
                         if (res != 0)
                             setBackgroundResource(view, id, res);
