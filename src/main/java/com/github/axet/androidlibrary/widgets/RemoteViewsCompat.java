@@ -5,18 +5,18 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.view.ContextThemeWrapper;
-import android.support.v7.widget.AppCompatImageButton;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RemoteViews;
-import android.widget.TextView;
 
 import com.github.axet.androidlibrary.R;
+
+import java.util.Arrays;
 
 public class RemoteViewsCompat {
     public static final String TAG = RemoteViewsCompat.class.getSimpleName();
@@ -34,37 +34,35 @@ public class RemoteViewsCompat {
         public View onCreateView(String name, Context context, AttributeSet attrs) {
             if (Build.VERSION.SDK_INT >= 21 && this.context != context) // API21+ and 'android:theme' applied = ignore
                 return null;
+
             int[] attrsArray = new int[]{
-                    android.R.attr.id, // 0
-                    android.R.attr.background, // 1
-                    android.R.attr.tint, // 2
-                    android.R.attr.textColor, // 3
-                    android.R.attr.textAppearance, // 4
-                    android.R.attr.theme, // 5
+                    android.R.attr.id,
+                    android.R.attr.background,
+                    android.R.attr.tint,
+                    android.R.attr.textColor,
             };
+
+            Arrays.sort(attrsArray); // know bug https://stackoverflow.com/questions/19034597
+
+            final int ID = Arrays.binarySearch(attrsArray, android.R.attr.id);
+            final int BACKGROUND = Arrays.binarySearch(attrsArray, android.R.attr.background);
+            final int TEXTCOLOR = Arrays.binarySearch(attrsArray, android.R.attr.textColor);
+            final int TINT = Arrays.binarySearch(attrsArray, android.R.attr.tint);
+
             Resources.Theme theme = context.getTheme();
             TypedArray ta = theme.obtainStyledAttributes(attrs, attrsArray, 0, 0);
             TypedValue out = new TypedValue();
-            if (ta.getValue(0, out)) {
+            if (ta.getValue(ID, out)) {
                 int id = out.resourceId;
-                if (ta.getValue(1, out))
-                    setBackgroundColor(view, id, out.data);
-                if (name.equals("TextView")) {
-                    TextView t = new TextView(context, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
-                    view.setTextColor(id, t.getCurrentTextColor());
+                if (ta.getValue(BACKGROUND, out))
+                    setBackgroundColor(view, id, getColor(context, out));
+                if (ta.getValue(TEXTCOLOR, out)) {
+                    view.setTextColor(id, getColor(context, out));
                 }
-                if (name.equals("Button")) {
-                    Button t = new Button(context, attrs); // 'textColor' not seen by obtainStyledAttributes() for unknown reason
-                    view.setTextColor(id, t.getCurrentTextColor());
-                }
-                if (name.equals("ImageView")) {
-                    if (ta.getValue(2, out))
-                        setImageViewTint(view, id, out.data);
-                }
-                if (name.equals("ImageButton")) {
-                    if (ta.getValue(2, out))
-                        setImageViewTint(view, id, out.data);
-                    if (!ta.getValue(1, out)) { // no background set
+                if (ta.getValue(TINT, out))
+                    setImageViewTint(view, id, getColor(context, out));
+                if (name.equals(ImageButton.class.getSimpleName())) {
+                    if (!ta.getValue(BACKGROUND, out)) { // no background set
                         int res = getImageButtonBackground(theme, context);
                         if (res != 0)
                             setBackgroundResource(view, id, res);
@@ -73,6 +71,12 @@ public class RemoteViewsCompat {
             }
             ta.recycle();
             return null;
+        }
+
+        public int getColor(Context context, TypedValue out) {
+            if (out.type == TypedValue.TYPE_STRING)
+                out.data = ContextCompat.getColor(context, out.resourceId); // xml color selector
+            return out.data;
         }
 
         @SuppressLint("RestrictedApi")
