@@ -18,6 +18,8 @@ public class MainApplication extends Application {
     public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public static MainApplication from(Context context) {
+        if (context instanceof Application)
+            return (MainApplication) context;
         if (context instanceof Service)
             return (MainApplication) ((Service) context).getApplication();
         if (context instanceof Activity)
@@ -119,7 +121,7 @@ public class MainApplication extends Application {
     public int getVersion(String key, int id) {
         final SharedPreferences defaultValueSp = getSharedPreferences(PreferenceManager.KEY_HAS_SET_DEFAULT_VALUES, Context.MODE_PRIVATE);
         if (!defaultValueSp.getBoolean(PreferenceManager.KEY_HAS_SET_DEFAULT_VALUES, false)) {
-            PreferenceManager.setDefaultValues(this,id, false);
+            PreferenceManager.setDefaultValues(this, id, false);
             return -1;
         } else {
             SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
