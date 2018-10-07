@@ -155,10 +155,6 @@ public class Toast {
         Runnable show = new Runnable() {
             @Override
             public void run() {
-                if (w != null) {
-                    w.dismiss();
-                    w = null;
-                }
                 View v = toast.getView();
                 ViewParent p = v.getParent();
                 if (p != null) // second show same view (after exception)
@@ -203,6 +199,8 @@ public class Toast {
                     handler.postDelayed(hide, getDuration());
                 } catch (WindowManager.BadTokenException e) { // happens onCreate when screen is locked
                     Log.d(TAG, "unable to use activity", e);
+                    handler.removeCallbacks(hide);
+                    w = null; // nothing to dismiss, dismiss may crash due to IllegalArgumentException
                     show.run();
                 }
             } else { // from Service
