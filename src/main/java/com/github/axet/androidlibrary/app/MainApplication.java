@@ -3,12 +3,16 @@ package com.github.axet.androidlibrary.app;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.support.v7.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.R;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 
@@ -16,6 +20,24 @@ public class MainApplication extends Application {
     public static final String TAG = MainApplication.class.getSimpleName();
 
     public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public static ComponentName startService(Context context, Intent intent) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            Class k = context.getClass();
+            try {
+                Method m = k.getMethod("startForegroundService", Intent.class);
+                return (ComponentName) m.invoke(context, intent);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return context.startService(intent);
+        }
+    }
 
     public static MainApplication from(Context context) {
         if (context instanceof Application)

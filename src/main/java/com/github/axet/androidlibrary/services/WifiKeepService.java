@@ -17,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.github.axet.androidlibrary.app.AlarmManager;
+import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.SuperUser;
 
 import java.io.IOException;
@@ -54,7 +55,7 @@ public class WifiKeepService extends Service {
         Intent intent = new Intent(context, WifiKeepService.class);
         intent.setPackage(context.getPackageName());
         intent.setAction(WIFI);
-        context.startService(intent);
+        MainApplication.startService(context, intent);
     }
 
     public static void stopService(Context context) {
