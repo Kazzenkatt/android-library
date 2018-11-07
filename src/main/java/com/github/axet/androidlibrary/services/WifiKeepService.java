@@ -1,12 +1,14 @@
 package com.github.axet.androidlibrary.services;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.app.IntentService;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.NetworkInfo;
@@ -14,11 +16,15 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
+import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.SuperUser;
+import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
+import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,16 +38,18 @@ import java.net.UnknownHostException;
  * &lt;uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /&gt;
  */
 public class WifiKeepService extends Service {
-
     public static String TAG = WifiKeepService.class.getSimpleName();
 
     public static int REFRESH = 1 * 60 * 1000; // check every ms
+    public static int NOTIFICATION_ICON = 200; // notificaion icon id
 
     public static final String WIFI = WifiKeepService.class.getCanonicalName() + ".WIFI";
 
     public static final String BIN_PING = SuperUser.which("ping");
 
-    Thread t;
+    public Thread t;
+    public Notification notification;
+    public NotificationChannelCompat channel;
 
     public static void startIfEnabled(Context context, boolean b) {
         if (b) {
@@ -95,8 +103,8 @@ public class WifiKeepService extends Service {
         }
     }
 
-    public static Thread wifi(final Context context, boolean keep) {
-        Intent intent = new Intent(context, WifiKeepService.class);
+    public static Thread wifi(final Context context, Class klass, boolean keep) {
+        Intent intent = new Intent(context, klass);
         intent.setPackage(context.getPackageName());
         intent.setAction(WIFI);
         if (keep) {
@@ -164,13 +172,24 @@ public class WifiKeepService extends Service {
         }
     }
 
+    public Thread wifi(boolean keep) {
+        return wifi(this, getClass(), keep);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        channel = new NotificationChannelCompat(this, "wifi", "Wifi", NotificationManagerCompat.IMPORTANCE_LOW);
+        showNotification(true);
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             String action = intent.getAction();
             if (action != null) {
                 if (action.equals(WIFI)) {
-                    t = wifi(this, true);
+                    t = wifi(true);
                 }
             }
         }
@@ -180,12 +199,55 @@ public class WifiKeepService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        t = wifi(this, false);
+        t = wifi(false);
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @SuppressLint("RestrictedApi")
+    public Notification build() {
+        PendingIntent main;
+
+        RemoteNotificationCompat.Builder builder;
+
+        String title;
+        String text = "Wifi service";
+        builder = new RemoteNotificationCompat.Low(this);
+        title = getApplicationInfo().name;
+
+        PackageManager pm = getPackageManager();
+        Intent intent = pm.getLaunchIntentForPackage(getPackageName());
+        startActivity(intent);
+
+        main = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        builder.setTitle(title)
+                .setText(text)
+                .setWhen(notification)
+                .setMainIntent(main)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.ic_circle);
+
+        return builder.build();
+    }
+
+    public void showNotification(boolean show) {
+        NotificationManagerCompat nm = NotificationManagerCompat.from(this);
+        if (!show) {
+            stopForeground(false);
+            nm.cancel(NOTIFICATION_ICON);
+            notification = null;
+        } else {
+            Notification n = build();
+            if (notification == null)
+                startForeground(NOTIFICATION_ICON, n);
+            else
+                nm.notify(NOTIFICATION_ICON, n);
+            notification = n;
+        }
     }
 }
