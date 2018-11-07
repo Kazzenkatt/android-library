@@ -89,6 +89,24 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     // all service related code, for old phones, where AlarmManager will be used to keep app running
     protected Class<? extends Service> service;
 
+    public static ComponentName startService(Context context, Intent intent) {
+        if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26) {
+            Class k = context.getClass();
+            try {
+                Method m = k.getMethod("startForegroundService", Intent.class);
+                return (ComponentName) m.invoke(context, intent);
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            return context.startService(intent);
+        }
+    }
+
     public static void enable(Context context, long next, Class<? extends Service> service) {
         Intent intent = new Intent(context, service);
         intent.setAction(SERVICE_CHECK);
@@ -584,7 +602,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             public void run() {
                 Intent intent = new Intent(context, service);
                 intent.setAction(SERVICE_RESTART);
-                MainApplication.startService(context, intent);
+                OptimizationPreferenceCompat.startService(context, intent);
             }
         };
 
@@ -749,12 +767,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         public void onCreate() {
             channel = new NotificationChannelCompat(context, key, text, NotificationManagerCompat.IMPORTANCE_LOW);
             if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
-                showNotification(true);
+                show(true);
         }
 
         public void onDestroy() {
             if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
-                showNotification(false);
+                show(false);
         }
 
         @SuppressLint("RestrictedApi")
@@ -780,7 +798,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             return builder.build();
         }
 
-        public void showNotification(boolean show) {
+        public void show(boolean show) {
             NotificationManagerCompat nm = NotificationManagerCompat.from(context);
             if (!show) {
                 context.stopForeground(false);

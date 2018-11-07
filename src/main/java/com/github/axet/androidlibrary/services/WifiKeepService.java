@@ -55,7 +55,7 @@ public class WifiKeepService extends Service {
         Intent intent = new Intent(context, WifiKeepService.class);
         intent.setPackage(context.getPackageName());
         intent.setAction(WIFI);
-        MainApplication.startService(context, intent);
+        OptimizationPreferenceCompat.startService(context, intent);
     }
 
     public static void stopService(Context context) {
