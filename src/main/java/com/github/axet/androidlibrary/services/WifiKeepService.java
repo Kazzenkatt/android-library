@@ -1,14 +1,10 @@
 package com.github.axet.androidlibrary.services;
 
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
 import android.net.NetworkInfo;
@@ -16,15 +12,12 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.app.NotificationManagerCompat;
 import android.util.Log;
 
-import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.SuperUser;
-import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
-import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
+import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,8 +41,7 @@ public class WifiKeepService extends Service {
     public static final String BIN_PING = SuperUser.which("ping");
 
     public Thread t;
-    public Notification notification;
-    public NotificationChannelCompat channel;
+    OptimizationPreferenceCompat.NotificationIcon icon;
 
     public static void startIfEnabled(Context context, boolean b) {
         if (b) {
@@ -179,9 +171,8 @@ public class WifiKeepService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        channel = new NotificationChannelCompat(this, "wifi", "Wifi", NotificationManagerCompat.IMPORTANCE_LOW);
-        if (Build.VERSION.SDK_INT >= 26 && getApplicationInfo().targetSdkVersion >= 26)
-            showNotification(true);
+        icon = new OptimizationPreferenceCompat.NotificationIcon(this, NOTIFICATION_ICON, "wifi", "Wifi");
+        icon.onCreate();
     }
 
     @Override
@@ -201,58 +192,12 @@ public class WifiKeepService extends Service {
     public void onDestroy() {
         super.onDestroy();
         t = wifi(false);
-        if (Build.VERSION.SDK_INT >= 26 && getApplicationInfo().targetSdkVersion >= 26)
-            showNotification(false);
+        icon.onDestroy();
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
-    }
-
-    @SuppressLint("RestrictedApi")
-    public Notification build() {
-        PendingIntent main;
-
-        RemoteNotificationCompat.Builder builder;
-
-        String title;
-        String text = getString(R.string.optimization_alive);
-        builder = new RemoteNotificationCompat.Low(this);
-        title = getApplicationInfo().name;
-
-        PackageManager pm = getPackageManager();
-        Intent intent = pm.getLaunchIntentForPackage(getPackageName());
-        startActivity(intent);
-
-        main = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        builder.setTheme(R.style.AppThemeDarkLib)
-                .setChannel(channel)
-                .setTitle(title)
-                .setText(text)
-                .setWhen(notification)
-                .setMainIntent(main)
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.ic_circle);
-
-        return builder.build();
-    }
-
-    public void showNotification(boolean show) {
-        NotificationManagerCompat nm = NotificationManagerCompat.from(this);
-        if (!show) {
-            stopForeground(false);
-            nm.cancel(NOTIFICATION_ICON);
-            notification = null;
-        } else {
-            Notification n = build();
-            if (notification == null)
-                startForeground(NOTIFICATION_ICON, n);
-            else
-                nm.notify(NOTIFICATION_ICON, n);
-            notification = n;
-        }
     }
 }

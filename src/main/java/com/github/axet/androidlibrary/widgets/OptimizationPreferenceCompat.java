@@ -3,6 +3,8 @@ package com.github.axet.androidlibrary.widgets;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -21,6 +23,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v4.widget.TextViewCompat;
 import android.support.v7.app.AlertDialog;
@@ -715,6 +718,82 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             if (json == null || json.isEmpty())
                 return;
             load(new JSONObject(json));
+        }
+    }
+
+    public static class NotificationIcon {
+        public Notification notification;
+        public NotificationChannelCompat channel;
+        public Service context;
+        public int iconId;
+        public String key;
+        public String text;
+        public int theme = R.style.AppThemeDarkLib;
+
+        public NotificationIcon(Service context, int iconId) {
+            this.context = context;
+            this.iconId = iconId;
+        }
+
+        public NotificationIcon(Service context, int iconId, String key, String text) {
+            this(context, iconId);
+            this.key = key;
+            this.text = text;
+        }
+
+        public NotificationIcon(Service context, int iconId, String key, String text, int theme) {
+            this(context, iconId, key, text);
+            this.theme = theme;
+        }
+
+        public void onCreate() {
+            channel = new NotificationChannelCompat(context, key, text, NotificationManagerCompat.IMPORTANCE_LOW);
+            if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
+                showNotification(true);
+        }
+
+        public void onDestroy() {
+            if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
+                showNotification(false);
+        }
+
+        @SuppressLint("RestrictedApi")
+        public Notification build() {
+            String title = context.getApplicationInfo().name;
+            String text = context.getString(R.string.optimization_alive);
+            RemoteNotificationCompat.Builder builder = new RemoteNotificationCompat.Low(context);
+
+            PackageManager pm = context.getPackageManager();
+            Intent intent = pm.getLaunchIntentForPackage(context.getPackageName());
+
+            PendingIntent main = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            builder.setTheme(theme)
+                    .setChannel(channel)
+                    .setTitle(title)
+                    .setText(text)
+                    .setWhen(notification)
+                    .setMainIntent(main)
+                    .setOngoing(true)
+                    .setSmallIcon(R.drawable.ic_circle);
+
+            return builder.build();
+        }
+
+        public void showNotification(boolean show) {
+            NotificationManagerCompat nm = NotificationManagerCompat.from(context);
+            if (!show) {
+                context.stopForeground(false);
+                nm.cancel(iconId);
+                notification = null;
+            } else {
+                Notification n = build();
+                if (notification == null)
+                    context.startForeground(iconId, n);
+                else
+                    nm.notify(iconId, n);
+                notification = n;
+            }
         }
     }
 
