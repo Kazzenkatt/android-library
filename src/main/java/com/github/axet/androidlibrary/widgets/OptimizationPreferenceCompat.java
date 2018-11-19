@@ -283,7 +283,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                         saveState(context, state, builder.key);
                     }
                     builder.updateIcon(); // update icon switch
-                    builder.pref.setChecked(state.icon); // update pref switch
                     Intent intent = new Intent(ICON_UPDATE);
                     context.sendBroadcast(intent);
                     return false;
@@ -921,7 +920,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                             WarningBuilder builder = buildWarning(getContext(), true, getKey());
                             builder.serviceEnable = enable;
                             builder.serviceDisable = disable;
-                            builder.pref = OptimizationPreferenceCompat.this;
                             showWarning(getContext(), builder); // show commons
                             return false;
                         }
@@ -961,7 +959,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                                     setChecked(true);
                                 }
                             });
-                            builder.pref = OptimizationPreferenceCompat.this;
                             showWarning(getContext(), builder); // show commons
                         } else {
                             State state = getState(getContext(), getKey());
