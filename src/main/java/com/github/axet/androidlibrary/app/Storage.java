@@ -540,8 +540,7 @@ public class Storage {
             try {
                 childCursor = resolver.query(uri, null, null, null, null);
                 if (childCursor != null) {
-                    boolean n = childCursor.moveToNext();
-                    if (n)
+                    if (childCursor.moveToNext())
                         return true;
                 }
             } catch (RuntimeException e) { // not found catched here

@@ -2,6 +2,7 @@ package com.github.axet.androidlibrary.app;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
 import org.apache.commons.io.IOUtils;
@@ -9,11 +10,14 @@ import org.apache.commons.io.IOUtils;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 
 public class SuperUser {
     public static String TAG = SuperUser.class.getSimpleName();
+
+    public static int BUF_SIZE = 4 * 1024; // IOUtils#DEFAULT_BUFFER_SIZE
 
     public static final String SYSTEM = "/system";
     public static final String ETC = "/etc";
@@ -41,7 +45,7 @@ public class SuperUser {
     public static final String BIN_SET = "set"; // build-in
 
     public static final String SETE = BIN_SET + " -e";
-    public static final String CAT_TO = BIN_CAT + " << EOF > {0}\n{1}\nEOF";
+    public static final String CAT_TO = BIN_CAT + " << 'EOF' > {0}\n{1}\nEOF";
     public static final String REMOUNT_SYSTEM = BIN_MOUNT + " -o remount,rw " + SYSTEM;
     public static final String MKDIRS = BIN_MKDIR + " -p {0}";
     public static final String TOUCH = BIN_TOUCH + " -a {0}";
@@ -115,7 +119,6 @@ public class SuperUser {
                 this.e = e;
                 return;
             }
-
             this.res = p.exitValue();
             this.e = e;
             captureOutputs(cmd, p);
@@ -181,6 +184,10 @@ public class SuperUser {
                 return s;
         }
         return null;
+    }
+
+    public static String escape(File p) {
+        return escape(p.getAbsolutePath());
     }
 
     public static String escape(String p) {
@@ -256,21 +263,74 @@ public class SuperUser {
     }
 
     public static Result touch(File f) {
-        String p = f.getAbsolutePath();
-        return su(TOUCH, escape(p));
+        return su(TOUCH, escape(f));
     }
 
     public static Result mkdirs(File f) {
-        String p = f.getAbsolutePath();
-        return su(MKDIRS, escape(p));
+        return su(MKDIRS, escape(f));
     }
 
     public static Result delete(File f) {
-        String p = f.getAbsolutePath();
-        return su(DELETE, escape(p));
+        return su(DELETE, escape(f));
     }
 
     public static Result mv(File f, File to) {
-        return su(MV, escape(f.getAbsolutePath()), escape(to.getAbsolutePath()));
+        return su(MV, escape(f), escape(to));
+    }
+
+    public static InputStream cat(Uri uri) {
+        File f = Storage.getFile(uri);
+        Commands cmd = new Commands(MessageFormat.format("cat {0}", escape(f)));
+        try {
+            final Process su = Runtime.getRuntime().exec(BIN_SU);
+            DataOutputStream os = new DataOutputStream(su.getOutputStream());
+            os.writeBytes(cmd.build());
+            os.flush();
+            os.writeBytes(BIN_EXIT + EOL);
+            os.flush();
+            return new InputStream() {
+                Process p = su;
+                InputStream is = p.getInputStream();
+
+                @Override
+                public int read() throws IOException {
+                    return is.read();
+                }
+
+                @Override
+                public void close() throws IOException {
+                    super.close();
+                    p.destroy();
+                }
+            };
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Result cat(InputStream is, Uri uri) {
+        File f = Storage.getFile(uri);
+        Process su = null;
+        Commands cmd = new Commands(MessageFormat.format(BIN_SU + " > {0}", escape(f)));
+        cmd.add(BIN_CAT);
+        try {
+            su = Runtime.getRuntime().exec(BIN_SU);
+            DataOutputStream os = new DataOutputStream(su.getOutputStream());
+            os.writeBytes(cmd.build());
+            os.flush();
+            byte[] buf = new byte[BUF_SIZE];
+            int len;
+            while ((len = is.read(buf)) > 0) {
+                os.write(buf, 0, len);
+            }
+            os.close();
+            su.waitFor();
+            return new Result(cmd, su);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new Result(cmd, su, e);
+        }
     }
 }
