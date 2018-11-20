@@ -3,14 +3,15 @@ package com.github.axet.androidlibrary.app;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import org.apache.commons.io.IOUtils;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 
@@ -191,9 +192,16 @@ public class SuperUser {
     }
 
     public static String escape(String p) {
-        p = p.replaceAll(" ", "\\ "); // ' ' -> '\'
-        p = p.replaceAll("\"", "\\\""); // '"' -> '\"'
+        p = p.replaceAll("\\)", "\\\\)");
+        p = p.replaceAll("\\(", "\\\\(");
+        p = p.replaceAll(" ", "\\\\ ");
+        p = p.replaceAll("\"", "\\\"");
         return p;
+    }
+
+    public static void writeUTF8(String str, OutputStream os) throws IOException {
+        os.write(str.getBytes(Charset.defaultCharset()));
+        os.flush();
     }
 
     public static Result su(String pattern, Object... args) {
@@ -208,15 +216,11 @@ public class SuperUser {
         Process su = null;
         try {
             su = Runtime.getRuntime().exec(BIN_SU);
-            DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            if (cmd.sete) {
-                os.writeBytes(SETE + EOL);
-                os.flush();
-            }
-            os.writeBytes(cmd.build());
-            os.flush();
-            os.writeBytes(BIN_EXIT + EOL);
-            os.flush();
+            OutputStream os = su.getOutputStream();
+            if (cmd.sete)
+                writeUTF8(SETE + EOL, os);
+            writeUTF8(cmd.build(), os);
+            writeUTF8(BIN_EXIT + EOL, os);
             su.waitFor();
             return new Result(cmd, su);
         } catch (IOException e) {
@@ -283,11 +287,9 @@ public class SuperUser {
         Commands cmd = new Commands(MessageFormat.format("cat {0}", escape(f)));
         try {
             final Process su = Runtime.getRuntime().exec(BIN_SU);
-            DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            os.writeBytes(cmd.build());
-            os.flush();
-            os.writeBytes(BIN_EXIT + EOL);
-            os.flush();
+            OutputStream os = su.getOutputStream();
+            writeUTF8(cmd.build(), os);
+            writeUTF8(BIN_EXIT + EOL, os);
             return new InputStream() {
                 Process p = su;
                 InputStream is = p.getInputStream();
@@ -295,6 +297,11 @@ public class SuperUser {
                 @Override
                 public int read() throws IOException {
                     return is.read();
+                }
+
+                @Override
+                public int read(@NonNull byte[] b, int off, int len) throws IOException {
+                    return is.read(b, off, len);
                 }
 
                 @Override
@@ -308,29 +315,37 @@ public class SuperUser {
         }
     }
 
-    public static Result cat(InputStream is, Uri uri) {
-        File f = Storage.getFile(uri);
-        Process su = null;
-        Commands cmd = new Commands(MessageFormat.format(BIN_SU + " > {0}", escape(f)));
-        cmd.add(BIN_CAT);
-        try {
-            su = Runtime.getRuntime().exec(BIN_SU);
-            DataOutputStream os = new DataOutputStream(su.getOutputStream());
-            os.writeBytes(cmd.build());
-            os.flush();
-            byte[] buf = new byte[BUF_SIZE];
-            int len;
-            while ((len = is.read(buf)) > 0) {
-                os.write(buf, 0, len);
+    public static OutputStream write(final Uri uri) throws IOException {
+        return new OutputStream() {
+            Process su;
+            OutputStream os;
+
+            {
+                File f = Storage.getFile(uri);
+
+                Commands cmd = new Commands(MessageFormat.format(BIN_CAT + " > {0}", escape(f)));
+                su = Runtime.getRuntime().exec(BIN_SU);
+
+                os = su.getOutputStream();
+
+                writeUTF8(cmd.build(), os);
             }
-            os.close();
-            su.waitFor();
-            return new Result(cmd, su);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return new Result(cmd, su, e);
-        }
+
+            @Override
+            public void write(int b) throws IOException {
+                os.write(b);
+            }
+
+            @Override
+            public void write(@NonNull byte[] b, int off, int len) throws IOException {
+                os.write(b, off, len);
+            }
+
+            @Override
+            public void close() throws IOException {
+                super.close();
+                su.destroy();
+            }
+        };
     }
 }
