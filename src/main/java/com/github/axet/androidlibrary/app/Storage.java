@@ -1252,7 +1252,6 @@ public class Storage {
                     long size = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE));
                     long last = cursor.getLong(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_LAST_MODIFIED));
                     boolean d = type.equals(DocumentsContract.Document.MIME_TYPE_DIR);
-                    p = new File(p, name).getPath();
                     files.add(new Storage.Node(uri, p, d, size, last)); // root uri (unchanged)
                     if (d) {
                         doc = DocumentsContract.buildChildDocumentsUriUsingTree(uri, id);
