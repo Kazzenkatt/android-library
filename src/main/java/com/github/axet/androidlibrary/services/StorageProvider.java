@@ -25,6 +25,7 @@ import android.webkit.MimeTypeMap;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
 import java.io.File;
@@ -118,11 +119,18 @@ public class StorageProvider extends ContentProvider {
             tree = DocumentsContract.getTreeDocumentId(uri);
         String[] ss = tree.split(":", 2); // 1D13-0F08:folder_name
         if (ss[0].equals(Storage.STORAGE_PRIMARY)) {
-            File f = Environment.getExternalStorageDirectory();
-            if (ss.length > 1)
-                f = new File(f, ss[1]);
+            File f = new File(Environment.getExternalStorageDirectory(), ss[1]);
             uri = Uri.fromFile(f);
-        } // else TODO: convert content://.../1D13-0F08:folder_name into file:// uris. do not have device to test...
+        } else {
+            File[] ff = OpenFileDialog.getPortableList();
+            for (File f : ff) {
+                if (ss[0].equals(f.getName())) {
+                    File r = new File(f, ss[1]);
+                    uri = Uri.fromFile(r);
+                }
+            }
+
+        }
         return uri;
     }
 
@@ -130,6 +138,7 @@ public class StorageProvider extends ContentProvider {
         String s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_CONTENT) && Build.VERSION.SDK_INT >= 21 && uri.getAuthority().startsWith(Storage.SAF))
             uri = filterFolderIntent(context, uri);
+        s = uri.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE) && Build.VERSION.SDK_INT >= 24 && context.getApplicationInfo().targetSdkVersion >= 24) { // 24+ failed to open file:// with FileUriExposedException
             Uri.Builder b = uri.buildUpon();
             b.scheme(SCHEME_FOLDER); // replace file:// with folder://

@@ -91,7 +91,7 @@ public class OpenChoicer {
         ff = ContextCompat.getExternalFilesDirs(context, ""); // can show no external dir: https://stackoverflow.com/questions/33350250
         int count = 0;
         for (File f : ff) {
-            if (f == null || f.getAbsolutePath().startsWith(ext.getAbsolutePath())) { // f can be null, if media unmounted
+            if (f == null || f.getPath().startsWith(ext.getPath())) { // f can be null, if media unmounted
                 continue;
             }
             count++;
@@ -219,11 +219,11 @@ public class OpenChoicer {
     public void showFallbackFolders() { // simple folder selection
         final List<String> ss = new ArrayList<>();
         File local = OpenFileDialog.getLocalInternal(context);
-        ss.add(local.getAbsolutePath());
+        ss.add(local.getPath());
         File[] ext = OpenFileDialog.getLocalExternals(context, readonly);
         if (ext != null) {
             for (File f : ext) {
-                ss.add(f.getAbsolutePath());
+                ss.add(f.getPath());
             }
         }
         AlertDialog.Builder b = showFallbackFoldersBuild(ss);
@@ -235,7 +235,7 @@ public class OpenChoicer {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setTitle(title);
         File summ = Storage.getFile(old);
-        builder.setSingleChoiceItems(ss.toArray(new CharSequence[]{}), ss.indexOf(summ.getAbsolutePath()), new DialogInterface.OnClickListener() {
+        builder.setSingleChoiceItems(ss.toArray(new CharSequence[]{}), ss.indexOf(summ.getPath()), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String fileName = ss.get(which);
@@ -274,7 +274,7 @@ public class OpenChoicer {
                         if (!ff.isDirectory())
                             ff = ff.getParentFile();
                         Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                        if (!f.adapter.canWrite(ff)) {
+                        if (!ff.canWrite()) {
                             b2.setEnabled(false);
                         } else {
                             b2.setEnabled(true);
