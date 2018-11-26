@@ -179,25 +179,6 @@ public class StorageProvider extends ContentProvider {
         return intent;
     }
 
-    public static String getName(Context context, Uri uri) {
-        String s = uri.getScheme();
-        if (s.equals(ContentResolver.SCHEME_CONTENT) && Build.VERSION.SDK_INT >= 21 && !uri.getAuthority().startsWith(Storage.SAF)) {
-            ContentResolver resolver = context.getContentResolver();
-            Cursor cursor = resolver.query(uri, null, null, null, null);
-            if (cursor != null) {
-                try {
-                    if (cursor.moveToNext())
-                        return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-                    else
-                        return uri.getLastPathSegment();
-                } finally {
-                    cursor.close();
-                }
-            }
-        }
-        return Storage.getName(context, uri);
-    }
-
     public static Intent openIntent23(Context context, Uri uri) {
         boolean perms = false;
         String s = uri.getScheme();
@@ -215,7 +196,7 @@ public class StorageProvider extends ContentProvider {
         } else {
             perms = true;
         }
-        String name = getName(context, uri);
+        String name = Storage.getName(context, uri);
         String type = Storage.getTypeByName(name);
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, type);
