@@ -552,7 +552,6 @@ public class StorageProvider extends ContentProvider {
 
     public ParcelFileDescriptor openInputStream(final InputStreamWriter is, String mode) {
         deleteTmp(); // will not delete opened files
-
         try {
             if (checkMode(mode).equals("r")) { // r - can be pipe. check ContentProvider#openFile
                 ParcelFileDescriptor[] ff = ParcelFileDescriptor.createPipe();
