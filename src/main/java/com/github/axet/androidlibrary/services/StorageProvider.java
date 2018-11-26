@@ -277,10 +277,74 @@ public class StorageProvider extends ContentProvider {
         }
 
         public void close() throws IOException {
-            if (is != null) {
-                is.close();
-                is = null;
-            }
+            is.close();
+        }
+    }
+
+    public static class ParcelInputStream extends ParcelFileDescriptor {
+        Thread thread;
+        ParcelFileDescriptor w;
+
+        public ParcelInputStream(ParcelFileDescriptor[] ff) {
+            super(ff[0]);
+            w = ff[1];
+        }
+
+        public ParcelInputStream(final InputStream is) throws IOException {
+            this(ParcelFileDescriptor.createPipe());
+            thread = new Thread("ParcelInputStream") {
+                @Override
+                public void run() {
+                    OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
+                    try {
+                        IOUtils.copy(is, os);
+                    } catch (IOException e) {
+                        Log.d(TAG, "Copy error", e);
+                    } finally {
+                        try {
+                            os.close();
+                        } catch (IOException e) {
+                            Log.d(TAG, "Copy close error", e);
+                        }
+                        try {
+                            is.close();
+                        } catch (IOException e) {
+                            Log.d(TAG, "Copy close error", e);
+                        }
+                    }
+                }
+            };
+            thread.start();
+        }
+
+        public ParcelInputStream() throws IOException {
+            this(ParcelFileDescriptor.createPipe());
+            thread = new Thread("ParcelInputStream") {
+                @Override
+                public void run() {
+                    OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
+                    try {
+                        copy(os);
+                    } catch (IOException e) {
+                        Log.d(TAG, "Copy error", e);
+                    } finally {
+                        try {
+                            os.close();
+                        } catch (IOException e) {
+                            Log.d(TAG, "Copy close error", e);
+                        }
+                    }
+                }
+            };
+            thread.start();
+        }
+
+        public void copy(OutputStream os) throws IOException {
+        }
+
+        @Override
+        public long getStatSize() {
+            return super.getStatSize();
         }
     }
 
@@ -296,11 +360,6 @@ public class StorageProvider extends ContentProvider {
             String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
                 File f = Storage.getFile(uri);
-                File[] ff = concat(new File[]{getContext().getCacheDir()}, getContext().getExternalCacheDirs());
-                for (File k : ff) {
-                    if (Storage.relative(k, f) != null)
-                        return openIntent23(getContext(), uri);
-                }
                 if (f.isDirectory())
                     return openFolderIntent(getContext(), uri);
                 uri = share(uri, name);
@@ -550,39 +609,30 @@ public class StorageProvider extends ContentProvider {
         }
     }
 
+    public String checkMode(String mode) { // check if caller required File on disk
+        if (Build.VERSION.SDK_INT >= 19 && mode.equals("r")) {
+            String[] ss = new String[]{ // know broken packages list which request socket (mode "r") but required file on disk, check ContentResolver#openFileDescriptor
+                    "com.google.android.music"
+            };
+            Arrays.sort(ss);
+            if (Arrays.binarySearch(ss, getCallingPackage()) >= 0)
+                return "rw"; // rw means we request file on disk, check ContentResolver#openFileDescriptor
+        }
+        return mode;
+    }
+
     public ParcelFileDescriptor openInputStream(final InputStreamWriter is, String mode) {
         deleteTmp(); // will not delete opened files
         try {
             if (checkMode(mode).equals("r")) { // r - can be pipe. check ContentProvider#openFile
-                ParcelFileDescriptor[] ff = ParcelFileDescriptor.createPipe();
-                final ParcelFileDescriptor r = ff[0];
-                final ParcelFileDescriptor w = ff[1];
-                return new ParcelFileDescriptor(r) {
-                    Thread thread = new Thread("Storage InputStream") {
-                        @Override
-                        public void run() {
-                            OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
-                            try {
-                                is.copy(os);
-                            } catch (Exception e) {
-                                Log.d(TAG, "Error reading archive", e);
-                            } finally {
-                                try {
-                                    os.close();
-                                } catch (IOException e) {
-                                    Log.d(TAG, "copy close error", e);
-                                }
-                                try {
-                                    is.close();
-                                } catch (IOException e) {
-                                    Log.d(TAG, "copy close error", e);
-                                }
-                            }
+                return new ParcelInputStream() {
+                    @Override
+                    public void copy(OutputStream os) throws IOException {
+                        try {
+                            is.copy(os);
+                        } finally {
+                            is.close();
                         }
-                    };
-
-                    {
-                        thread.start();
                     }
 
                     @Override
@@ -615,18 +665,5 @@ public class StorageProvider extends ContentProvider {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public String checkMode(String mode) { // check if caller required File on disk
-        if (Build.VERSION.SDK_INT >= 19 && mode.equals("r")) {
-            String[] ss = new String[]{ // know broken packages list which request socket (mode "r") but required file on disk, check ContentResolver#openFileDescriptor
-                    "com.google.android.music"
-            };
-            for (String s : ss) {
-                if (getCallingPackage().equals(s))
-                    return "rw"; // rw means we request file on disk, check ContentResolver#openFileDescriptor
-            }
-        }
-        return mode;
     }
 }
