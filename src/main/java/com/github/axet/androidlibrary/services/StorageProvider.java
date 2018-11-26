@@ -505,12 +505,12 @@ public class StorageProvider extends ContentProvider {
     public AssetFileDescriptor openAssetFile(ParcelFileDescriptor fd, long size) { // check if caller required 'length' -1
         if (Build.VERSION.SDK_INT >= 19) {
             String[] ss = new String[]{ // know broken packages list which requests socket (mode "r") but calling ContentResolver#openFileDescriptor
-                    "com.google.android.gm"
+                    "com.google.android.gm",
+                    "org.videolan.vlc"
             };
-            for (String s : ss) {
-                if (getCallingPackage().equals(s))
-                    return new AssetFileDescriptor(fd, 0, -1); // -1 means full file, check ContentResolver#openFileDescriptor
-            }
+            Arrays.sort(ss);
+            if (Arrays.binarySearch(ss, getCallingPackage()) >= 0)
+                return new AssetFileDescriptor(fd, 0, -1); // -1 means full file, check ContentResolver#openFileDescriptor
         }
         return new AssetFileDescriptor(fd, 0, size);
     }
