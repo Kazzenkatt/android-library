@@ -458,7 +458,7 @@ public class StorageProvider extends ContentProvider {
             if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 return resolver.openFileDescriptor(f, mode);
             } else if (s.equals(ContentResolver.SCHEME_FILE)) {
-                return ParcelFileDescriptor.open(Storage.getFile(f), FileProvider.modeToMode(checkMode(mode)));
+                return ParcelFileDescriptor.open(Storage.getFile(f), FileProvider.modeToMode(mode));
             } else {
                 throw new Storage.UnknownUri();
             }
