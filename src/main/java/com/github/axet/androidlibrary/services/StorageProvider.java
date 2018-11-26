@@ -13,7 +13,6 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.CancellationSignal;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
@@ -21,6 +20,7 @@ import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import com.github.axet.androidlibrary.R;
@@ -28,9 +28,15 @@ import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,11 +56,16 @@ import java.util.HashSet;
 // url example:
 // content://com.github.axet.androidlibrary/35470c701a29ef8a9d58fbf8bd89dd83/image.jpg
 public class StorageProvider extends ContentProvider {
+    public static String TAG = StorageProvider.class.getSimpleName();
+
     public static long TIMEOUT = 1 * 1000 * 60;
     public static final int MD5_SIZE = 32;
 
     public static final String CONTENTTYPE_FOLDER = "resource/folder";
     public static final String SCHEME_FOLDER = "folder";
+
+    public static final String FILE_PREFIX = "storage";
+    public static final String FILE_SUFFIX = ".tmp";
 
     protected static HashMap<Class, StorageProvider> infos = new HashMap<>();
 
@@ -224,6 +235,55 @@ public class StorageProvider extends ContentProvider {
         return intent;
     }
 
+    public void deleteTmp() {
+        File tmp = getContext().getExternalCacheDir();
+        deleteTmp(tmp);
+        tmp = getContext().getCacheDir();
+        deleteTmp(tmp);
+    }
+
+    public void deleteTmp(File tmp) {
+        if (tmp == null)
+            return;
+        File[] ff = tmp.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return file.getName().startsWith(FILE_PREFIX);
+            }
+        });
+        if (ff == null)
+            return;
+        for (File f : ff) {
+            f.delete();
+        }
+    }
+
+    public static class InputStreamWriter {
+        InputStream is;
+
+        public InputStreamWriter() {
+        }
+
+        public InputStreamWriter(InputStream is) {
+            this.is = is;
+        }
+
+        public void copy(OutputStream os) throws IOException {
+            IOUtils.copy(is, os);
+        }
+
+        public long getSize() {
+            return AssetFileDescriptor.UNKNOWN_LENGTH;
+        }
+
+        public void close() throws IOException {
+            if (is != null) {
+                is.close();
+                is = null;
+            }
+        }
+    }
+
     public StorageProvider() {
     }
 
@@ -238,7 +298,7 @@ public class StorageProvider extends ContentProvider {
                 File f = Storage.getFile(uri);
                 File[] ff = concat(new File[]{getContext().getCacheDir()}, getContext().getExternalCacheDirs());
                 for (File k : ff) {
-                    if (f.getPath().startsWith(k.getPath()))
+                    if (Storage.relative(k, f) != null)
                         return openIntent23(getContext(), uri);
                 }
                 if (f.isDirectory())
@@ -279,7 +339,7 @@ public class StorageProvider extends ContentProvider {
 
         if (name == null) {
             String s = u.getScheme();
-            if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT) && !DocumentsContract.isDocumentUri(getContext(), u)) {
+            if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT) && !DocumentsContract.isDocumentUri(getContext(), u)) {
                 String id = DocumentsContract.getTreeDocumentId(u);
                 id = id.substring(id.indexOf(Storage.COLON) + 1);
                 File f = new File(id);
@@ -290,7 +350,7 @@ public class StorageProvider extends ContentProvider {
         }
 
         File path = new File(hash, name);
-        return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(info.authority).path(path.toString()).build();
+        return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(info.authority).path(path.getPath()).build();
     }
 
     public String getAuthority() {
@@ -329,13 +389,10 @@ public class StorageProvider extends ContentProvider {
     public void attachInfo(Context context, ProviderInfo i) {
         super.attachInfo(context, i);
         info = i;
-        // Sanity check our security
-        if (info.exported) {
+        if (info.exported)
             throw new SecurityException("Provider must not be exported");
-        }
-        if (!info.grantUriPermissions) {
+        if (!info.grantUriPermissions)
             throw new SecurityException("Provider must grant uri permissions");
-        }
         infos.put(getClass(), this);
     }
 
@@ -348,25 +405,18 @@ public class StorageProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        return null;
-    }
-
-    @Nullable
-    @Override
     @TargetApi(16)
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, CancellationSignal cancellationSignal) {
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         Uri f = find(uri);
         if (f == null)
             return null;
 
         String s = f.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            return resolver.query(f, projection, selection, selectionArgs, sortOrder, cancellationSignal);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            if (projection == null) {
+        if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return resolver.query(f, projection, selection, selectionArgs, sortOrder);
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+            if (projection == null)
                 projection = FileProvider.COLUMNS;
-            }
 
             File path = Storage.getFile(f);
 
@@ -408,7 +458,7 @@ public class StorageProvider extends ContentProvider {
                 for (String col : projection) {
                     if (OpenableColumns.DISPLAY_NAME.equals(col)) {
                         cols[i] = OpenableColumns.DISPLAY_NAME;
-                        values[i++] = uri.getLastPathSegment();
+                        values[i++] = uri.getLastPathSegment(); // contains original name
                     } else if (OpenableColumns.SIZE.equals(col)) {
                         cols[i] = OpenableColumns.SIZE;
                         values[i++] = path.length();
@@ -431,11 +481,11 @@ public class StorageProvider extends ContentProvider {
         if (f == null)
             return null;
         String s = f.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+        if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return resolver.getType(f);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            File ff = Storage.getFile(f);
-            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(Storage.getExt(ff));
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = Storage.getFile(f);
+            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(Storage.getExt(k));
         } else {
             throw new Storage.UnknownUri();
         }
@@ -466,12 +516,10 @@ public class StorageProvider extends ContentProvider {
         freeUris();
         try {
             String s = f.getScheme();
-            if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 return resolver.openFileDescriptor(f, mode);
-            } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-                final int fileMode = FileProvider.modeToMode(mode);
-                File ff = Storage.getFile(f);
-                return ParcelFileDescriptor.open(ff, fileMode);
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                return ParcelFileDescriptor.open(Storage.getFile(f), FileProvider.modeToMode(mode));
             } else {
                 throw new Storage.UnknownUri();
             }
@@ -489,18 +537,96 @@ public class StorageProvider extends ContentProvider {
         freeUris();
         try {
             String s = f.getScheme();
-            if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 return resolver.openAssetFileDescriptor(f, mode);
-            } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-                final int fileMode = FileProvider.modeToMode(mode);
-                File ff = Storage.getFile(f);
-                ParcelFileDescriptor fd = ParcelFileDescriptor.open(ff, fileMode);
-                return new AssetFileDescriptor(fd, 0, AssetFileDescriptor.UNKNOWN_LENGTH); // -1 means full file, check ContentResolver#openFileDescriptor
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(f);
+                return new AssetFileDescriptor(ParcelFileDescriptor.open(k, FileProvider.modeToMode(mode)), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
             } else {
                 throw new Storage.UnknownUri();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public ParcelFileDescriptor openInputStream(final InputStreamWriter is, String mode) {
+        deleteTmp(); // will not delete opened files
+        try {
+            if (checkMode(mode).equals("r")) { // r - can be pipe. check ContentProvider#openFile
+                ParcelFileDescriptor[] ff = ParcelFileDescriptor.createPipe();
+                final ParcelFileDescriptor r = ff[0];
+                final ParcelFileDescriptor w = ff[1];
+                return new ParcelFileDescriptor(r) {
+                    Thread thread = new Thread("Storage InputStream") {
+                        @Override
+                        public void run() {
+                            OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
+                            try {
+                                is.copy(os);
+                            } catch (Exception e) {
+                                Log.d(TAG, "Error reading archive", e);
+                            } finally {
+                                try {
+                                    os.close();
+                                } catch (IOException e) {
+                                    Log.d(TAG, "copy close error", e);
+                                }
+                                try {
+                                    is.close();
+                                } catch (IOException e) {
+                                    Log.d(TAG, "copy close error", e);
+                                }
+                            }
+                        }
+                    };
+
+                    {
+                        thread.start();
+                    }
+
+                    @Override
+                    public long getStatSize() {
+                        return is.getSize();
+                    }
+                };
+            } else { // rw - has to be File. check ContentProvider#openFile
+                File tmp = getContext().getExternalCacheDir();
+                if (tmp == null)
+                    tmp = getContext().getCacheDir();
+                tmp = File.createTempFile(FILE_PREFIX, FILE_SUFFIX, tmp);
+                FileOutputStream os = new FileOutputStream(tmp);
+                try {
+                    is.copy(os);
+                } finally {
+                    try {
+                        os.close();
+                    } catch (IOException e) {
+                        Log.d(TAG, "copy close error", e);
+                    }
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        Log.d(TAG, "copy close error", e);
+                    }
+                }
+                return ParcelFileDescriptor.open(tmp, FileProvider.modeToMode(mode));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String checkMode(String mode) { // check if caller required File on disk
+        if (Build.VERSION.SDK_INT >= 19 && mode.equals("r")) {
+            String[] ss = new String[]{ // know broken packages list which request socket (mode "r") but required file on disk, check ContentResolver#openFileDescriptor
+                    "com.google.android.music"
+            };
+            for (String s : ss) {
+                if (getCallingPackage().equals(s))
+                    return "rw"; // rw means we request file on disk, check ContentResolver#openFileDescriptor
+            }
+        }
+        return mode;
     }
 }
