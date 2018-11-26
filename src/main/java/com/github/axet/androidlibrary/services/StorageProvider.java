@@ -37,7 +37,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -360,17 +359,7 @@ public class StorageProvider extends ContentProvider {
         if (Build.VERSION.SDK_INT >= 24 && getContext().getApplicationInfo().targetSdkVersion >= 24) { // API24+ failed to open file:// with FileUriExposedException
             String s = uri.getScheme();
             if (s.equals(ContentResolver.SCHEME_FILE)) {
-                ArrayList<File> aa = new ArrayList<>();
-                aa.add(getContext().getCacheDir());
-                File[] ff = getContext().getExternalCacheDirs();
-                if (ff != null)
-                    aa.addAll(Arrays.asList(ff));
-                aa.add(getContext().getFilesDir());
                 File f = Storage.getFile(uri);
-                for (File k : aa) {
-                    if (Storage.relative(k, f) != null)
-                        return openIntent23(getContext(), uri);
-                }
                 if (f.isDirectory())
                     return openFolderIntent(getContext(), uri);
                 uri = share(uri, name);
