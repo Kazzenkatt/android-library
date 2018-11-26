@@ -272,6 +272,10 @@ public class StorageProvider extends ContentProvider {
             IOUtils.copy(is, os);
         }
 
+        public long getSize() {
+            return AssetFileDescriptor.UNKNOWN_LENGTH;
+        }
+
         public void close() throws IOException {
             if (is != null) {
                 is.close();
@@ -554,30 +558,39 @@ public class StorageProvider extends ContentProvider {
                 ParcelFileDescriptor[] ff = ParcelFileDescriptor.createPipe();
                 final ParcelFileDescriptor r = ff[0];
                 final ParcelFileDescriptor w = ff[1];
-                Thread thread = new Thread("Storage InputStream") {
-                    @Override
-                    public void run() {
-                        OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
-                        try {
-                            is.copy(os);
-                        } catch (Exception e) {
-                            Log.d(TAG, "Error reading archive", e);
-                        } finally {
+                return new ParcelFileDescriptor(r) {
+                    Thread thread = new Thread("Storage InputStream") {
+                        @Override
+                        public void run() {
+                            OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
                             try {
-                                os.close();
-                            } catch (IOException e) {
-                                Log.d(TAG, "copy close error", e);
-                            }
-                            try {
-                                is.close();
-                            } catch (IOException e) {
-                                Log.d(TAG, "copy close error", e);
+                                is.copy(os);
+                            } catch (Exception e) {
+                                Log.d(TAG, "Error reading archive", e);
+                            } finally {
+                                try {
+                                    os.close();
+                                } catch (IOException e) {
+                                    Log.d(TAG, "copy close error", e);
+                                }
+                                try {
+                                    is.close();
+                                } catch (IOException e) {
+                                    Log.d(TAG, "copy close error", e);
+                                }
                             }
                         }
+                    };
+
+                    {
+                        thread.start();
+                    }
+
+                    @Override
+                    public long getStatSize() {
+                        return is.getSize();
                     }
                 };
-                thread.start();
-                return r;
             } else { // rw - has to be File. check ContentProvider#openFile
                 File tmp = getContext().getExternalCacheDir();
                 if (tmp == null)
@@ -616,18 +629,5 @@ public class StorageProvider extends ContentProvider {
             }
         }
         return mode;
-    }
-
-    public AssetFileDescriptor openAssetFile(ParcelFileDescriptor fd, long size) { // check if caller required 'length' -1
-        if (Build.VERSION.SDK_INT >= 19) {
-            String[] ss = new String[]{ // know broken packages list which requests socket (mode "r") but calling ContentResolver#openFileDescriptor
-                    "com.google.android.gm",
-                    "org.videolan.vlc"
-            };
-            Arrays.sort(ss);
-            if (Arrays.binarySearch(ss, getCallingPackage()) >= 0)
-                return new AssetFileDescriptor(fd, 0, AssetFileDescriptor.UNKNOWN_LENGTH); // -1 means full file, check ContentResolver#openFileDescriptor
-        }
-        return new AssetFileDescriptor(fd, 0, size);
     }
 }
