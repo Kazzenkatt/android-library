@@ -2,7 +2,6 @@ package com.github.axet.androidlibrary.app;
 
 import android.content.ComponentName;
 import android.content.Intent;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -298,8 +297,7 @@ public class SuperUser {
         return su(MV, escape(f), escape(to));
     }
 
-    public static InputStream cat(Uri uri) {
-        File f = Storage.getFile(uri);
+    public static InputStream cat(File f) {
         Commands cmd = new Commands(MessageFormat.format("cat {0}", escape(f))).exit(true);
         try {
             final Process su = Runtime.getRuntime().exec(BIN_SU);
@@ -331,14 +329,12 @@ public class SuperUser {
         }
     }
 
-    public static OutputStream open(final Uri uri) throws IOException {
+    public static OutputStream open(final File f) throws IOException {
         return new OutputStream() {
             Process su;
             OutputStream os;
 
             {
-                File f = Storage.getFile(uri);
-
                 Commands cmd = new Commands(MessageFormat.format(BIN_CAT + " > {0}", escape(f))).exit(true);
                 su = Runtime.getRuntime().exec(BIN_SU);
 
