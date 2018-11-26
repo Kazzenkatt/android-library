@@ -555,7 +555,17 @@ public class Storage {
     public static String getName(Context context, Uri uri) {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            return getDocumentName(context, uri);
+            ContentResolver resolver = context.getContentResolver();
+            Cursor cursor = resolver.query(uri, null, null, null, null);
+            if (cursor != null) {
+                try {
+                    if (cursor.moveToNext())
+                        return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)); // getDocumentName() SAF only
+                } finally {
+                    cursor.close();
+                }
+            }
+            return uri.getLastPathSegment();
         } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
             return getFile(uri).getName();
         } else {
