@@ -13,7 +13,6 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.CancellationSignal;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
@@ -238,7 +237,7 @@ public class StorageProvider extends ContentProvider {
                 File f = Storage.getFile(uri);
                 File[] ff = concat(new File[]{getContext().getCacheDir()}, getContext().getExternalCacheDirs());
                 for (File k : ff) {
-                    if (f.getPath().startsWith(k.getPath()))
+                    if (Storage.relative(k, f) != null)
                         return openIntent23(getContext(), uri);
                 }
                 if (f.isDirectory())
@@ -279,7 +278,7 @@ public class StorageProvider extends ContentProvider {
 
         if (name == null) {
             String s = u.getScheme();
-            if (Build.VERSION.SDK_INT >= 21 && s.startsWith(ContentResolver.SCHEME_CONTENT) && !DocumentsContract.isDocumentUri(getContext(), u)) {
+            if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT) && !DocumentsContract.isDocumentUri(getContext(), u)) {
                 String id = DocumentsContract.getTreeDocumentId(u);
                 id = id.substring(id.indexOf(Storage.COLON) + 1);
                 File f = new File(id);
@@ -290,7 +289,7 @@ public class StorageProvider extends ContentProvider {
         }
 
         File path = new File(hash, name);
-        return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(info.authority).path(path.toString()).build();
+        return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(info.authority).path(path.getPath()).build();
     }
 
     public String getAuthority() {
@@ -329,13 +328,10 @@ public class StorageProvider extends ContentProvider {
     public void attachInfo(Context context, ProviderInfo i) {
         super.attachInfo(context, i);
         info = i;
-        // Sanity check our security
-        if (info.exported) {
+        if (info.exported)
             throw new SecurityException("Provider must not be exported");
-        }
-        if (!info.grantUriPermissions) {
+        if (!info.grantUriPermissions)
             throw new SecurityException("Provider must grant uri permissions");
-        }
         infos.put(getClass(), this);
     }
 
@@ -348,25 +344,18 @@ public class StorageProvider extends ContentProvider {
 
     @Nullable
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        return null;
-    }
-
-    @Nullable
-    @Override
     @TargetApi(16)
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, CancellationSignal cancellationSignal) {
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         Uri f = find(uri);
         if (f == null)
             return null;
 
         String s = f.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
-            return resolver.query(f, projection, selection, selectionArgs, sortOrder, cancellationSignal);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            if (projection == null) {
+        if (s.equals(ContentResolver.SCHEME_CONTENT)) {
+            return resolver.query(f, projection, selection, selectionArgs, sortOrder);
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+            if (projection == null)
                 projection = FileProvider.COLUMNS;
-            }
 
             File path = Storage.getFile(f);
 
@@ -408,7 +397,7 @@ public class StorageProvider extends ContentProvider {
                 for (String col : projection) {
                     if (OpenableColumns.DISPLAY_NAME.equals(col)) {
                         cols[i] = OpenableColumns.DISPLAY_NAME;
-                        values[i++] = uri.getLastPathSegment();
+                        values[i++] = uri.getLastPathSegment(); // contains original name
                     } else if (OpenableColumns.SIZE.equals(col)) {
                         cols[i] = OpenableColumns.SIZE;
                         values[i++] = path.length();
@@ -431,11 +420,11 @@ public class StorageProvider extends ContentProvider {
         if (f == null)
             return null;
         String s = f.getScheme();
-        if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+        if (s.equals(ContentResolver.SCHEME_CONTENT)) {
             return resolver.getType(f);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-            File ff = Storage.getFile(f);
-            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(Storage.getExt(ff));
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File k = Storage.getFile(f);
+            return MimeTypeMap.getSingleton().getMimeTypeFromExtension(Storage.getExt(k));
         } else {
             throw new Storage.UnknownUri();
         }
@@ -466,12 +455,10 @@ public class StorageProvider extends ContentProvider {
         freeUris();
         try {
             String s = f.getScheme();
-            if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 return resolver.openFileDescriptor(f, mode);
-            } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-                final int fileMode = FileProvider.modeToMode(mode);
-                File ff = Storage.getFile(f);
-                return ParcelFileDescriptor.open(ff, fileMode);
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                return ParcelFileDescriptor.open(Storage.getFile(f), FileProvider.modeToMode(checkMode(mode)));
             } else {
                 throw new Storage.UnknownUri();
             }
@@ -489,18 +476,42 @@ public class StorageProvider extends ContentProvider {
         freeUris();
         try {
             String s = f.getScheme();
-            if (s.startsWith(ContentResolver.SCHEME_CONTENT)) {
+            if (s.equals(ContentResolver.SCHEME_CONTENT)) {
                 return resolver.openAssetFileDescriptor(f, mode);
-            } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
-                final int fileMode = FileProvider.modeToMode(mode);
-                File ff = Storage.getFile(f);
-                ParcelFileDescriptor fd = ParcelFileDescriptor.open(ff, fileMode);
-                return new AssetFileDescriptor(fd, 0, AssetFileDescriptor.UNKNOWN_LENGTH); // -1 means full file, check ContentResolver#openFileDescriptor
+            } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+                File k = Storage.getFile(f);
+                return new AssetFileDescriptor(ParcelFileDescriptor.open(k, FileProvider.modeToMode(mode)), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
             } else {
                 throw new Storage.UnknownUri();
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public String checkMode(String mode) { // check if caller required File on disk
+        if (Build.VERSION.SDK_INT >= 19 && mode.equals("r")) {
+            String[] ss = new String[]{ // know broken packages list which request socket (mode "r") but required file on disk, check ContentResolver#openFileDescriptor
+                    "com.google.android.music"
+            };
+            for (String s : ss) {
+                if (getCallingPackage().equals(s))
+                    return "rw"; // rw means we request file on disk, check ContentResolver#openFileDescriptor
+            }
+        }
+        return mode;
+    }
+
+    public AssetFileDescriptor openAssetFile(ParcelFileDescriptor fd, long size) { // check if caller required 'length' -1
+        if (Build.VERSION.SDK_INT >= 19) {
+            String[] ss = new String[]{ // know broken packages list which requests socket (mode "r") but calling ContentResolver#openFileDescriptor
+                    "com.google.android.gm"
+            };
+            for (String s : ss) {
+                if (getCallingPackage().equals(s))
+                    return new AssetFileDescriptor(fd, 0, -1); // -1 means full file, check ContentResolver#openFileDescriptor
+            }
+        }
+        return new AssetFileDescriptor(fd, 0, size);
     }
 }

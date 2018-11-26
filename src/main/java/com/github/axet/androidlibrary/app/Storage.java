@@ -60,6 +60,7 @@ public class Storage {
     public static final String CONTENTTYPE_OPUS = "audio/opus";
     public static final String CONTENTTYPE_OGG = "audio/ogg";
     public static final String CONTENTTYPE_FB2 = "application/x-fictionbook";
+    public static final String CONTENTTYPE_RAR = "application/x-rar-compressed";
 
     public static final String COLON = ":";
 
@@ -92,13 +93,14 @@ public class Storage {
             int l = b.length();
             if (f.length() > l) { // same path or relative?
                 if (f.charAt(l) != File.separatorChar)
-                    return null;
+                    return null; // not relative
                 else
                     l++;
             }
             f = f.substring(l);
+            return new File(f); // "" or relative path
         }
-        return new File(f);
+        return null; // not relative
     }
 
     public static boolean isDocumentIdRelative(String base, String id) { // home:system64 <-> home:system64/test, but not home:system
@@ -624,6 +626,8 @@ public class Storage {
                 return CONTENTTYPE_OGG; // replace 'application/ogg'
             case "fb2":
                 return CONTENTTYPE_FB2;
+            case "rar":
+                return CONTENTTYPE_RAR;
         }
         String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
         if (type == null)
