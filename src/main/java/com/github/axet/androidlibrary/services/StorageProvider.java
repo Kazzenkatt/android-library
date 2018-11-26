@@ -224,12 +224,12 @@ public class StorageProvider extends ContentProvider {
         return intent;
     }
 
-    public static Intent shareIntent23(Context context, Uri uri, String type, String name) {
+    public static Intent shareIntent23(Context context, Uri uri, String type, String subject) {
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType(type);
         intent.putExtra(Intent.EXTRA_STREAM, uri);
         intent.putExtra(Intent.EXTRA_EMAIL, "");
-        intent.putExtra(Intent.EXTRA_SUBJECT, name);
+        intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         intent.putExtra(Intent.EXTRA_TEXT, context.getString(R.string.shared_via, getApplicationName(context)));
         FileProvider.grantPermissions(context, intent, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         return intent;
@@ -375,14 +375,14 @@ public class StorageProvider extends ContentProvider {
         return shareIntent(uri, null, type, name);
     }
 
-    public Intent shareIntent(Uri uri, String t, String type, String name) {
+    public Intent shareIntent(Uri uri, String name, String type, String subject) {
         if (Build.VERSION.SDK_INT >= 24 && getContext().getApplicationInfo().targetSdkVersion >= 24) { // API24+ failed to open file:// with FileUriExposedException
-            uri = share(uri, t);
-            return shareIntent23(getContext(), uri, type, name);
+            uri = share(uri, name);
+            return shareIntent23(getContext(), uri, type, subject);
         } else { // API23 can open file://
-            if (t != null)
-                uri = share(uri, t);
-            return shareIntent23(getContext(), uri, type, name);
+            if (name != null)
+                uri = share(uri, name);
+            return shareIntent23(getContext(), uri, type, subject);
         }
     }
 
