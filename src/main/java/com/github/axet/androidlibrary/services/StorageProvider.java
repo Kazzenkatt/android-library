@@ -20,6 +20,7 @@ import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import com.github.axet.androidlibrary.R;
@@ -27,9 +28,15 @@ import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -49,11 +56,16 @@ import java.util.HashSet;
 // url example:
 // content://com.github.axet.androidlibrary/35470c701a29ef8a9d58fbf8bd89dd83/image.jpg
 public class StorageProvider extends ContentProvider {
+    public static String TAG = StorageProvider.class.getSimpleName();
+
     public static long TIMEOUT = 1 * 1000 * 60;
     public static final int MD5_SIZE = 32;
 
     public static final String CONTENTTYPE_FOLDER = "resource/folder";
     public static final String SCHEME_FOLDER = "folder";
+
+    public static final String FILE_PREFIX = "storage";
+    public static final String FILE_SUFFIX = ".tmp";
 
     protected static HashMap<Class, StorageProvider> infos = new HashMap<>();
 
@@ -221,6 +233,51 @@ public class StorageProvider extends ContentProvider {
         intent.putExtra(Intent.EXTRA_TEXT, context.getString(R.string.shared_via, getApplicationName(context)));
         FileProvider.grantPermissions(context, intent, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         return intent;
+    }
+
+    public void deleteTmp() {
+        File tmp = getContext().getExternalCacheDir();
+        deleteTmp(tmp);
+        tmp = getContext().getCacheDir();
+        deleteTmp(tmp);
+    }
+
+    public void deleteTmp(File tmp) {
+        if (tmp == null)
+            return;
+        File[] ff = tmp.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return file.getName().startsWith(FILE_PREFIX);
+            }
+        });
+        if (ff == null)
+            return;
+        for (File f : ff) {
+            f.delete();
+        }
+    }
+
+    public static class InputStreamWriter {
+        InputStream is;
+
+        public InputStreamWriter() {
+        }
+
+        public InputStreamWriter(InputStream is) {
+            this.is = is;
+        }
+
+        public void copy(OutputStream os) throws IOException {
+            IOUtils.copy(is, os);
+        }
+
+        public void close() throws IOException {
+            if (is != null) {
+                is.close();
+                is = null;
+            }
+        }
     }
 
     public StorageProvider() {
@@ -483,6 +540,65 @@ public class StorageProvider extends ContentProvider {
                 return new AssetFileDescriptor(ParcelFileDescriptor.open(k, FileProvider.modeToMode(mode)), 0, AssetFileDescriptor.UNKNOWN_LENGTH);
             } else {
                 throw new Storage.UnknownUri();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ParcelFileDescriptor openInputStream(final InputStreamWriter is, String mode) {
+        deleteTmp(); // will not delete opened files
+
+        try {
+            if (checkMode(mode).equals("r")) { // r - can be pipe. check ContentProvider#openFile
+                ParcelFileDescriptor[] ff = ParcelFileDescriptor.createPipe();
+                final ParcelFileDescriptor r = ff[0];
+                final ParcelFileDescriptor w = ff[1];
+                Thread thread = new Thread("Storage InputStream") {
+                    @Override
+                    public void run() {
+                        OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(w);
+                        try {
+                            is.copy(os);
+                        } catch (Exception e) {
+                            Log.d(TAG, "Error reading archive", e);
+                        } finally {
+                            try {
+                                os.close();
+                            } catch (IOException e) {
+                                Log.d(TAG, "copy close error", e);
+                            }
+                            try {
+                                is.close();
+                            } catch (IOException e) {
+                                Log.d(TAG, "copy close error", e);
+                            }
+                        }
+                    }
+                };
+                thread.start();
+                return r;
+            } else { // rw - has to be File. check ContentProvider#openFile
+                File tmp = getContext().getExternalCacheDir();
+                if (tmp == null)
+                    tmp = getContext().getCacheDir();
+                tmp = File.createTempFile(FILE_PREFIX, FILE_SUFFIX, tmp);
+                FileOutputStream os = new FileOutputStream(tmp);
+                try {
+                    is.copy(os);
+                } finally {
+                    try {
+                        os.close();
+                    } catch (IOException e) {
+                        Log.d(TAG, "copy close error", e);
+                    }
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        Log.d(TAG, "copy close error", e);
+                    }
+                }
+                return ParcelFileDescriptor.open(tmp, FileProvider.modeToMode(mode));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
