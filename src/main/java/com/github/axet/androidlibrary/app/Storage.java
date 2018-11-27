@@ -563,6 +563,8 @@ public class Storage {
 
     @TargetApi(19)
     public static String getContentName(Context context, Uri uri) { // ContentResolver or SAF document
+        if (uri.getAuthority().startsWith(SAF)) // query crashed for DocumentsContract.isTreeUri() uris
+            return getDocumentName(context, uri);
         ContentResolver resolver = context.getContentResolver();
         Cursor cursor = resolver.query(uri, null, null, null, null);
         if (cursor != null) {
@@ -577,31 +579,30 @@ public class Storage {
     }
 
     @TargetApi(21)
-    public static String getDocumentName(Context context, Uri uri) { // SAF document name by ID
+    public static String getDocumentName(Context context, Uri uri) { // DocumentFile return null name for non existent files
         if (DocumentsContract.isDocumentUri(context, uri)) {
             String id = DocumentsContract.getDocumentId(uri);
             String[] ss = id.split(COLON, 2);
-            if (ss[1].isEmpty()) {
+            if (ss[1].isEmpty()) { // unknown id format
                 String pid = DocumentsContract.getTreeDocumentId(uri);
                 if (pid.equals(id))
                     return OpenFileDialog.ROOT;
                 DocumentFile f = DocumentFile.fromSingleUri(context, uri);
                 return f.getName();
             }
-            return new File(ss[1]).getName();
+            return new File(ss[1]).getName(); // not using query when it is possible
         } else {
             String id = DocumentsContract.getTreeDocumentId(uri);
             String[] ss = id.split(COLON, 2);
-            if (ss[1].isEmpty())
+            if (ss[1].isEmpty()) // we except true here
                 return OpenFileDialog.ROOT;
             DocumentFile f = DocumentFile.fromTreeUri(context, uri);
-            return f.getName();
+            return f.getName(); // unknown id format
         }
     }
 
-    // get document folder from document uri
     @TargetApi(21)
-    public static Uri getDocumentTreeUri(Uri treeUri) {
+    public static Uri getDocumentTreeUri(Uri treeUri) { // get document folder from document uri
         return new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT)
                 .authority(treeUri.getAuthority()).appendPath(PATH_TREE)
                 .appendPath(DocumentsContract.getTreeDocumentId(treeUri))
