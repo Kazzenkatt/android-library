@@ -86,21 +86,26 @@ public class Storage {
     }
 
     public static File relative(File base, File file) { // system/test64/123 - system/test64 == 123, but not 'system/test'
-        String r = relative(base.getPath(), file.getPath());
+        String f = file.getPath();
+        String r = relative(base.getPath(), f);
         if (r == null)
             return null;
+        if (f == r)
+            return file;
         return new File(r);
     }
 
-    public static String relative(String b, String f) { // home:system64 <-> home:system64/test, but not home:system
-        if (f.startsWith(b)) {
-            int l = b.length();
-            if (f.length() > l) { // same path or relative?
-                if (f.charAt(l) != File.separatorChar)
+    public static String relative(String base, String file) { // home:system64 <-> home:system64/test, but not home:system
+        if (file.startsWith(base)) {
+            int l = base.length();
+            if (l == 0) // base is ""
+                return file;
+            if (base.charAt(l - 1) != File.separatorChar && file.length() > l) { // base not ends with '/', same path or relative?
+                if (file.charAt(l) != File.separatorChar)
                     return null; // not relative
-                l++;
+                l++; // 'l' points to '/'
             }
-            return f.substring(l); // "" or relative path
+            return file.substring(l); // "" or relative path
         }
         return null; // not relative
     }

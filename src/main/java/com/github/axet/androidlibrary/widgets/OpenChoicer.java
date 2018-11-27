@@ -265,6 +265,8 @@ public class OpenChoicer {
             showFallbackFolders();
         } else {
             final OpenFileDialog f = fileDialogBuild();
+            if (title != null)
+                f.setTitle(title);
             final AlertDialog d = f.create();
             if (!readonly) {
                 f.setChangeFolderListener(new Runnable() {
@@ -369,7 +371,6 @@ public class OpenChoicer {
     }
 
     public void onResult(Uri uri) {
-        ;
     }
 
     public void onResult(Uri uri, boolean tmp) {
