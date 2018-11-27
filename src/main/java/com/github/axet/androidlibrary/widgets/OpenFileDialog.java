@@ -9,10 +9,13 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.graphics.drawable.DrawableCompat;
+import android.support.v4.widget.TextViewCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatButton;
+import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
@@ -81,9 +84,10 @@ public class OpenFileDialog extends AlertDialog.Builder {
         BOOTH
     }
 
+    protected String title;
     protected File currentPath;
     protected TextView free;
-    protected TextView title;
+    protected TextView path;
     protected TextView message;
     protected RecyclerView listView;
     protected RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {
@@ -676,11 +680,11 @@ public class OpenFileDialog extends AlertDialog.Builder {
         titlebar.setPadding(paddingLeft, 0, paddingRight, 0);
         titlebar.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        title = (TextView) inflater.inflate(android.R.layout.simple_list_item_1, null);
-        title.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        title.setPadding(0, paddingTop, dp2, paddingBottom);
+        path = (TextView) inflater.inflate(android.R.layout.simple_list_item_1, null);
+        path.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        path.setPadding(0, paddingTop, dp2, paddingBottom);
 
-        PathMax textMax = new PathMax(getContext(), title);
+        PathMax textMax = new PathMax(getContext(), path);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
         lp.gravity = Gravity.CENTER;
         textMax.setLayoutParams(lp);
@@ -716,7 +720,19 @@ public class OpenFileDialog extends AlertDialog.Builder {
                 d.show();
             }
         });
-        setCustomTitle(titlebar);
+        if (title != null) {
+            final LinearLayout titlebarVert = new LinearLayout(getContext());
+            titlebarVert.setOrientation(LinearLayout.VERTICAL);
+            TextView t = new AppCompatTextView(getContext());
+            TextViewCompat.setTextAppearance(t, R.style.TextAppearance_AppCompat_Title);
+            t.setText(title);
+            t.setPadding(paddingLeft, paddingTop, paddingRight, 0);
+            titlebarVert.addView(t);
+            titlebarVert.addView(titlebar);
+            setCustomTitle(titlebarVert);
+        } else {
+            setCustomTitle(titlebar);
+        }
 
         // main view, linearlayout
         final LinearLayout main = new LinearLayout(getContext());
@@ -982,7 +998,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         adapter.scan();
 
         listView.scrollToPosition(0);
-        title.setText(adapter.currentPath.getPath());
+        path.setText(adapter.currentPath.getPath());
         free.setText(MainApplication.formatSize(getContext(), Storage.getFree(adapter.currentPath)));
         if (changeFolder != null)
             changeFolder.run();
@@ -1015,5 +1031,17 @@ public class OpenFileDialog extends AlertDialog.Builder {
             listView.setAdapter(a);
         if (a != null)
             a.registerAdapterDataObserver(observer);
+    }
+
+    @Override
+    public AlertDialog.Builder setTitle(int titleId) {
+        title = getContext().getString(titleId);
+        return this;
+    }
+
+    @Override
+    public AlertDialog.Builder setTitle(@Nullable CharSequence t) {
+        title = t.toString();
+        return this;
     }
 }
