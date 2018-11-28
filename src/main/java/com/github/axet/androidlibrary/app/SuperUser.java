@@ -51,6 +51,7 @@ public class SuperUser {
     public static final String BIN_READLINK = which("readlink");
     public static final String BIN_LN = which("ln");
     public static final String BIN_LS = which("ls");
+    public static final String BIN_STAT = which("stat");
 
     public static final String SETE = BIN_SET + " -e";
     public static final String CAT_TO = BIN_CAT + " << 'EOF' > {0}\n{1}\nEOF";
@@ -64,6 +65,7 @@ public class SuperUser {
     public static final String READLINK = BIN_READLINK + " {0}";
     public static final String LNS = BIN_LN + " -s {0} {1}";
     public static final String TOUCHMCT = BIN_TOUCH + " -mct {0} {1}"; // m = modification time, c = do not create file, t = set date/time
+    public static final String STATLCS = BIN_STAT + " -Lc%s {0}"; // L = follow symlinks, c = custom format, %s = file size
 
     public static final String KILL_SELF = BIN_KILL + " -9 $$";
     public static final String SU1 = " || " + KILL_SELF; // some su does not return error codes for pipe scripts, kill it from inside pipe if script fails
@@ -242,10 +244,12 @@ public class SuperUser {
         Process su = null;
         try {
             su = Runtime.getRuntime().exec(BIN_SU);
+            if (cmd.stderr != null && !cmd.stderr)
+                su.getErrorStream().close();
             OutputStream os = su.getOutputStream();
             if (cmd.sete)
                 writeString(SETE + EOL, os);
-            if (cmd.exit && !EXITCODE) // without 'trap' scrips with or without (set -e) will exit with '0'
+            if (cmd.exit && !EXITCODE) // without 'trap' scrips with or without (set -e) always exit with '0'
                 writeString(BIN_TRAP + " '" + KILL_SELF + "' ERR" + EOL, os);
             writeString(cmd.build(), os);
             writeString(BIN_EXIT + EOL, os);
