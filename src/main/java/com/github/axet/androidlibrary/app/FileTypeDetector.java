@@ -1,6 +1,7 @@
 package com.github.axet.androidlibrary.app;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -33,7 +34,7 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
 
     ArrayList<Handler> list = new ArrayList<>();
 
-    public static String detecting(Storage storage, FileTypeDetector.Detector[] dd, InputStream is, OutputStream os, Uri u) throws IOException, NoSuchAlgorithmException {
+    public static String detecting(Context context, FileTypeDetector.Detector[] dd, InputStream is, OutputStream os, Uri u) throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
         FileTypeDetectorXml xml = new FileTypeDetectorXml(dd);
         FileTypeDetectorZip zip = new FileTypeDetectorZip(dd);
@@ -61,7 +62,7 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
 
         String s = u.getScheme();
         if (s.equals(ContentResolver.SCHEME_CONTENT) || s.equals(ContentResolver.SCHEME_FILE)) // ext detection works for local files only
-            ext.detect(storage, u);
+            ext.detect(context, u);
 
         return Storage.toHex(digest.digest());
     }
@@ -181,8 +182,8 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
             }
         }
 
-        public void detect(Storage storage, Uri u) {
-            String name = storage.getName(u);
+        public void detect(Context context, Uri u) {
+            String name = Storage.getName(context, u);
             String e = Storage.getExt(name).toLowerCase();
             for (Handler h : list) {
                 if (h.done && h.detected && e.equals(h.ext)) {
@@ -367,6 +368,10 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
             boolean first = true;
             String firstTag;
 
+            public Handler(String ext) {
+                super(ext);
+            }
+
             public Handler(String ext, String firstTag) {
                 super(ext);
                 this.firstTag = firstTag;
@@ -376,12 +381,17 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
                 if (first) {
                     if (firstTag != null) {
                         done = true;
-                        if (localName.equals(firstTag)) {
+                        if (localName.equals(firstTag))
                             detected = true;
-                        }
                     }
                 }
                 first = false;
+            }
+
+            public void startDocument() {
+            }
+
+            public void endDocument() {
             }
 
             @Override
@@ -413,6 +423,24 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
                                 super.startElement(uri, localName, qName, attributes);
                                 for (Handler h : new ArrayList<>(list)) {
                                     h.startElement(uri, localName, qName, attributes);
+                                    if (h.done)
+                                        list.remove(h);
+                                }
+                            }
+
+                            @Override
+                            public void startDocument() throws SAXException {
+                                for (Handler h : new ArrayList<>(list)) {
+                                    h.startDocument();
+                                    if (h.done)
+                                        list.remove(h);
+                                }
+                            }
+
+                            @Override
+                            public void endDocument() throws SAXException {
+                                for (Handler h : new ArrayList<>(list)) {
+                                    h.endDocument();
                                     if (h.done)
                                         list.remove(h);
                                 }
@@ -467,8 +495,31 @@ public class FileTypeDetector { // take a look at tika from 'apache commons'
     }
 
     public static class FileHTML extends FileTypeDetectorXml.Handler {
+        public String content;
+
         public FileHTML() {
-            super("html", "html");
+            super("html");
+        }
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) {
+            if (first) {
+                if (localName.equals("html"))
+                    detected = true;
+            }
+            if (localName.equals("meta")) {
+                content = attributes.getValue("content");
+                if (detected)
+                    done = true;
+            }
+            super.startElement(uri, localName, qName, attributes);
+        }
+
+        @Override
+        public void endDocument() {
+            super.endDocument();
+            if (detected)
+                done = true;
         }
     }
 
