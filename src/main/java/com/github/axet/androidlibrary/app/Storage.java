@@ -115,7 +115,7 @@ public class Storage {
     }
 
     public static String[] splitPath(String s) {
-        return s.split("[//\\\\]");
+        return s.split(OpenFileDialog.ROOT);
     }
 
     public static String formatNextFile(String name, int i, String ext) {

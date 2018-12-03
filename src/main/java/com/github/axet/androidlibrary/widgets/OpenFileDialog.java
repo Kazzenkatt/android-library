@@ -19,6 +19,7 @@ import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.Gravity;
@@ -41,6 +42,7 @@ import android.widget.TextView;
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.app.Storage;
+import com.github.axet.androidlibrary.app.SuperUser;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -58,6 +60,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class OpenFileDialog extends AlertDialog.Builder {
+    public static final String TAG = OpenFileDialog.class.getSimpleName();
+
     public static final String ANDROID_STORAGE = "ANDROID_STORAGE"; // environment variable, TODO: add 'EXTERNAL_STORAGE' and 'SECONDARY_STORAGE'. do not have device to test
     public static final String DEFAULT_STORAGE_PATH = "/storage";
     public static final Pattern DEFAULT_STORAGE_PATTERN = Pattern.compile("\\w\\w\\w\\w-\\w\\w\\w\\w");
@@ -447,7 +451,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
         public AdapterView.OnItemLongClickListener onItemLongClickListener;
         public AdapterView.OnItemClickListener onItemClickListener;
-        public View emptyView;
+        public TextView emptyView; // also used to show fatal errors
 
         public FileAdapter(Context context, File currentPath) {
             this.context = context;
@@ -548,15 +552,23 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
             files.clear();
 
-            List<File> ff = cache(currentPath, null);
-            if (ff != null) {
-                if (Build.VERSION.SDK_INT < 11) {
-                    for (File f : ff)
-                        files.add(f); // API11< has no Collection.addAll()
-                } else {
-                    files.addAll(ff);
+            try {
+                List<File> ff = cache(currentPath, null);
+                if (ff != null) {
+                    if (Build.VERSION.SDK_INT < 11) {
+                        for (File f : ff)
+                            files.add(f); // API11< has no Collection.addAll()
+                    } else {
+                        files.addAll(ff);
+                    }
+                    Collections.sort(files, new SortFiles());
                 }
-                Collections.sort(files, new SortFiles());
+            } catch (RuntimeException e) {
+                Log.e(TAG, "listFiles", e);
+                if (emptyView != null) {
+                    emptyView.setVisibility(View.VISIBLE);
+                    emptyView.setText(SuperUser.toMessage(e));
+                }
             }
 
             if (emptyView != null)

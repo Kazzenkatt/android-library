@@ -64,7 +64,7 @@ public class CacheImagesAdapter {
         private final AtomicInteger mCount = new AtomicInteger(1);
 
         public Thread newThread(Runnable r) {
-            return new Thread(r, "AsyncTask #" + mCount.getAndIncrement());
+            return new Thread(r, "CacheImagesAdapter #" + mCount.getAndIncrement());
         }
     };
 
