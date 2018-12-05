@@ -98,13 +98,14 @@ public class SuperUser {
 
     public static String toMessage(Throwable e) {
         Throwable p = e;
-        while (p != null) {
-            e = p;
-            p = p.getCause();
+        while (e instanceof RuntimeException) {
+            e = e.getCause();
+            if (e != null)
+                p = e;
         }
-        String msg = e.getMessage();
+        String msg = p.getMessage();
         if (msg == null || msg.isEmpty())
-            msg = e.getClass().getCanonicalName();
+            msg = p.getClass().getCanonicalName();
         return msg;
     }
 
@@ -740,14 +741,6 @@ public class SuperUser {
             if (e != null)
                 return SuperUser.errno(toMessage(e), errno);
             return SuperUser.errno("", errno);
-        }
-
-        public String getMessage() {
-            if (stderr != null && !stderr.isEmpty())
-                return stderr + " (errno:" + errno + ")";
-            if (e != null)
-                return toMessage(e) + " (errno:" + errno + ")";
-            return "errno: " + errno;
         }
     }
 
