@@ -2,7 +2,10 @@ package com.github.axet.androidlibrary.app;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.Build;
 import android.support.annotation.NonNull;
+import android.system.ErrnoException;
+import android.system.OsConstants;
 import android.util.Log;
 
 import org.apache.commons.io.IOUtils;
@@ -16,6 +19,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.text.ParseException;
@@ -92,18 +97,54 @@ public class SuperUser {
     public static boolean EXITCODE = false; // does su support for exit code for pipe scripts? run exitTest()
 
     public static String toMessage(Throwable e) {
-        String msg = e.getMessage();
-        if (msg == null || msg.isEmpty()) {
-            Throwable p = e;
-            while (p != null) {
-                e = p;
-                p = p.getCause();
-            }
-            msg = e.getMessage();
-            if (msg == null || msg.isEmpty())
-                msg = e.getClass().getCanonicalName();
+        Throwable p = e;
+        while (p != null) {
+            e = p;
+            p = p.getCause();
         }
+        String msg = e.getMessage();
+        if (msg == null || msg.isEmpty())
+            msg = e.getClass().getCanonicalName();
         return msg;
+    }
+
+    public static Exception errno(String func, int errno) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            return new ErrnoException(func, errno);
+        } else {
+            try {
+                Class klass = Class.forName("libcore.io.ErrnoException");
+                return (Exception) klass.getDeclaredConstructor(String.class, int.class).newInstance(func, errno);
+            } catch (Exception ignore) {
+                return new IOException(func + ": " + errno);
+            }
+        }
+    }
+
+    public static String errnoName(int errno) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            return OsConstants.errnoName(errno);
+        }
+        try {
+            Class klass = Class.forName("libcore.io.OsConstants");
+            Method m = klass.getDeclaredMethod("errnoName", int.class);
+            return (String) m.invoke(null, errno);
+        } catch (Exception ignore) {
+            return "errno: " + errno;
+        }
+    }
+
+    public static String strerror(int errno) {
+        try {
+            Class klass = Class.forName("libcore.io.Libcore");
+            Field fieldOs = klass.getDeclaredField("os");
+            Object os = fieldOs.get(null);
+            Class klass2 = os.getClass().getSuperclass();
+            Method m = klass2.getDeclaredMethod("strerror", int.class);
+            return (String) m.invoke(os, errno);
+        } catch (Exception ignore) {
+            return "errno: " + errno;
+        }
     }
 
     public static String find(String... args) {
@@ -634,8 +675,8 @@ public class SuperUser {
         }
     }
 
-    public static class Result extends Throwable {
-        public int res;
+    public static class Result {
+        public int errno;
         public String stdout;
         public String stderr;
         public Throwable e;
@@ -646,31 +687,24 @@ public class SuperUser {
         }
 
         public Result(int res) {
-            this.res = res;
-        }
-
-        public Result(Result r) {
-            res = r.res;
-            stdout = r.stdout;
-            stderr = r.stderr;
-            e = r.e;
+            this.errno = res;
         }
 
         public Result(Commands cmd, Process p) {
-            res = p.exitValue();
+            errno = p.exitValue();
             captureOutputs(cmd, p);
         }
 
         public Result(Commands cmd, Process p, Throwable e) {
             if (p == null) {
-                this.res = 1;
+                this.errno = 1;
                 this.e = e;
                 return;
             }
             this.e = e;
             captureOutputs(cmd, p);
+            this.errno = p.exitValue();
             p.destroy();
-            this.res = p.exitValue();
         }
 
         public void captureOutputs(Commands cmd, Process p) {
@@ -691,22 +725,29 @@ public class SuperUser {
         }
 
         public boolean ok() {
-            return res == 0 && e == null;
+            return errno == 0 && e == null;
         }
 
         public Result must() {
             if (!ok())
-                throw new RuntimeException(this);
+                throw new RuntimeException(errno());
             return this;
         }
 
-        @Override
+        public Exception errno() {
+            if (stderr != null && !stderr.isEmpty())
+                return SuperUser.errno(stderr, errno);
+            if (e != null)
+                return SuperUser.errno(toMessage(e), errno);
+            return SuperUser.errno("", errno);
+        }
+
         public String getMessage() {
             if (stderr != null && !stderr.isEmpty())
-                return stderr + " (error:" + res + ")";
+                return stderr + " (errno:" + errno + ")";
             if (e != null)
-                return toMessage(e) + " (error:" + res + ")";
-            return "error: " + res;
+                return toMessage(e) + " (errno:" + errno + ")";
+            return "errno: " + errno;
         }
     }
 
