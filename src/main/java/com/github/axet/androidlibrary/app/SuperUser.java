@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.system.ErrnoException;
+import android.system.Os;
 import android.system.OsConstants;
 import android.util.Log;
 
@@ -14,12 +15,12 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
@@ -109,13 +110,45 @@ public class SuperUser {
         return msg;
     }
 
+    public FileDescriptor dup(FileDescriptor fd) {
+        try {
+            if (Build.VERSION.SDK_INT >= 21) {
+                return Os.dup(fd);
+            } else {
+                Class Libcore = Class.forName("libcore.io.Libcore");
+                Object os = Libcore.getDeclaredField("os").get(null);
+                Class Os = Class.forName("libcore.io.Os");
+                Method m = Os.getDeclaredMethod("dup", FileDescriptor.class);
+                return (FileDescriptor) m.invoke(os, fd);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void close(FileDescriptor fd) {
+        try {
+            if (Build.VERSION.SDK_INT >= 21) {
+                Os.close(fd);
+            } else {
+                Class Libcore = Class.forName("libcore.io.Libcore");
+                Object os = Libcore.getDeclaredField("os").get(null);
+                Class Os = Class.forName("libcore.io.Os");
+                Method m = Os.getDeclaredMethod("close", FileDescriptor.class);
+                m.invoke(os, fd);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static Exception errno(String func, int errno) {
         if (Build.VERSION.SDK_INT >= 21) {
             return new ErrnoException(func, errno);
         } else {
             try {
-                Class klass = Class.forName("libcore.io.ErrnoException");
-                return (Exception) klass.getDeclaredConstructor(String.class, int.class).newInstance(func, errno);
+                Class ErrnoException = Class.forName("libcore.io.ErrnoException");
+                return (Exception) ErrnoException.getDeclaredConstructor(String.class, int.class).newInstance(func, errno);
             } catch (Exception ignore) {
                 return new IOException(func + ": " + errno);
             }
@@ -127,8 +160,8 @@ public class SuperUser {
             return OsConstants.errnoName(errno);
         }
         try {
-            Class klass = Class.forName("libcore.io.OsConstants");
-            Method m = klass.getDeclaredMethod("errnoName", int.class);
+            Class OsConstants = Class.forName("libcore.io.OsConstants");
+            Method m = OsConstants.getDeclaredMethod("errnoName", int.class);
             return (String) m.invoke(null, errno);
         } catch (Exception ignore) {
             return "errno: " + errno;
@@ -137,11 +170,10 @@ public class SuperUser {
 
     public static String strerror(int errno) {
         try {
-            Class klass = Class.forName("libcore.io.Libcore");
-            Field fieldOs = klass.getDeclaredField("os");
-            Object os = fieldOs.get(null);
-            Class klass2 = os.getClass().getSuperclass();
-            Method m = klass2.getDeclaredMethod("strerror", int.class);
+            Class Libcore = Class.forName("libcore.io.Libcore");
+            Object os = Libcore.getDeclaredField("os").get(null);
+            Class ForwardingOs = Class.forName("libcore.io.ForwardingOs");
+            Method m = ForwardingOs.getDeclaredMethod("strerror", int.class);
             return (String) m.invoke(os, errno);
         } catch (Exception ignore) {
             return "errno: " + errno;
