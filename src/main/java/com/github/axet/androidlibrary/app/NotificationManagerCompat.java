@@ -15,13 +15,13 @@ import java.lang.reflect.InvocationTargetException;
 public class NotificationManagerCompat {
     public static final String TAG = NotificationManagerCompat.class.getSimpleName();
 
-    public static final int IMPORTANCE_NONE = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_NONE;
-    public static final int IMPORTANCE_MIN = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_MIN;
-    public static final int IMPORTANCE_LOW = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_LOW;
-    public static final int IMPORTANCE_DEFAULT = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_DEFAULT;
-    public static final int IMPORTANCE_HIGH = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_HIGH;
-    public static final int IMPORTANCE_MAX = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_MAX;
-    public static final int IMPORTANCE_UNSPECIFIED = android.support.v4.app.NotificationManagerCompat.IMPORTANCE_UNSPECIFIED;
+    public static final int IMPORTANCE_NONE = NotificationManager.IMPORTANCE_NONE;
+    public static final int IMPORTANCE_MIN = NotificationManager.IMPORTANCE_MIN;
+    public static final int IMPORTANCE_LOW = NotificationManager.IMPORTANCE_LOW;
+    public static final int IMPORTANCE_DEFAULT = NotificationManager.IMPORTANCE_DEFAULT;
+    public static final int IMPORTANCE_HIGH = NotificationManager.IMPORTANCE_HIGH;
+    public static final int IMPORTANCE_MAX = NotificationManager.IMPORTANCE_MAX;
+    public static final int IMPORTANCE_UNSPECIFIED = NotificationManager.IMPORTANCE_UNSPECIFIED;
 
     public NotificationManager nm;
     public android.support.v4.app.NotificationManagerCompat nmc;
