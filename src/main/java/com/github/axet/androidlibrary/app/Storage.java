@@ -363,9 +363,8 @@ public class Storage {
 
     public static boolean ejected(File p) { // check target 'parent RW' access if child does not exist, and 'child R' if exists
         if (!p.exists()) {
-            while (!p.exists()) {
+            while (!p.exists())
                 p = p.getParentFile();
-            }
             if (p.canWrite())
                 return false; // torrent parent folder not exist, but we have write access and can create subdirs
             else
@@ -386,14 +385,12 @@ public class Storage {
     }
 
     public static String getDocumentStorage(String s) {
-        String path;
         if (s.equals(STORAGE_PRIMARY))
-            path = "[i]";
+            return "[i]";
         else if (s.equals(STORAGE_HOME))
-            path = "[h]";
+            return "[h]";
         else
-            path = "[e]";
-        return path;
+            return "[e]"; // 12f1-2211
     }
 
     @TargetApi(21)
@@ -422,7 +419,6 @@ public class Storage {
             else
                 pss[1] = new File(pss[1], n).getPath();
         }
-        File d;
         if (dss[1].isEmpty())
             return pss[1];
         else if (pss[1].isEmpty())
@@ -1235,6 +1231,8 @@ public class Storage {
             DocumentFile m = DocumentFile.fromSingleUri(context, e);
             if (m.exists()) // directory or file == failed
                 return null;
+            if (!DocumentsContract.isDocumentUri(context, to))
+                to = DocumentsContract.buildDocumentUriUsingTree(to, DocumentsContract.getTreeDocumentId(to));
             File f = new File(name);
             File p = f.getParentFile();
             if (p != null) {
