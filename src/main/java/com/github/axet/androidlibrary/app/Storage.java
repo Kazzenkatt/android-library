@@ -63,6 +63,7 @@ public class Storage {
     public static final String CONTENTTYPE_RAR = "application/x-rar-compressed";
 
     public static final String COLON = ":";
+    public static final String CSS = COLON + "//"; // COLON SLASH SLASH
 
     protected Context context;
     protected ContentResolver resolver;
@@ -191,17 +192,15 @@ public class Storage {
 
     public static String getNameNoExt(String fileName) {
         int i = fileName.lastIndexOf('.');
-        if (i > 0) {
+        if (i > 0)
             fileName = fileName.substring(0, i);
-        }
         return fileName;
     }
 
     public static String getExt(String fileName) { // FilenameUtils.getExtension(n)
         int i = fileName.lastIndexOf('.');
-        if (i >= 0) {
+        if (i >= 0)
             return fileName.substring(i + 1);
-        }
         return "";
     }
 
@@ -491,16 +490,16 @@ public class Storage {
             String id = DocumentsContract.getTreeDocumentId(uri);
             String[] ss = id.split(COLON, 2); // 1D13-0F08:private
             if (ss.length > 1)
-                return saf + getDocumentStorage(ss[0]) + "://" + getDocumentPath(context, uri);
+                return saf + getDocumentStorage(ss[0]) + CSS + getDocumentPath(context, uri);
             else
-                return id + "://"; // uknown device path. new saf location?
+                return id + CSS; // uknown device path. new saf location?
         } else {
             String id = DocumentsContract.getTreeDocumentId(uri);
             String[] ss = id.split(COLON, 2); // 1D13-0F08:private
             if (ss.length > 1) // has colon
-                return saf + getDocumentStorage(ss[0]) + "://" + ss[1];
+                return saf + getDocumentStorage(ss[0]) + CSS + ss[1];
             else
-                return id + "://"; // uknown device path. new saf location?
+                return id + CSS; // uknown device path. new saf location?
         }
     }
 
@@ -679,9 +678,8 @@ public class Storage {
     }
 
     public static String getTypeByExt(String ext) {
-        if (ext == null || ext.isEmpty()) {
+        if (ext == null || ext.isEmpty())
             return CONTENTTYPE_OCTETSTREAM; // replace 'null'
-        }
         ext = ext.toLowerCase();
         switch (ext) {
             case "opus":
@@ -989,11 +987,10 @@ public class Storage {
         } else {
             f = new File(path);
         }
-        if (!permitted(context, PERMISSIONS_RW)) {
+        if (!permitted(context, PERMISSIONS_RW))
             return Uri.fromFile(getLocalStorage());
-        } else {
+        else
             return Uri.fromFile(getStoragePath(f));
-        }
     }
 
     public String getName(Uri uri) {
@@ -1138,11 +1135,10 @@ public class Storage {
             return u;
 
         String id;
-        if (DocumentsContract.isDocumentUri(context, parent)) {
+        if (DocumentsContract.isDocumentUri(context, parent))
             id = DocumentsContract.getDocumentId(parent);
-        } else {
+        else
             id = DocumentsContract.getTreeDocumentId(parent);
-        }
         Uri docUri = DocumentsContract.buildDocumentUriUsingTree(parent, id);
 
         String p = new File(path).getParent();
@@ -1152,7 +1148,7 @@ public class Storage {
         Log.d(TAG, "createFile " + path);
         String ext = getExt(u);
         String n = getDocumentName(context, u);
-        String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        String mime = getTypeByExt(ext);
         return DocumentsContract.createDocument(resolver, docUri, mime, n);
     }
 
@@ -1163,18 +1159,16 @@ public class Storage {
             return c;
 
         String id;
-        if (DocumentsContract.isDocumentUri(context, parent)) {
+        if (DocumentsContract.isDocumentUri(context, parent))
             id = DocumentsContract.getDocumentId(parent);
-        } else {
+        else
             id = DocumentsContract.getTreeDocumentId(parent);
-        }
         Uri docUri = DocumentsContract.buildDocumentUriUsingTree(parent, id);
 
         File p = new File(path);
         String n = p.getParent();
-        if (n != null && !n.isEmpty()) {
+        if (n != null && !n.isEmpty())
             docUri = createFolder(docUri, n);
-        }
 
         Log.d(TAG, "createFolder " + path);
         return DocumentsContract.createDocument(resolver, docUri, DocumentsContract.Document.MIME_TYPE_DIR, p.getName());
