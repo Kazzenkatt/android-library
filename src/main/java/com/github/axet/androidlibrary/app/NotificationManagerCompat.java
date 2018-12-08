@@ -71,15 +71,15 @@ public class NotificationManagerCompat {
                 p = p.getCause();
             }
             if (Build.VERSION.SDK_INT >= 16 && c instanceof TransactionTooLargeException) { // API15+
-                Log.e(TAG, "notify", e);
                 if (n.bigContentView != null) {  // API16+
+                    Log.e(TAG, "notify", e);
                     n.contentView = n.bigContentView;
                     n.bigContentView = null;
+                    nmc.notify(id, n);
+                    return;
                 }
-                nmc.notify(id, n);
-            } else {
-                throw e;
             }
+            throw e;
         }
     }
 }
