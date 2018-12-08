@@ -64,7 +64,13 @@ public class NotificationManagerCompat {
         try {
             nmc.notify(id, n);
         } catch (Exception e) {
-            if (Build.VERSION.SDK_INT >= 16 && e instanceof TransactionTooLargeException) { // API15+
+            Throwable p = e;
+            Throwable c = null;
+            while (p != null) {
+                c = p;
+                p = p.getCause();
+            }
+            if (Build.VERSION.SDK_INT >= 16 && c instanceof TransactionTooLargeException) { // API15+
                 Log.e(TAG, "notify", e);
                 if (n.bigContentView != null) {  // API16+
                     n.contentView = n.bigContentView;
