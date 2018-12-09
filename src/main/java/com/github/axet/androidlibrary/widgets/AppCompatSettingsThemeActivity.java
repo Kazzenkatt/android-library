@@ -6,9 +6,10 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
+import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
 
-public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
+public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActivity implements SharedPreferences.OnSharedPreferenceChangeListener, PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
 
     public static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
@@ -37,9 +38,7 @@ public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActiv
     public static void bindPreferenceSummaryToValue(Preference preference) {
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
         sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getAll().get(preference.getKey()));
+                PreferenceManager.getDefaultSharedPreferences(preference.getContext()).getAll().get(preference.getKey()));
     }
 
     @Override
@@ -58,6 +57,15 @@ public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActiv
     }
 
     public abstract String getAppThemeKey();
+
+    @Override
+    public boolean onPreferenceDisplayDialog(PreferenceFragmentCompat caller, Preference pref) {
+        if (pref instanceof NameFormatPreferenceCompat) {
+            NameFormatPreferenceCompat.show(caller, pref.getKey());
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
