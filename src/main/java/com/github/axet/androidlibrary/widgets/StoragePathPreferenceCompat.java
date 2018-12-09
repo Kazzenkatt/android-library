@@ -86,7 +86,7 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public void updatePath(String path) {
         if (Build.VERSION.SDK_INT >= 21 && path.startsWith(ContentResolver.SCHEME_CONTENT)) {
             Uri u = storage.getStoragePath(path);
-            String n = storage.getDisplayName(u); // can be null
+            String n = Storage.getDisplayName(getContext(), u); // can be null
             setSummary(n);
             return;
         }

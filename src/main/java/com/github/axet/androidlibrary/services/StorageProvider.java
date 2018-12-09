@@ -385,7 +385,7 @@ public class StorageProvider extends ContentProvider {
                 File f = new File(id);
                 name = f.getName();
             } else {
-                name = storage.getName(u);
+                name = Storage.getName(getContext(), u);
             }
         }
 
