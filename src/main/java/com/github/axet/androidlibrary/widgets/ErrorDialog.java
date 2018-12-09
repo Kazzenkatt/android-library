@@ -34,6 +34,10 @@ public class ErrorDialog extends AlertDialog.Builder {
         return msg;
     }
 
+    public ErrorDialog(@NonNull Context context, Throwable e) {
+        this(context, toMessage(e));
+    }
+
     public ErrorDialog(@NonNull Context context, String msg) {
         super(context);
         setTitle("Error");
