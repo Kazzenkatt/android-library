@@ -26,6 +26,7 @@ import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.ProgressBar;
 
+import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
 import com.github.axet.androidlibrary.widgets.Toast;
@@ -1055,7 +1056,7 @@ public class Storage {
         progress.setIndeterminate(true);
         progress.setPadding(dp10, dp10, dp10, dp10);
         AlertDialog.Builder b = new AlertDialog.Builder(a);
-        b.setTitle("Migrating data");
+        b.setTitle(R.string.migrating_data);
         b.setView(progress);
         b.setCancelable(false);
         final AlertDialog dialog = b.create();
