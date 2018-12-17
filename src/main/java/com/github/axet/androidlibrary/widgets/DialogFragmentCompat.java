@@ -31,7 +31,7 @@ public class DialogFragmentCompat extends DialogFragment {
     @Nullable
     @Override
     public View getView() {
-        return null; // return null, or 'IllegalStateException DialogFragment can not be attached to a container view'
+        return null; // return null, or api10 crash 'IllegalStateException DialogFragment can not be attached to a container view'
     }
 
     @Nullable
