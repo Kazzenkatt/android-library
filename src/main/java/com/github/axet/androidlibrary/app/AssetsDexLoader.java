@@ -40,6 +40,30 @@ public class AssetsDexLoader {
             return new File(context.getCacheDir(), "../code_cache");
     }
 
+    public static File extract(Context context, String asset) throws IOException { // extract asset into .jar
+        AssetManager am = context.getAssets();
+        InputStream is = am.open(asset);
+        File tmp = File.createTempFile(Storage.getNameNoExt(asset), "." + JAR, context.getCacheDir());
+        FileOutputStream os = new FileOutputStream(tmp);
+        IOUtils.copy(is, os);
+        os.close();
+        is.close();
+        return tmp;
+    }
+
+    public static File pack(Context context, String asset) throws IOException { // pack .dex into .jar/classes.dex
+        AssetManager am = context.getAssets();
+        InputStream is = am.open(asset);
+        File tmp = File.createTempFile(Storage.getNameNoExt(asset), "." + JAR, context.getCacheDir());
+        ZipOutputStream os = new ZipOutputStream(new FileOutputStream(tmp));
+        ZipEntry e = new ZipEntry(CLASSES);
+        os.putNextEntry(e);
+        IOUtils.copy(is, os);
+        os.close();
+        is.close();
+        return tmp;
+    }
+
     public static ClassLoader deps(Context context, String... deps) {
         ClassLoader parent = null;
         try {
@@ -49,26 +73,14 @@ public class AssetsDexLoader {
                 for (String a : aa) {
                     if (a.startsWith(dep)) {
                         if (a.endsWith("." + JAR)) {
-                            InputStream is = am.open(a);
-                            File tmp = File.createTempFile(Storage.getNameNoExt(a), "." + JAR, context.getCacheDir());
-                            FileOutputStream os = new FileOutputStream(tmp);
-                            IOUtils.copy(is, os);
-                            os.close();
-                            is.close();
+                            File tmp = extract(context, a);
                             parent = load(context, tmp, parent);
-                            tmp.delete();
+                            tmp.delete(); // getCodeCacheDir() should keep classes
                         }
                         if (a.endsWith("." + DEX)) {
-                            InputStream is = am.open(a);
-                            File tmp = File.createTempFile(Storage.getNameNoExt(a), "." + JAR, context.getCacheDir());
-                            ZipOutputStream os = new ZipOutputStream(new FileOutputStream(tmp));
-                            ZipEntry e = new ZipEntry(CLASSES);
-                            os.putNextEntry(e);
-                            IOUtils.copy(is, os);
-                            os.close();
-                            is.close();
+                            File tmp = pack(context, a);
                             parent = load(context, tmp, parent);
-                            tmp.delete();
+                            tmp.delete(); // getCodeCacheDir() should keep classes
                         }
                     }
                 }
