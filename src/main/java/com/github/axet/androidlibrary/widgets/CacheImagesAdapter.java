@@ -101,7 +101,7 @@ public class CacheImagesAdapter {
             size = bm.getHeight();
         int l = (bm.getWidth() - size) / 2;
         int t = (bm.getHeight() - size) / 2;
-        Bitmap sbm = Bitmap.createBitmap(COVER_SIZE, COVER_SIZE, bm.getConfig());
+        Bitmap sbm = Bitmap.createBitmap(COVER_SIZE, COVER_SIZE, Bitmap.Config.RGB_565);
         Rect src = new Rect(l, t, l + size, t + size);
         Rect dst = new Rect(0, 0, sbm.getWidth(), sbm.getHeight());
         Canvas canvas = new Canvas(sbm);
