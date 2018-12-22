@@ -18,8 +18,6 @@ import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.crypto.MD5;
 
-import org.apache.commons.io.IOUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -76,8 +74,7 @@ public class CacheImagesAdapter {
     public static Rect getImageSize(InputStream is) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
-        Rect outPadding = new Rect();
-        BitmapFactory.decodeStream(is, outPadding, options);
+        BitmapFactory.decodeStream(is, null, options);
         if (options.outWidth == -1 || options.outHeight == -1)
             return null;
         return new Rect(0, 0, options.outWidth, options.outHeight);
@@ -88,28 +85,32 @@ public class CacheImagesAdapter {
         Rect size = getImageSize(sis);
         sis.reset();
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-        bitmapOptions.inSampleSize = (int) Math.ceil(size.width() / (double) COVER_SIZE);
-        Rect out = new Rect();
-        Bitmap bm = BitmapFactory.decodeStream(sis, out, bitmapOptions);
-        return createThumbnail(bm, COVER_SIZE);
+        if (size.width() < size.height())
+            bitmapOptions.inSampleSize = (int) Math.ceil(size.width() / (double) COVER_SIZE);
+        else
+            bitmapOptions.inSampleSize = (int) Math.ceil(size.height() / (double) COVER_SIZE);
+        Bitmap bm = BitmapFactory.decodeStream(sis, null, bitmapOptions);
+        return createThumbnail(bm);
     }
 
-    public static Bitmap createThumbnail(Bitmap bm, int cover) { // scale by width and cut top and bottom
-        float ratio = cover / (float) bm.getWidth();
-        Bitmap sbm = Bitmap.createScaledBitmap(bm, (int) (bm.getWidth() * ratio), (int) (bm.getHeight() * ratio), true);
-        if (sbm != bm)
-            bm.recycle();
-        if (sbm.getHeight() > cover) {
-            bm = Bitmap.createBitmap(cover, cover, sbm.getConfig());
-            Canvas canvas = new Canvas(bm);
-            canvas.drawBitmap(sbm, 0, -(sbm.getHeight() - cover) / 2, null);
-            sbm.recycle();
-            sbm = bm;
-        }
+    public static Bitmap createThumbnail(Bitmap bm) { // scale by min width and cut rest
+        int size;
+        if (bm.getWidth() < bm.getHeight())
+            size = bm.getWidth();
+        else
+            size = bm.getHeight();
+        int l = (bm.getWidth() - size) / 2;
+        int t = (bm.getHeight() - size) / 2;
+        Bitmap sbm = Bitmap.createBitmap(COVER_SIZE, COVER_SIZE, Bitmap.Config.RGB_565);
+        Rect src = new Rect(l, t, l + size, t + size);
+        Rect dst = new Rect(0, 0, sbm.getWidth(), sbm.getHeight());
+        Canvas canvas = new Canvas(sbm);
+        canvas.drawBitmap(bm, src, dst, null);
+        bm.recycle();
         return sbm;
     }
 
-    public static boolean isImage(String name) { // supported image by BitmapFactory
+    public static boolean isImage(String name) { // supported images by BitmapFactory
         name = name.toLowerCase();
         String[] ss = new String[]{"webp", "png", "jpg", "jpeg", "gif", "bmp"};
         for (String s : ss) {
@@ -427,12 +428,13 @@ public class CacheImagesAdapter {
     }
 
     public Bitmap downloadImage(Uri cover, File f) throws IOException {
-        InputStream in = new URL(cover.toString()).openStream();
-        FileOutputStream out = new FileOutputStream(f);
-        IOUtils.copy(in, out);
-        in.close();
-        out.close();
-        return BitmapFactory.decodeStream(new FileInputStream(f));
+        InputStream is = new URL(cover.toString()).openStream();
+        Bitmap bm = createThumbnail(is);
+        is.close();
+        FileOutputStream os = new FileOutputStream(f);
+        bm.compress(Bitmap.CompressFormat.PNG, 100, os);
+        os.close();
+        return bm;
     }
 
     public Bitmap downloadImage(Uri cover) {
