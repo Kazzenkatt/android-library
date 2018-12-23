@@ -3,6 +3,7 @@ package com.github.axet.androidlibrary.widgets;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -45,6 +46,7 @@ import android.widget.TextView;
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
 import com.github.axet.androidlibrary.app.NotificationManagerCompat;
+import com.github.axet.androidlibrary.app.Storage;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -136,6 +138,18 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         Intent intent = new Intent();
         intent.setClassName(p, n);
         return intent;
+    }
+
+    public static boolean isBackgroundRestricted(Context context) {
+        if (Build.VERSION.SDK_INT >= 28) {
+            ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            try {
+                return (boolean) am.getClass().getDeclaredMethod("isBackgroundRestricted").invoke(am);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     @TargetApi(23)
@@ -333,6 +347,28 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 });
                 ll.addView(h.itemView);
             }
+            if (Build.VERSION.SDK_INT >= 28 && isBackgroundRestricted(context)) {
+                builder.restricted = new SwitchPreferenceCompat(themedContext(context));
+                builder.restricted.setTitle("Background Restricted");
+                builder.restricted.setSummary("Please disable 'Advanced/Battery/Background restriction' option to let app work properly");
+                builder.restricted.setChecked(true);
+                Drawable d = context.getDrawable(R.drawable.ic_open_in_new_black_24dp);
+                d = DrawableCompat.wrap(d);
+                DrawableCompat.setTint(d, ThemeUtils.getThemeColor(context, android.R.attr.colorForeground));
+                builder.restricted.setIcon(d);
+                builder.restrictedHolder = inflate(builder.restricted, null);
+                builder.restricted.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+                    @Override
+                    public boolean onPreferenceChange(Preference preference, Object newValue) {
+                        boolean b = (boolean) newValue;
+                        if (!b) {
+                            Storage.showPermissions(context);
+                        }
+                        return false;
+                    }
+                });
+                ll.addView(builder.restrictedHolder.itemView);
+            }
             ScrollView scroll = new ScrollView(context);
             scroll.addView(ll);
             builder.builder.setView(scroll);
@@ -507,6 +543,8 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         public PreferenceViewHolder iconHolder;
         public SwitchPreferenceCompat optimization;
         public PreferenceViewHolder optimizationHolder;
+        public SwitchPreferenceCompat restricted;
+        public PreferenceViewHolder restrictedHolder;
         public Runnable serviceEnable;
         public Runnable serviceDisable;
         public OptimizationPreferenceCompat pref;
@@ -578,6 +616,10 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 if (Build.VERSION.SDK_INT >= 23) {
                     updateOptimization();
                 }
+            }
+            if (restricted != null) {
+                restricted.setChecked(isBackgroundRestricted(context));
+                restricted.onBindViewHolder(restrictedHolder);
             }
         }
     }

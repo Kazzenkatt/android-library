@@ -13,15 +13,10 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.services.StorageProvider;
 
 // Check android notification_template_base.xml for constants
 public class RemoteNotificationCompat extends NotificationCompat {
-
-    public static String getApplicationName(Context context) {
-        ApplicationInfo applicationInfo = context.getApplicationInfo();
-        int stringId = applicationInfo.labelRes;
-        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : context.getString(stringId);
-    }
 
     public static class Builder extends NotificationCompat.Builder {
         public NotificationChannelCompat channel;
@@ -194,7 +189,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
         public void create(int layoutId) {
             super.create(layoutId);
             if (compact.getLayoutId() == LOW)
-                compact.setTextViewText(R.id.app_name_text, getApplicationName(mContext));
+                compact.setTextViewText(R.id.app_name_text, StorageProvider.getApplicationName(mContext));
         }
 
         @Override
