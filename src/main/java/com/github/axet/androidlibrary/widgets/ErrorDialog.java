@@ -12,6 +12,8 @@ import com.github.axet.androidlibrary.app.SuperUser;
 public class ErrorDialog extends AlertDialog.Builder {
     public static final String TAG = ErrorDialog.class.getSimpleName();
 
+    public static String ERROR = "Error"; // title
+
     public static Throwable getCause(Throwable e) { // get to the bottom
         Throwable c = null;
         while (e != null) {
@@ -40,7 +42,7 @@ public class ErrorDialog extends AlertDialog.Builder {
 
     public ErrorDialog(@NonNull Context context, String msg) {
         super(context);
-        setTitle("Error");
+        setTitle(ERROR);
         setMessage(msg);
         setIcon(android.R.drawable.ic_dialog_alert);
         setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
