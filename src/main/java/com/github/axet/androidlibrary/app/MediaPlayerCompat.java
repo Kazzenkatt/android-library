@@ -421,8 +421,6 @@ public class MediaPlayerCompat {
                         throw new RuntimeException(e);
                     } catch (InstantiationException e) {
                         throw new RuntimeException(e);
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
                     }
                 }
 
@@ -444,8 +442,6 @@ public class MediaPlayerCompat {
                         } catch (NoSuchMethodException e) {
                             throw new RuntimeException(e);
                         } catch (InstantiationException e) {
-                            throw new RuntimeException(e);
-                        } catch (ClassNotFoundException e) {
                             throw new RuntimeException(e);
                         }
                     } else {
