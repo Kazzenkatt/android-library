@@ -55,7 +55,7 @@ public class AboutPreferenceCompat extends DialogPreference {
         return V + pInfo.versionName;
     }
 
-    public static void setName(PackageManager pm, TextView t) throws PackageManager.NameNotFoundException {
+    public static void setName(PackageManager pm, TextView t) {
         t.setText(getApplicationName(t.getContext()));
     }
 
