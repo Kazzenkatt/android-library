@@ -27,13 +27,19 @@ import java.nio.charset.Charset;
 
 //
 // <com.github.axet.androidlibrary.widgets.AboutPreferenceCompat
-// app:html="@raw/about"
-// android:persistent="false" />
+//   app:html="@raw/about"
+//   android:persistent="false" />
 //
 public class AboutPreferenceCompat extends DialogPreference {
     public static final String V = "v";
 
     int id;
+
+    public static String getApplicationName(Context context) {
+        ApplicationInfo a = context.getApplicationInfo();
+        int id = a.labelRes;
+        return id == 0 ? a.nonLocalizedLabel.toString() : context.getString(id); // a.loadLabel()
+    }
 
     public static String getVersion(Context context) {
         try {
@@ -46,9 +52,7 @@ public class AboutPreferenceCompat extends DialogPreference {
     }
 
     public static void setName(PackageManager pm, TextView t) throws PackageManager.NameNotFoundException {
-        Context context = t.getContext();
-        ApplicationInfo a = pm.getApplicationInfo(context.getPackageName(), 0);
-        t.setText(a.loadLabel(pm));
+        t.setText(getApplicationName(t.getContext()));
     }
 
     public static void setVersion(TextView ver) {
@@ -189,17 +193,7 @@ public class AboutPreferenceCompat extends DialogPreference {
             id = a.getResourceId(R.styleable.AboutPreferenceCompat_html, -1);
         }
         setPersistent(false);
-        try {
-            String sum = "";
-            PackageManager pm = getContext().getPackageManager();
-            ApplicationInfo a = pm.getApplicationInfo(getContext().getPackageName(), PackageManager.GET_META_DATA);
-            sum += a.loadLabel(pm);
-            PackageInfo pInfo = pm.getPackageInfo(getContext().getPackageName(), PackageManager.GET_META_DATA);
-            sum += " " + V + pInfo.versionName;
-            setSummary(sum);
-        } catch (PackageManager.NameNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        setSummary(getApplicationName(getContext()) + " " + getVersion(getContext()));
         setTitle(getContext().getString(R.string.menu_about));
     }
 
@@ -209,6 +203,10 @@ public class AboutPreferenceCompat extends DialogPreference {
     }
 
     public void setDialog(int id) {
+        this.id = id;
+    }
+
+    public void setRawId(int id) {
         this.id = id;
     }
 }
