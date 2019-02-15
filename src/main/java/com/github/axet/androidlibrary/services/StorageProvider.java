@@ -371,14 +371,9 @@ public class StorageProvider extends ContentProvider {
     }
 
     public Intent shareIntent(Uri uri, String name, String type, String subject) {
-        if (Build.VERSION.SDK_INT >= 24 && getContext().getApplicationInfo().targetSdkVersion >= 24) { // API24+ failed to open file:// with FileUriExposedException
+        if (isExternal(uri) || name != null) // gmail unable to open file:// links
             uri = share(uri, name);
-            return shareIntent23(getContext(), uri, type, subject);
-        } else { // API23 can open file://
-            if (name != null)
-                uri = share(uri, name);
-            return shareIntent23(getContext(), uri, type, subject);
-        }
+        return shareIntent23(getContext(), uri, type, subject);
     }
 
     public Intent shareIntent(ArrayList<Uri> uris, String type, String name) {
@@ -386,17 +381,13 @@ public class StorageProvider extends ContentProvider {
     }
 
     public Intent shareIntent(ArrayList<Uri> uris, String name, String type, String subject) {
-        if (Build.VERSION.SDK_INT >= 24 && getContext().getApplicationInfo().targetSdkVersion >= 24) { // API24+ failed to open file:// with FileUriExposedException
-            for (int i = 0; i < uris.size(); i++)
-                uris.set(i, share(uris.get(i), name));
-            return shareIntent23(getContext(), uris, type, subject);
-        } else { // API23 can open file://
-            if (name != null) {
-                for (int i = 0; i < uris.size(); i++)
-                    uris.set(i, share(uris.get(i), name));
-            }
-            return shareIntent23(getContext(), uris, type, subject);
+        for (int i = 0; i < uris.size(); i++) {
+            Uri uri = uris.get(i);
+            if (isExternal(uri) || name != null) // gmail unable to open file:// links
+                uri = share(uri, name);
+            uris.set(i, uri);
         }
+        return shareIntent23(getContext(), uris, type, subject);
     }
 
     public Uri share(Uri u) { // original uri -> hased uri
