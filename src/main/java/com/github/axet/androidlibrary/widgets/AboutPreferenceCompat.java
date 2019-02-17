@@ -38,7 +38,7 @@ public class AboutPreferenceCompat extends DialogPreference {
     public static String getApplicationName(Context context) {
         ApplicationInfo a = context.getApplicationInfo();
         int id = a.labelRes;
-        return id == 0 ? a.nonLocalizedLabel.toString() : context.getString(id); // a.loadLabel() for external resource
+        return id == 0 ? a.nonLocalizedLabel.toString() : context.getString(id); // a.loadLabel() for external package
     }
 
     public static String getVersion(Context context) {
@@ -55,7 +55,7 @@ public class AboutPreferenceCompat extends DialogPreference {
         return V + pInfo.versionName;
     }
 
-    public static void setName(PackageManager pm, TextView t) {
+    public static void setName(TextView t) {
         t.setText(getApplicationName(t.getContext()));
     }
 
@@ -79,13 +79,8 @@ public class AboutPreferenceCompat extends DialogPreference {
         TextView t = (TextView) title.findViewById(R.id.about_title_name);
         TextView v = (TextView) title.findViewById(R.id.about_title_version);
 
-        try {
-            PackageManager pm = context.getPackageManager();
-            setName(pm, t);
-            setVersion(pm, v);
-        } catch (PackageManager.NameNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        setName(t);
+        setVersion(v);
 
         return title;
     }
