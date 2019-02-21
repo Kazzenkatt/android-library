@@ -1,9 +1,14 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.support.v4.content.ContextCompat;
 import android.util.TypedValue;
+import android.view.ContextThemeWrapper;
 
 public class ThemeUtils {
 
@@ -28,7 +33,11 @@ public class ThemeUtils {
                 case TypedValue.TYPE_INT_COLOR_RGB8:
                     return out.data;
                 default:
-                    return getColor(context, out.resourceId);
+                    try {
+                        return getColor(context, out.resourceId);
+                    } catch (Resources.NotFoundException e) { // API16 crashes, since android.* colors not found
+                        return 0;
+                    }
             }
         } else {
             throw new Resources.NotFoundException("Color resource ID #0x" + Integer.toHexString(id));
