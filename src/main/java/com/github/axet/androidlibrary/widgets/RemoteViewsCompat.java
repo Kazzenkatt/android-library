@@ -57,9 +57,8 @@ public class RemoteViewsCompat {
                 int id = out.resourceId;
                 if (ta.getValue(BACKGROUND, out))
                     setBackgroundColor(view, id, getColor(context, out));
-                if (ta.getValue(TEXTCOLOR, out)) {
+                if (ta.getValue(TEXTCOLOR, out))
                     view.setTextColor(id, getColor(context, out));
-                }
                 if (ta.getValue(TINT, out))
                     setImageViewTint(view, id, getColor(context, out));
                 if (name.equals(Button.class.getSimpleName())) {

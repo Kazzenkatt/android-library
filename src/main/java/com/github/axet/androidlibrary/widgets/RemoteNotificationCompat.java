@@ -4,8 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.view.ContextThemeWrapper;
@@ -13,10 +16,40 @@ import android.view.View;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
-import com.github.axet.androidlibrary.services.StorageProvider;
 
 // Check android notification_template_base.xml for constants
 public class RemoteNotificationCompat extends NotificationCompat {
+
+    public static Bitmap getBitmap(Drawable drawable) {
+        Bitmap bitmap;
+
+        if (drawable instanceof BitmapDrawable) {
+            BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
+            bitmap = bitmapDrawable.getBitmap();
+            if (bitmap != null)
+                return bitmap;
+        }
+
+        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0)
+            bitmap = Bitmap.createBitmap(128, 128, Bitmap.Config.ARGB_8888);
+        else
+            bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    public static Drawable getApplicationIcon(Context context) {
+        PackageManager pm = context.getPackageManager();
+        return pm.getApplicationIcon(context.getApplicationInfo());
+    }
+
+    public static Bitmap getBitmap(Context context) {
+        Drawable d = getApplicationIcon(context);
+        return getBitmap(d);
+    }
 
     public static class Builder extends NotificationCompat.Builder {
         public NotificationChannelCompat channel;
@@ -38,6 +71,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
             create(layoutId, bigId);
         }
 
+        @SuppressLint("RestrictedApi")
         public void create(int layoutId) {
             compact = new RemoteViews(mContext.getPackageName(), layoutId);
             setCustomContentView(compact);
@@ -45,6 +79,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
                 setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         }
 
+        @SuppressLint("RestrictedApi")
         public void create(int layoutId, int bigId) {
             create(layoutId);
             big = new RemoteViews(mContext.getPackageName(), bigId);
@@ -101,6 +136,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
             return this;
         }
 
+        @SuppressLint("RestrictedApi")
         public int getThemeColor(int attr) {
             Context context = theme;
             if (context == null)
@@ -173,6 +209,37 @@ public class RemoteNotificationCompat extends NotificationCompat {
         }
     }
 
+    public static class Default extends Builder {
+        int foreground; // foreground part of icon
+
+        public Default(Context context) {
+            super(context);
+            create(R.layout.remoteview);
+            setImageViewBitmap(R.id.icon, getBitmap(context));
+            setViewVisibility(R.id.icon_circle, View.GONE);
+        }
+
+        public Default(Context context, int foreground) { // foregound icon have circle under it
+            super(context);
+            this.foreground = foreground;
+            create(R.layout.remoteview);
+            setIcon(foreground);
+            if (Build.VERSION.SDK_INT >= 21)
+                setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.colorButtonNormal));
+            else
+                setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.windowBackground));
+        }
+
+        @Override
+        public Builder setTheme(int id) {
+            super.setTheme(id);
+            setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal));
+            if (foreground == 0) // clear default tint if here is app default icon
+                setImageViewTint(R.id.icon, 0);
+            return this;
+        }
+    }
+
     public static class Low extends Builder {
         private static final int LOW = R.layout.remoteview_low; // when public crashing javadoc
 
@@ -190,6 +257,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
         }
 
         @Override
+        @SuppressLint("RestrictedApi")
         public void create(int layoutId) {
             super.create(layoutId);
             if (compact.getLayoutId() == LOW)
