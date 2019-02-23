@@ -49,6 +49,20 @@ public class NotificationManagerCompat {
         }
     }
 
+    @TargetApi(26)
+    public void deleteNotificationChannel(NotificationChannelCompat channel) {
+        try {
+            Class NotificationManager = nm.getClass();
+            NotificationManager.getDeclaredMethod("deleteNotificationChannel", channel.NotificationChannel).invoke(nm, channel.channel);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public boolean isNotificationPolicyAccessGranted() {
         if (Build.VERSION.SDK_INT >= 23)
             return nm.isNotificationPolicyAccessGranted();

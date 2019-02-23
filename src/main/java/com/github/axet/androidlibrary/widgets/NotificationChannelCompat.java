@@ -96,9 +96,20 @@ public class NotificationChannelCompat {
 
     public NotificationChannelCompat(Context context, String id, String name, @Importance int importance) {
         this(id, name, importance);
+        create(context);
+    }
+
+    public void create(Context context) {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationManagerCompat nm = NotificationManagerCompat.from(context);
             nm.createNotificationChannel(this);
+        }
+    }
+
+    public void delete(Context context) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManagerCompat nm = NotificationManagerCompat.from(context);
+            nm.deleteNotificationChannel(this);
         }
     }
 
