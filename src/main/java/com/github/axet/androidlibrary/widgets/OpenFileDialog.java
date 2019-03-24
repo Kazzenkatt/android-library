@@ -119,14 +119,14 @@ public class OpenFileDialog extends AlertDialog.Builder {
             return fs.getBlockCount() * (long) fs.getBlockSize();
     }
 
-    public static File getPortable() {
+    public static File getPortable() { // portable location /storage
         String path = System.getenv(OpenFileDialog.ANDROID_STORAGE);
         if (path == null || path.isEmpty())
             path = OpenFileDialog.DEFAULT_STORAGE_PATH;
         return new File(path);
     }
 
-    public static File[] getPortableList() {
+    public static File[] getPortableList() { // portable formatted sdcards
         File portable = getPortable();
         return portable.listFiles(new FileFilter() {
             @Override
