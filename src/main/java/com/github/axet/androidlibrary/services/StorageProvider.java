@@ -132,13 +132,14 @@ public class StorageProvider extends ContentProvider {
         else
             tree = DocumentsContract.getTreeDocumentId(uri);
         String[] ss = tree.split(Storage.COLON, 2); // 1D13-0F08:folder_name
-        if (ss[0].equals(Storage.STORAGE_PRIMARY)) {
+        String id = ss[0];
+        if (id.equals(Storage.STORAGE_PRIMARY)) {
             File f = new File(Environment.getExternalStorageDirectory(), ss[1]);
             uri = Uri.fromFile(f);
         } else {
             File[] ff = OpenFileDialog.getPortableList();
             for (File f : ff) {
-                if (ss[0].equals(f.getName())) {
+                if (id.equals(f.getName())) {
                     File r = new File(f, ss[1]);
                     uri = Uri.fromFile(r);
                 }

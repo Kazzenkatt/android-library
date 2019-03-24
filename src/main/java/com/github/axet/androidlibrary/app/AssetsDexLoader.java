@@ -22,6 +22,7 @@ public class AssetsDexLoader {
     public static final String JAR = "jar";
     public static final String DEX = "dex";
     public static final String CLASSES = "classes.dex";
+    public static final String CODE_CAHCE = "code_cache";
 
     public static DexFile[] getDexs(ClassLoader l) {
         try {
@@ -37,11 +38,22 @@ public class AssetsDexLoader {
         if (Build.VERSION.SDK_INT >= 21) {
             return context.getCodeCacheDir();
         } else {
-            File file = new File(context.getApplicationInfo().dataDir, "code_cache");
-            if (!file.exists() && !file.mkdirs())
+            File file = new File(context.getApplicationInfo().dataDir, CODE_CAHCE);
+            if (!Storage.mkdirs(file))
                 throw new RuntimeException("unable to create: " + file);
             return file;
         }
+    }
+
+    public static File getExternalCodeCacheDir(Context context) {
+        File ext = context.getExternalCacheDir();
+        if (ext == null)
+            return null;
+        else
+            ext = new File(ext.getParentFile(), CODE_CAHCE);
+        if (!Storage.mkdirs(ext))
+            return null;
+        return ext;
     }
 
     public static File extract(Context context, String asset) throws IOException { // extract asset into .jar
@@ -98,7 +110,10 @@ public class AssetsDexLoader {
     public static ClassLoader load(Context context, File tmp, ClassLoader parent) {
         if (parent == null)
             parent = DexClassLoader.getSystemClassLoader();
-        return new DexClassLoader(tmp.getPath(), getCodeCacheDir(context).getPath(), null, parent);
+        File ext = getExternalCodeCacheDir(context);
+        if (ext == null)
+            ext = getCodeCacheDir(context);
+        return new DexClassLoader(tmp.getPath(), ext.getPath(), null, parent);
     }
 
 }
