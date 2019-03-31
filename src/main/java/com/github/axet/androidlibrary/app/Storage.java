@@ -523,6 +523,8 @@ public class Storage {
 
     @TargetApi(21)
     public static Uri createDocumentFile(Context context, Uri u, String name) {
+        if (!DocumentsContract.isDocumentUri(context, u))
+            u = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
         ContentResolver resolver = context.getContentResolver();
         String ext = getExt(name);
         String mime = getTypeByExt(ext);
@@ -531,6 +533,8 @@ public class Storage {
 
     @TargetApi(21)
     public static Uri createDocumentFolder(Context context, Uri u, String name) {
+        if (!DocumentsContract.isDocumentUri(context, u))
+            u = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
         ContentResolver resolver = context.getContentResolver();
         return DocumentsContract.createDocument(resolver, u, DocumentsContract.Document.MIME_TYPE_DIR, name);
     }
@@ -976,8 +980,6 @@ public class Storage {
             DocumentFile k = getDocumentFile(context, uri, name);
             if (k == null || !k.exists()) {
                 try {
-                    if (!DocumentsContract.isDocumentUri(context, uri))
-                        uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
                     Uri doc = createDocumentFile(context, uri, name);
                     if (doc == null)
                         throw new IOException("no permission");
@@ -1094,11 +1096,9 @@ public class Storage {
         String s = dir.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             Log.d(TAG, "migrate: " + f + " --> " + getDisplayName(context, dir));
-            String n = getNameNoExt(f);
-            String e = getExt(f);
-            Uri t = getNextFile(context, dir, n, e);
+            String n = f.getName();
             if (f.isDirectory()) {
-                Uri tt = createDocumentFolder(context, dir, getContentName(context, t));
+                Uri tt = createDocumentFolder(context, dir, n); // create (1) automatically
                 File[] files = f.listFiles();
                 if (files != null) {
                     for (File m : files)
@@ -1107,7 +1107,7 @@ public class Storage {
                 delete(f);
                 return tt;
             } else {
-                return move(context, f, dir, getDocumentChildPath(t));
+                return move(context, f, dir, n); // create (1) automatically
             }
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             Log.d(TAG, "migrate: " + f + " --> " + dir.getPath());
