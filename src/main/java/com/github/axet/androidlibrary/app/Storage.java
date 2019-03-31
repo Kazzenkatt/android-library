@@ -978,21 +978,22 @@ public class Storage {
             }
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             DocumentFile k = getDocumentFile(context, uri, name);
-            if (k == null || !k.exists()) {
-                try {
-                    Uri doc = createDocumentFile(context, uri, name);
+            try {
+                Uri doc;
+                if (k == null || !k.exists()) {
+                    doc = createDocumentFile(context, uri, name);
                     if (doc == null)
                         throw new IOException("no permission");
-                    ContentResolver resolver = context.getContentResolver();
-                    OutputStream os = resolver.openOutputStream(doc, "wa");
-                    os.close();
-                    return doc;
-                } catch (IOException e) {
-                    Log.d(TAG, "touch", e);
-                    return null;
+                } else {
+                    doc = k.getUri();
                 }
-            } else {
-                return createDocumentFile(context, uri, name);
+                ContentResolver resolver = context.getContentResolver();
+                OutputStream os = resolver.openOutputStream(doc, "wa");
+                os.close();
+                return doc;
+            } catch (IOException e) {
+                Log.d(TAG, "touch", e);
+                return null;
             }
         } else {
             throw new UnknownUri();
