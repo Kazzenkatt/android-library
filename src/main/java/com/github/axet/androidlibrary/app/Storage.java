@@ -401,15 +401,23 @@ public class Storage {
     }
 
     @TargetApi(21)
-    public static DocumentFile getDocumentFile(Context context, Uri uri, final String name) {
+    public static DocumentFile getDocumentFile(Context context, Uri uri, final String path) {
         if (uri.getAuthority().startsWith(SAF)) {
-            Uri doc = child(context, uri, name);
+            Uri doc = child(context, uri, path);
             return getDocumentFile(context, doc);
         } else {
+            final File f = new File(path);
+            final File p = f.getParentFile();
+            if (p != null) {
+                DocumentFile k = getDocumentFile(context, uri, p.getPath());
+                if (k == null)
+                    return null;
+                uri = k.getUri();
+            }
             ArrayList<Node> nn = list(context, uri, new NodeFilter() {
                 @Override
                 public boolean accept(Node n) {
-                    return n.name.equals(name);
+                    return n.name.equals(f.getName());
                 }
             });
             if (nn.isEmpty())
@@ -466,14 +474,14 @@ public class Storage {
     }
 
     @TargetApi(21)
-    public static Uri getDocumentChild(Context context, Uri uri, String name) {
+    public static Uri getDocumentChild(Context context, Uri uri, String path) {
         String id;
         if (DocumentsContract.isDocumentUri(context, uri))
             id = DocumentsContract.getDocumentId(uri);
         else
             id = DocumentsContract.getTreeDocumentId(uri);
         String[] ss = id.split(COLON, 2);
-        File f = new File(ss[1], name);
+        File f = new File(ss[1], path);
         return DocumentsContract.buildDocumentUriUsingTree(uri, ss[0] + COLON + f.getPath());
     }
 
