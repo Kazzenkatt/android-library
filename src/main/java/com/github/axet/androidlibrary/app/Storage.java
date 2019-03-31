@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 public class Storage {
     private static final String TAG = Storage.class.getSimpleName();
 
-    protected static boolean permittedForce = false; // bugged phones has no PackageManager.ACTION_REQUEST_PERMISSIONS acitivty allow it all
+    protected static boolean permittedForce = false; // bugged phones has no PackageManager.ACTION_REQUEST_PERMISSIONS activity. allow it all.
 
     public static final String PATH_TREE = "tree";
     public static final String[] PERMISSIONS_RO = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
@@ -397,6 +397,24 @@ public class Storage {
     }
 
     @TargetApi(21)
+    public static DocumentFile getDocumentFile(Context context, Uri uri, final String name) {
+        if (uri.getAuthority().startsWith(SAF)) {
+            Uri doc = child(context, uri, name);
+            return getDocumentFile(context, doc);
+        } else {
+            ArrayList<Node> nn = list(context, uri, new NodeFilter() {
+                @Override
+                public boolean accept(Node n) {
+                    return n.name.equals(name);
+                }
+            });
+            if (nn.isEmpty())
+                return null;
+            return getDocumentFile(context, nn.get(0).uri);
+        }
+    }
+
+    @TargetApi(21)
     public static String getDocumentPath(Context context, Uri uri) { // for display purpose only
         String pid = DocumentsContract.getTreeDocumentId(uri);
         String[] pss = pid.split(COLON, 2);
@@ -504,6 +522,20 @@ public class Storage {
     }
 
     @TargetApi(21)
+    public static Uri createDocumentFile(Context context, Uri u, String name) {
+        ContentResolver resolver = context.getContentResolver();
+        String ext = getExt(name);
+        String mime = getTypeByExt(ext);
+        return DocumentsContract.createDocument(resolver, u, mime, name);
+    }
+
+    @TargetApi(21)
+    public static Uri createDocumentFolder(Context context, Uri u, String name) {
+        ContentResolver resolver = context.getContentResolver();
+        return DocumentsContract.createDocument(resolver, u, DocumentsContract.Document.MIME_TYPE_DIR, name);
+    }
+
+    @TargetApi(21)
     public static String buildDocumentPath(Context context, Uri end) {
         return buildDocumentPath(context, DocumentsContract.buildDocumentUriUsingTree(end, DocumentsContract.getTreeDocumentId(end)), end);
     }
@@ -568,14 +600,17 @@ public class Storage {
 
     public static String getQueryName(Context context, Uri uri) {
         ContentResolver resolver = context.getContentResolver();
-        Cursor cursor = resolver.query(uri, null, null, null, null);
-        if (cursor != null) {
-            try {
+        Cursor cursor = null;
+        try {
+            cursor = resolver.query(uri, null, null, null, null); // can throw UnsupportedOperationException
+            if (cursor != null) {
                 if (cursor.moveToNext())
                     return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-            } finally {
-                cursor.close();
             }
+        } catch (UnsupportedOperationException ignore) {
+        } finally {
+            if (cursor != null)
+                cursor.close();
         }
         return uri.getLastPathSegment();
     }
@@ -637,7 +672,6 @@ public class Storage {
 
     @TargetApi(21)
     synchronized public static Uri createFile(Context context, Uri parent, String path) {
-        ContentResolver resolver = context.getContentResolver();
         Uri u = child(context, parent, path);
         if (exists(context, u))
             return u;
@@ -654,15 +688,12 @@ public class Storage {
             docUri = createFolder(context, docUri, p);
 
         Log.d(TAG, "createFile " + path);
-        String ext = getExt(context, u);
         String n = getDocumentName(context, u);
-        String mime = getTypeByExt(ext);
-        return DocumentsContract.createDocument(resolver, docUri, mime, n);
+        return createDocumentFile(context, docUri, n);
     }
 
     @TargetApi(21)
     synchronized public static Uri createFolder(Context context, Uri parent, String path) {
-        ContentResolver resolver = context.getContentResolver();
         Uri c = child(context, parent, path);
         if (exists(context, c))
             return c;
@@ -680,12 +711,12 @@ public class Storage {
             docUri = createFolder(context, docUri, n);
 
         Log.d(TAG, "createFolder " + path);
-        return DocumentsContract.createDocument(resolver, docUri, DocumentsContract.Document.MIME_TYPE_DIR, p.getName());
+        return createDocumentFolder(context, docUri, p.getName());
     }
 
     @TargetApi(21)
     public static Uri move(Context context, File f, Uri dir, String t) {
-        Uri u = createFile(context, dir, t);
+        Uri u = createDocumentFile(context, dir, t);
         if (u == null)
             throw new RuntimeException("Unable to create file " + t);
         ContentResolver resolver = context.getContentResolver();
@@ -784,7 +815,10 @@ public class Storage {
                 return null;
             return Uri.fromFile(f);
         } else if (s.equals(ContentResolver.SCHEME_CONTENT)) {
-            return getDocumentParent(context, uri);
+            if (uri.getAuthority().startsWith(SAF))
+                return getDocumentParent(context, uri);
+            else
+                return null;
         } else {
             throw new UnknownUri();
         }
@@ -806,7 +840,7 @@ public class Storage {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             return isDocumentExists(context, uri);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = getFile(uri);
             if (!f1.canRead())
                 return false;
@@ -820,7 +854,7 @@ public class Storage {
         String s = uri.getScheme();
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             return getDocumentChild(context, uri, name);
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = new File(getFile(uri), name);
             return Uri.fromFile(f1);
         } else {
@@ -890,7 +924,7 @@ public class Storage {
             }
 
             return uri;
-        } else if (s.startsWith(ContentResolver.SCHEME_FILE)) {
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = getFile(parent);
             return Uri.fromFile(getNextFile(f1, name, i, ext));
         } else {
@@ -938,10 +972,14 @@ public class Storage {
                 return null;
             }
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            Uri doc = child(context, uri, name);
-            DocumentFile file = getDocumentFile(context, doc);
-            if (file.exists()) {
+            DocumentFile k = getDocumentFile(context, uri, name);
+            if (k == null || !k.exists()) {
                 try {
+                    if (!DocumentsContract.isDocumentUri(context, uri))
+                        uri = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri));
+                    Uri doc = createDocumentFile(context, uri, name);
+                    if (doc == null)
+                        throw new IOException("no permission");
                     ContentResolver resolver = context.getContentResolver();
                     OutputStream os = resolver.openOutputStream(doc, "wa");
                     os.close();
@@ -951,8 +989,7 @@ public class Storage {
                     return null;
                 }
             } else {
-                doc = createFile(context, uri, name);
-                return doc;
+                return createDocumentFile(context, uri, name);
             }
         } else {
             throw new UnknownUri();
@@ -960,7 +997,6 @@ public class Storage {
     }
 
     public static Uri mkdir(Context context, Uri to, String name) {
-        ContentResolver resolver = context.getContentResolver();
         String s = to.getScheme();
         if (s.equals(ContentResolver.SCHEME_FILE)) {
             File k = getFile(to);
@@ -968,9 +1004,8 @@ public class Storage {
             if (m.mkdir())
                 return Uri.fromFile(m);
         } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
-            Uri e = getDocumentChild(context, to, name);
-            DocumentFile m = DocumentFile.fromSingleUri(context, e);
-            if (m.exists()) // directory or file == failed
+            DocumentFile m = getDocumentFile(context, to, name);
+            if (m != null && m.exists()) // directory or file == failed
                 return null;
             if (!DocumentsContract.isDocumentUri(context, to))
                 to = DocumentsContract.buildDocumentUriUsingTree(to, DocumentsContract.getTreeDocumentId(to));
@@ -980,7 +1015,7 @@ public class Storage {
                 to = getDocumentChild(context, to, p.getPath());
                 name = f.getName();
             }
-            return DocumentsContract.createDocument(resolver, to, DocumentsContract.Document.MIME_TYPE_DIR, name); // createFolder() 'mkdirs' mode
+            return createDocumentFolder(context, to, name); // createFolder() 'mkdirs' mode
         } else {
             throw new UnknownUri();
         }
