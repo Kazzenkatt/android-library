@@ -311,6 +311,10 @@ public class Storage {
         return file;
     }
 
+    public static String getNextName(File parent, String name, int i, String ext) {
+        return getNextFile(parent, name, i, ext).getName();
+    }
+
     public static boolean delete(File f) {
         return FileUtils.deleteQuietly(f);
     }
@@ -932,6 +936,34 @@ public class Storage {
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
             File f1 = getFile(parent);
             return Uri.fromFile(getNextFile(f1, name, i, ext));
+        } else {
+            throw new UnknownUri();
+        }
+    }
+
+    public static String getNextName(Context context, Uri parent, String name, String ext) {
+        return getNextName(context, parent, name, 0, ext);
+    }
+
+    public static String getNextName(Context context, Uri parent, String name, int i, String ext) {
+        String s = parent.getScheme();
+        if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+            String fileName = formatNextFile(name, i, ext);
+
+            DocumentFile k = getDocumentFile(context, parent, fileName);
+
+            i++;
+            while (k != null && k.exists()) {
+                fileName = formatNextFile(name, i, ext);
+                fileName = fileName.trim(); // if filename is empty
+                k = getDocumentFile(context, parent, fileName);
+                i++;
+            }
+
+            return fileName;
+        } else if (s.equals(ContentResolver.SCHEME_FILE)) {
+            File f1 = getFile(parent);
+            return getNextName(f1, name, i, ext);
         } else {
             throw new UnknownUri();
         }
