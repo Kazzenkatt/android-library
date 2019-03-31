@@ -1043,12 +1043,13 @@ public class Storage {
             DocumentFile m = getDocumentFile(context, to, name);
             if (m != null && m.exists()) // directory or file == failed
                 return null;
-            if (!DocumentsContract.isDocumentUri(context, to))
-                to = DocumentsContract.buildDocumentUriUsingTree(to, DocumentsContract.getTreeDocumentId(to));
             File f = new File(name);
             File p = f.getParentFile();
             if (p != null) {
-                to = getDocumentChild(context, to, p.getPath());
+                m = getDocumentFile(context, to, p.getPath());
+                if (m == null || !m.exists())
+                    return null;
+                to = m.getUri();
                 name = f.getName();
             }
             return createDocumentFolder(context, to, name); // createFolder() 'mkdirs' mode
