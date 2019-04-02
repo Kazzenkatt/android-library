@@ -173,32 +173,32 @@ public class Storage {
         return (s.toString());
     }
 
-    public static String getNameNoExt(String fileName) {
-        int i = fileName.lastIndexOf('.');
+    public static String getNameNoExt(String name) {
+        int i = name.lastIndexOf('.');
         if (i > 0)
-            fileName = fileName.substring(0, i);
-        return fileName;
+            name = name.substring(0, i);
+        return name;
     }
 
-    public static String getExt(String fileName) { // FilenameUtils.getExtension(n)
-        int i = fileName.lastIndexOf('.');
-        if (i >= 0)
-            return fileName.substring(i + 1);
+    public static String getExt(String name) { // FilenameUtils.getExtension(n)
+        int i = name.lastIndexOf('.');
+        if (i > 0)
+            return name.substring(i + 1);
         return "";
     }
 
-    public static String filterDups(String fileName) { // "test (1)" --> "test"
+    public static String filterDups(String name) { // "test (1)" --> "test"
         Pattern p = Pattern.compile("(.*)\\s\\(\\d+\\)");
-        Matcher m = p.matcher(fileName);
+        Matcher m = p.matcher(name);
         if (m.matches()) {
-            fileName = m.group(1);
-            return filterDups(fileName);
+            name = m.group(1);
+            return filterDups(name);
         }
-        return fileName;
+        return name;
     }
 
-    public static String getTypeByName(String fileName) {
-        String ext = getExt(fileName);
+    public static String getTypeByName(String name) {
+        String ext = getExt(name);
         return getTypeByExt(ext);
     }
 
@@ -233,7 +233,7 @@ public class Storage {
         String r = relative(base.getPath(), f);
         if (r == null)
             return null;
-        if (f == r)
+        if (f == r) // ==
             return file;
         return new File(r);
     }
@@ -335,6 +335,7 @@ public class Storage {
         }
         copy(f, to);
         delete(f);
+        to.setLastModified(last);
         return to;
     }
 
@@ -553,7 +554,7 @@ public class Storage {
 
     @TargetApi(21)
     public static Uri createDocumentFile(Context context, Uri u, String name) {
-        if (!DocumentsContract.isDocumentUri(context, u))
+        if (!DocumentsContract.isDocumentUri(context, u)) // tree uri?
             u = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
         ContentResolver resolver = context.getContentResolver();
         String ext = getExt(name);
@@ -563,7 +564,7 @@ public class Storage {
 
     @TargetApi(21)
     public static Uri createDocumentFolder(Context context, Uri u, String name) {
-        if (!DocumentsContract.isDocumentUri(context, u))
+        if (!DocumentsContract.isDocumentUri(context, u)) // tree uri?
             u = DocumentsContract.buildDocumentUriUsingTree(u, DocumentsContract.getTreeDocumentId(u));
         ContentResolver resolver = context.getContentResolver();
         return DocumentsContract.createDocument(resolver, u, DocumentsContract.Document.MIME_TYPE_DIR, name);
@@ -637,10 +638,8 @@ public class Storage {
         Cursor cursor = null;
         try {
             cursor = resolver.query(uri, null, null, null, null); // can throw UnsupportedOperationException
-            if (cursor != null) {
-                if (cursor.moveToNext())
-                    return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-            }
+            if (cursor != null && cursor.moveToNext())
+                return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
         } catch (UnsupportedOperationException ignore) {
         } finally {
             if (cursor != null)
@@ -1256,7 +1255,7 @@ public class Storage {
                         files.add(n);
                 }
             }
-        } else if (Build.VERSION.SDK_INT >= 23 && s.equals(ContentResolver.SCHEME_CONTENT)) {
+        } else if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             String p = buildDocumentPath(context, root, uri);
             ContentResolver resolver = context.getContentResolver();
             Uri doc;
