@@ -640,7 +640,7 @@ public class Storage {
             cursor = resolver.query(uri, null, null, null, null); // can throw UnsupportedOperationException
             if (cursor != null && cursor.moveToNext())
                 return cursor.getString(cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME));
-        } catch (UnsupportedOperationException ignore) {
+        } catch (Exception ignore) { // UnsupportedOperationException | IllegalArgumentException
         } finally {
             if (cursor != null)
                 cursor.close();
