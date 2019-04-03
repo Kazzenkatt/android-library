@@ -1395,6 +1395,16 @@ public class Storage {
             }
             return Storage.getParent(context, uri);
         }
+
+        @Override
+        public SAFCache get(Object t) {
+            SAFCache c = super.get(t);
+            if (c == null) {
+                c = new SAFCache();
+                put((T) t, c);
+            }
+            return c;
+        }
     }
 
     public Storage(Context context) {
