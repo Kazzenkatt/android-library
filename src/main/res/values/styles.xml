@@ -1,5 +1,17 @@
 <resources>
 
+    <!-- api 25 vs 27 compatibility https://stackoverflow.com/questions/48241620 @style/TextAppearance.AppCompat.Notification.Info -->
+    <style name="NotificationInfo">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+
+    <!-- api 25 vs 27 compatibility https://stackoverflow.com/questions/48241620 @style/TextAppearance.AppCompat.Notification.Time -->
+    <style name="NotificationTime">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+
     <style name="AppThemeLightLib" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
