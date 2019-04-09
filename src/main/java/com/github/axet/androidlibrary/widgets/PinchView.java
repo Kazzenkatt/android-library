@@ -27,8 +27,8 @@ public class PinchView extends FrameLayout implements GestureDetector.OnGestureL
     float current;
     float centerx = 0.5f;
     float centery = 0.5f;
-    Rect page; // page rect
-    Rect box; // box is smaller then 'page rect', it can increace scroll distance
+    Rect page; // page rect, area on screen where to draw bm
+    Rect box; // box is smaller then 'page rect', cut by layout bounds, scrolling offscreen can increase scroll distance
     float sx;
     float sy;
     Bitmap bm;
@@ -155,7 +155,9 @@ public class PinchView extends FrameLayout implements GestureDetector.OnGestureL
     }
 
     public void onScale(ScaleGestureDetector detector) {
-        current = detector.getCurrentSpan() - start;
+        float k = lp.width / (float) page.width();
+
+        current = (detector.getCurrentSpan() - start) * k;
 
         centerx = (detector.getFocusX() - lp.leftMargin) / lp.width;
         centery = (detector.getFocusY() - lp.topMargin) / lp.height;
