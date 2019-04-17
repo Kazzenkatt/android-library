@@ -3,6 +3,7 @@ package com.github.axet.androidlibrary.app;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.os.Build;
+import android.util.Log;
 
 import org.apache.commons.io.IOUtils;
 
@@ -20,6 +21,8 @@ import dalvik.system.DexClassLoader;
 import dalvik.system.DexFile;
 
 public class AssetsDexLoader {
+    public static String TAG = AssetsDexLoader.class.getSimpleName();
+
     public static final String JAR = "jar";
     public static final String DEX = "dex";
     public static final String CLASSES = "classes.dex";
@@ -122,7 +125,7 @@ public class AssetsDexLoader {
         public static Thread thread;
 
         public Context context;
-        public String[] deps;
+        public String[] deps; // delayed load
 
         public ThreadLoader(Context context, String... deps) {
             this.context = context;
@@ -131,6 +134,10 @@ public class AssetsDexLoader {
 
         public ThreadLoader(Context context, boolean block, String... deps) {
             this(context, deps);
+            init(block);
+        }
+
+        public void init(boolean block) {
             if (need())
                 load(block);
         }
@@ -139,18 +146,24 @@ public class AssetsDexLoader {
             return true;
         }
 
+        public ClassLoader deps() {
+            return AssetsDexLoader.deps(context, deps);
+        }
+
         public void load() {
-            done(AssetsDexLoader.deps(context, deps));
+            done(deps());
         }
 
         public Object lock() {
             Class k = getClass();
-            Object v = locks.get(k);
-            if (v == null) {
-                v = new Object();
-                locks.put(k, v);
+            synchronized (locks) {
+                Object v = locks.get(k);
+                if (v == null) {
+                    v = new Object();
+                    locks.put(k, v);
+                }
+                return v;
             }
-            return v;
         }
 
         public void load(boolean block) {
@@ -163,7 +176,12 @@ public class AssetsDexLoader {
                         thread = new Thread("ThreadLoader") {
                             @Override
                             public void run() {
-                                load();
+                                try {
+                                    load();
+                                } catch (Exception e) {
+                                    Log.e(TAG, "error", e);
+                                    error(e);
+                                }
                             }
                         };
                         thread.start();
@@ -180,6 +198,9 @@ public class AssetsDexLoader {
                     Thread.currentThread().interrupt();
                 }
             } // else return
+        }
+
+        public void error(Exception e) {
         }
 
         public void done(ClassLoader l) {
