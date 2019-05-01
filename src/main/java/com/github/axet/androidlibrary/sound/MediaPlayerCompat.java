@@ -498,9 +498,8 @@ public class MediaPlayerCompat {
                     }
                     if (method.getName().equals("onPlayerError")) {
                         Exception e = (Exception) ((Exception) args[0]).getCause();
-                        if (UnrecognizedInputFormatException.isInstance(e)) {
+                        if (UnrecognizedInputFormatException.isInstance(e))
                             e = new UnrecognizedInputFormatException(e);
-                        }
                         if (mp.listener != null)
                             mp.listener.onError(e);
                     }
