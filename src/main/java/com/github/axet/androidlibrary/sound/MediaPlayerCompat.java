@@ -16,6 +16,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
@@ -114,6 +115,7 @@ public class MediaPlayerCompat {
         if (mp == null)
             return null;
         return new MediaPlayerCompat() {
+            Handler handler = new Handler(Looper.getMainLooper());
             android.media.MediaPlayer player = mp;
 
             {
@@ -132,7 +134,7 @@ public class MediaPlayerCompat {
                     @Override
                     public boolean onError(MediaPlayer mp, int what, int extra) {
                         if (listener != null)
-                            listener.onError(new Exception("" + what));
+                            listener.onError(new Exception(what + " " + extra));
                         return true;
                     }
                 });
@@ -142,11 +144,21 @@ public class MediaPlayerCompat {
             public void prepare() {
                 try {
                     player.prepare();
-                    if (listener != null)
-                        listener.onReady();
-                } catch (IOException e) {
-                    if (listener != null)
-                        listener.onError(e);
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null)
+                                listener.onReady();
+                        }
+                    });
+                } catch (final IOException e) {
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (listener != null)
+                                listener.onError(e);
+                        }
+                    });
                 }
             }
 
@@ -163,6 +175,7 @@ public class MediaPlayerCompat {
             @Override
             public void release() {
                 player.release();
+                handler.removeCallbacksAndMessages(null);
             }
 
             @Override
@@ -192,7 +205,7 @@ public class MediaPlayerCompat {
                     try {
                         MediaMetadataRetriever m = new MediaMetadataRetriever();
                         setDataSource(context, m, uri);
-                        byte art[] = m.getEmbeddedPicture();
+                        byte[] art = m.getEmbeddedPicture();
                         if (art == null)
                             return null;
                         return BitmapFactory.decodeByteArray(art, 0, art.length);
@@ -259,7 +272,7 @@ public class MediaPlayerCompat {
         else
             mp.setAudioStreamType(streamType);
         try {
-            mp.setDataSource(context, uri);
+            setDataSource(context, mp, uri);
             return mp;
         } catch (IOException e) {
             Log.d(TAG, "unable to create MediaPlayer", e);
