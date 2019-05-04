@@ -16,7 +16,6 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.support.annotation.Nullable;
@@ -45,12 +44,51 @@ import java.lang.reflect.Proxy;
 public class MediaPlayerCompat {
     public static String TAG = MediaPlayerCompat.class.getSimpleName();
 
+    public static final int MEDIA_ERROR_SYSTEM = -2147483648;
+
     public static ClassLoader classLoader = MediaPlayerCompat.class.getClassLoader();
 
     public Listener listener;
 
     public static Class forName(String className) throws ClassNotFoundException {
         return Class.forName(className, true, classLoader);
+    }
+
+    public static String toStringError(int what, int extra) {
+        String str = "";
+        switch (what) {
+            case MediaPlayer.MEDIA_ERROR_UNKNOWN:
+                str += "MEDIA_ERROR_UNKNOWN";
+                break;
+            case MediaPlayer.MEDIA_ERROR_SERVER_DIED:
+                str += "MEDIA_ERROR_SERVER_DIED";
+                break;
+            default:
+                str += what;
+                break;
+        }
+        str += " ";
+        switch (extra) {
+            case MediaPlayer.MEDIA_ERROR_IO:
+                str += "MEDIA_ERROR_IO";
+                break;
+            case MediaPlayer.MEDIA_ERROR_MALFORMED:
+                str += "MEDIA_ERROR_MALFORMED";
+                break;
+            case MediaPlayer.MEDIA_ERROR_UNSUPPORTED:
+                str += "MEDIA_ERROR_UNSUPPORTED";
+                break;
+            case MediaPlayer.MEDIA_ERROR_TIMED_OUT:
+                str += "MEDIA_ERROR_TIMED_OUT";
+                break;
+            case MEDIA_ERROR_SYSTEM:
+                str += "MEDIA_ERROR_SYSTEM";
+                break;
+            default:
+                str += extra;
+                break;
+        }
+        return str;
     }
 
     public static ParcelFileDescriptor getFD(Context context, Uri uri) throws IOException {
@@ -101,11 +139,61 @@ public class MediaPlayerCompat {
         pfd.close();
     }
 
-    public static MediaPlayerCompat create(Context context, Uri uri) {
+    public static MediaPlayerCompat create(final Context context, final Uri uri) {
         try {
-            return new ExoUnrecognized(context, uri, createExoPlayer25(context, uri));
+            final Wrapper w = new Wrapper(createExoPlayer25(context, uri));
+            w.player.addListener(new Listener() {
+                @Override
+                public void onReady() {
+                    if (w.listener != null)
+                        w.listener.onReady();
+                }
+
+                @Override
+                public void onEnd() {
+                    if (w.listener != null)
+                        w.listener.onEnd();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    if (e instanceof UnrecognizedInputFormatException) {
+                        Log.d(TAG, "onError", e);
+                        boolean b = w.player.getPlayWhenReady();
+                        w.player.release();
+                        w.player = MediaPlayerCompat.createMediaPlayer(context, uri);
+                        if (w.player != null) {
+                            w.player.addListener(new Listener() {
+                                @Override
+                                public void onReady() {
+                                    if (w.listener != null)
+                                        w.listener.onReady();
+                                }
+
+                                @Override
+                                public void onEnd() {
+                                    if (w.listener != null)
+                                        w.listener.onEnd();
+                                }
+
+                                @Override
+                                public void onError(Exception e) {
+                                    if (w.listener != null)
+                                        w.listener.onError(e);
+                                }
+                            });
+                            w.player.prepare();
+                            w.player.setPlayWhenReady(b);
+                            return;
+                        }
+                    }
+                    if (w.listener != null)
+                        w.listener.onError(e);
+                }
+            });
+            return w;
         } catch (RuntimeException e) {
-            Log.e(TAG, "exo failed", e);
+            Log.e(TAG, "exo create failed", e);
             return createMediaPlayer(context, uri);
         }
     }
@@ -115,7 +203,6 @@ public class MediaPlayerCompat {
         if (mp == null)
             return null;
         return new MediaPlayerCompat() {
-            Handler handler = new Handler(Looper.getMainLooper());
             android.media.MediaPlayer player = mp;
 
             {
@@ -123,6 +210,13 @@ public class MediaPlayerCompat {
             }
 
             public void setListeners() {
+                player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        if (listener != null)
+                            listener.onReady();
+                    }
+                });
                 player.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
@@ -134,7 +228,7 @@ public class MediaPlayerCompat {
                     @Override
                     public boolean onError(MediaPlayer mp, int what, int extra) {
                         if (listener != null)
-                            listener.onError(new Exception(what + " " + extra));
+                            listener.onError(new Exception(toStringError(what, extra)));
                         return true;
                     }
                 });
@@ -142,24 +236,7 @@ public class MediaPlayerCompat {
 
             @Override
             public void prepare() {
-                try {
-                    player.prepare();
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null)
-                                listener.onReady();
-                        }
-                    });
-                } catch (final IOException e) {
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (listener != null)
-                                listener.onError(e);
-                        }
-                    });
-                }
+                player.prepareAsync();
             }
 
             @Override
@@ -175,7 +252,6 @@ public class MediaPlayerCompat {
             @Override
             public void release() {
                 player.release();
-                handler.removeCallbacksAndMessages(null);
             }
 
             @Override
@@ -762,60 +838,11 @@ public class MediaPlayerCompat {
         }
     }
 
-    public static class ExoUnrecognized extends MediaPlayerCompat {
+    public static class Wrapper extends MediaPlayerCompat {
         public MediaPlayerCompat player;
 
-        public ExoUnrecognized(final Context context, final Uri uri, MediaPlayerCompat mp) {
+        public Wrapper(MediaPlayerCompat mp) {
             player = mp;
-            player.addListener(new Listener() {
-                @Override
-                public void onReady() {
-                    if (listener != null)
-                        listener.onReady();
-                }
-
-                @Override
-                public void onEnd() {
-                    if (listener != null)
-                        listener.onEnd();
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    if (e instanceof UnrecognizedInputFormatException) {
-                        Log.d(TAG, "onError", e);
-                        boolean b = player.getPlayWhenReady();
-                        player.release();
-                        player = MediaPlayerCompat.createMediaPlayer(context, uri);
-                        if (player != null) {
-                            player.addListener(new Listener() {
-                                @Override
-                                public void onReady() {
-                                    if (listener != null)
-                                        listener.onReady();
-                                }
-
-                                @Override
-                                public void onEnd() {
-                                    if (listener != null)
-                                        listener.onEnd();
-                                }
-
-                                @Override
-                                public void onError(Exception e) {
-                                    if (listener != null)
-                                        listener.onError(e);
-                                }
-                            });
-                            player.prepare();
-                            player.setPlayWhenReady(b);
-                            return;
-                        }
-                    }
-                    if (listener != null)
-                        listener.onError(e);
-                }
-            });
         }
 
         @Override
