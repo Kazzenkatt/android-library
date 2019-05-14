@@ -42,6 +42,14 @@ public class PersistentService extends Service {
         context.stopService(intent);
     }
 
+    public static void registerNext(Context context, boolean b) {
+        OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, PREFERENCE_OPTIMIZATION);
+        if (Build.VERSION.SDK_INT < 26 && b || state.icon) // always running service for <API26
+            start(context);
+        else
+            stop(context);
+    }
+
     public class ServiceReceiver extends OptimizationPreferenceCompat.ServiceReceiver {
         public ServiceReceiver(Context context, Class<? extends Service> service, String key) {
             super(context, service, key);
