@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
@@ -79,7 +80,9 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     public static int REFRESH = 15 * AlarmManager.MIN1;
     public static int CHECK_DELAY = 5 * AlarmManager.MIN1;
-    public static boolean ICON = false; // default no persistent icon option
+    public static boolean ICON = false; // default no persistent icon option, use setIcon if default false
+
+    public static int BOOT_DELAY = 2 * 60 * 1000;
 
     // checkbox for old phones, which fires 15 minutes event
     public static final String PING = OptimizationPreferenceCompat.class.getCanonicalName() + ".PING";
@@ -94,6 +97,28 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
     // all service related code, for old phones, where AlarmManager will be used to keep app running
     protected Class<? extends Service> service;
+
+    public static boolean findPermission(Context context, String p) {
+        try {
+            PackageManager pm = context.getPackageManager();
+            PackageInfo info = pm.getPackageInfo(context.getPackageName(), PackageManager.GET_PERMISSIONS);
+            for (String i : info.requestedPermissions) {
+                if (i.equals(p))
+                    return true; // or use pm.checkPermission()
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(TAG, "unable to find permission", e);
+        }
+        return false;
+    }
+
+    public static boolean findPermissions(Context context, String[] pp) {
+        for (String p : pp) {
+            if (!findPermission(context, p))
+                return false;
+        }
+        return true;
+    }
 
     public static ComponentName startService(Context context, Intent intent) {
         if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26) {
@@ -219,7 +244,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             startActivity(context, intent);
         } else {
-            if (context.getPackageManager().checkPermission(Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, context.getPackageName()) != PackageManager.PERMISSION_GRANTED)
+            if (!findPermission(context, Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS))
                 Log.e(TAG, "Permission not granted: " + Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
             Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
             intent.setData(Uri.parse("package:" + n));
@@ -531,6 +556,30 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         edit.commit();
     }
 
+    public static boolean needBootWarning(Context context, String bootpref, String installpref) {
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        long auto = shared.getLong(bootpref, -1);
+        long install = shared.getLong(installpref, -1);
+        if (auto == -1 && install == -1)
+            return false; // freshly installed app, never ran before
+        long now = System.currentTimeMillis();
+        long boot = now - SystemClock.elapsedRealtime(); // boot time
+        if (install > boot)
+            return false; // app was installed after boot
+        if (boot + BOOT_DELAY > now) // give 2 minutes to receive boot event
+            return false; // 2 minutes maybe not enougth to receive boot event
+        return boot > auto; // boot > auto = boot event never received
+    }
+
+    public static AlertDialog buildBootWarning(Context context) {
+        return new AlertDialog.Builder(context).setMessage("Application never received BOOT event, check if it has been removed from autostart").create();
+    }
+
+    public static void setBootInstallTime(Context context, String pref, long time) {
+        SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
+        shared.edit().putLong(pref, time).commit();
+    }
+
     public static class WarningBuilder {
         public String key;
         public Context context;
@@ -596,6 +645,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 pref.onResume();
         }
 
+        @SuppressLint("RestrictedApi")
         public void onShow() {
             Window w = dialog.getWindow();
             w.setCallback(new WindowCallbackWrapper(w.getCallback()) {
