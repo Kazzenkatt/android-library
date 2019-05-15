@@ -39,9 +39,13 @@ public class PersistentService extends Service {
         context.stopService(intent);
     }
 
-    public static boolean startIfPersistent(Context context, boolean b, Intent intent) { // if service is optional keep running service for <API26
+    public static boolean isPersistent(Context context, boolean b) {
         OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, PREFERENCE_OPTIMIZATION);
-        if ((Build.VERSION.SDK_INT < 26 && b) || state.icon) {
+        return (Build.VERSION.SDK_INT < 26 && b) || state.icon;
+    }
+
+    public static boolean startIfPersistent(Context context, boolean b, Intent intent) { // if service is optional keep running service for <API26
+        if (isPersistent(context, b)) {
             start(context, intent);
             return true;
         } else {
