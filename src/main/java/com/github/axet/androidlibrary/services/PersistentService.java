@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.services;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -128,6 +129,43 @@ public class PersistentService extends Service {
         }
     }
 
+    @SuppressLint("RestrictedApi")
+    public class PersistentIconBuilder extends RemoteNotificationCompat.Low {
+        public PersistentIconBuilder() {
+            super(PersistentService.this, R.layout.remoteview);
+        }
+
+        public PersistentIconBuilder create() {
+            return create(getAppTheme(), getChannelStatus());
+        }
+
+        public PersistentIconBuilder create(int theme, NotificationChannelCompat channel) {
+            PackageManager pm = mContext.getPackageManager();
+            Intent launch = pm.getLaunchIntentForPackage(mContext.getPackageName());
+            PendingIntent main = PendingIntent.getActivity(mContext, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            setTheme(theme)
+                    .setChannel(channel)
+                    .setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal))
+                    .setTitle(AboutPreferenceCompat.getApplicationName(mContext))
+                    .setText(getString(R.string.optimization_alive))
+                    .setWhen(notification)
+                    .setMainIntent(main)
+                    .setOngoing(true)
+                    .setSmallIcon(R.drawable.ic_circle);
+
+            return this;
+        }
+
+        public int getAppTheme() {
+            return R.style.AppThemeLightLib;
+        }
+
+        public NotificationChannelCompat getChannelStatus() {
+            return new NotificationChannelCompat(mContext, "status", "Status", NotificationManagerCompat.IMPORTANCE_LOW);
+        }
+    }
+
     public PersistentService() {
     }
 
@@ -189,32 +227,8 @@ public class PersistentService extends Service {
         optimization.onTaskRemoved(rootIntent);
     }
 
-    public int getAppTheme() {
-        return R.style.AppThemeLightLib;
-    }
-
-    public NotificationChannelCompat getChannelStatus() {
-        return new NotificationChannelCompat(this, "status", "Status", NotificationManagerCompat.IMPORTANCE_LOW);
-    }
-
-    public Notification build(Intent intent) { // override getAppTheme() and getChannelStatus() if this method in use
-        PackageManager pm = getPackageManager();
-        Intent launch = pm.getLaunchIntentForPackage(getPackageName());
-        PendingIntent main = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        RemoteNotificationCompat.Builder builder = new RemoteNotificationCompat.Low(this, R.layout.remoteview);
-
-        builder.setTheme(getAppTheme())
-                .setChannel(getChannelStatus())
-                .setImageViewTint(R.id.icon_circle, builder.getThemeColor(R.attr.colorButtonNormal))
-                .setTitle(AboutPreferenceCompat.getApplicationName(this))
-                .setText(getString(R.string.optimization_alive))
-                .setWhen(notification)
-                .setMainIntent(main)
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.ic_circle);
-
-        return builder.build();
+    public Notification build(Intent intent) {
+        return new PersistentIconBuilder().create().build();
     }
 
     public void updateIcon() {
