@@ -1,6 +1,7 @@
 package com.github.axet.androidlibrary.widgets;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -158,6 +159,34 @@ public class RemoteNotificationCompat extends NotificationCompat {
             return this;
         }
 
+        @TargetApi(16)
+        @SuppressLint("RestrictedApi")
+        public Builder setAdaptiveIcon(int id) { // android adaptive foreground icon has 72dp out of 108dp
+            Context context = theme;
+            if (context == null)
+                context = mContext;
+            int nw = context.getResources().getDimensionPixelOffset(R.dimen.notification_large_icon_width); // 64dp
+            int nh = context.getResources().getDimensionPixelOffset(R.dimen.notification_large_icon_height); // 64dp
+            setAdaptiveIcon(context, compact, nw, nh);
+            if (big != null)
+                setAdaptiveIcon(context, big, nw, nh);
+            setIcon(id);
+            return this;
+        }
+
+        @TargetApi(16)
+        public Builder setAdaptiveIcon(Context context, RemoteViews view, int nw, int nh) {
+            int fg = ThemeUtils.dp2px(context, 108);
+            int fp = ThemeUtils.dp2px(context, 72);
+            int ap = (fg - fp) / 2; // adaptive icon padding = 18dp
+            float nrw = nw / (float) fg; // layout icon ratio width
+            float nrh = nh / (float) fg; // layout icon ratio height
+            int wp = -(int) (ap * nrw);
+            int hp = -(int) (ap * nrh);
+            view.setViewPadding(R.id.icon, wp, hp, wp, hp);
+            return this;
+        }
+
         public Builder setViewVisibility(int id, int v) {
             compact.setViewVisibility(id, v);
             if (big != null)
@@ -256,8 +285,8 @@ public class RemoteNotificationCompat extends NotificationCompat {
                 create(bigId);
         }
 
-        @Override
         @SuppressLint("RestrictedApi")
+        @Override
         public void create(int layoutId) {
             super.create(layoutId);
             if (compact.getLayoutId() == LOW)
@@ -272,6 +301,26 @@ public class RemoteNotificationCompat extends NotificationCompat {
                 compact.setViewVisibility(R.id.header_text, View.VISIBLE);
             }
             return super.setText(text);
+        }
+
+        @SuppressLint("RestrictedApi")
+        @Override
+        public Builder setAdaptiveIcon(int id) {
+            Context context = theme;
+            if (context == null)
+                context = mContext;
+            if (compact.getLayoutId() == LOW) {
+                int dp = ThemeUtils.dp2px(context, 18); // 18dp
+                setAdaptiveIcon(context, compact, dp, dp);
+                if (big != null) {
+                    int nw = context.getResources().getDimensionPixelOffset(R.dimen.notification_large_icon_width); // 64dp
+                    int nh = context.getResources().getDimensionPixelOffset(R.dimen.notification_large_icon_height); // 64dp
+                    setAdaptiveIcon(context, big, nw, nh);
+                }
+                return setIcon(id);
+            } else {
+                return super.setAdaptiveIcon(id);
+            }
         }
 
         @Override
