@@ -21,11 +21,13 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 // Check android notification_template_base.xml for constants
@@ -82,9 +84,22 @@ public class RemoteNotificationCompat extends NotificationCompat {
     public static Rect getAdaptivePaddings(Context context, RemoteViews view, int id) {
         DimensionFactory size = new DimensionFactory(context, id);
         RemoteViewsCompat.applyTheme(context, view, size);
-        if (size.width <= 0 || size.height <= 0)
+        ViewGroup v;
+        v = size.view;
+        int width = v.getLayoutParams().width;
+        int height = v.getLayoutParams().height;
+        while (width == ViewGroup.LayoutParams.MATCH_PARENT) {
+            v = (ViewGroup) v.getParent();
+            width = v.getLayoutParams().width;
+        }
+        v = size.view;
+        while (height == ViewGroup.LayoutParams.MATCH_PARENT) {
+            v = (ViewGroup) v.getParent();
+            height = v.getLayoutParams().height;
+        }
+        if (width <= 0 || height <= 0)
             throw new RuntimeException("Adaptive Icon view must be fixed");
-        return getAdaptivePaddings(context, size.width, size.height);
+        return getAdaptivePaddings(context, width, height);
     }
 
     public static Rect getAdaptivePaddings(Context context, int nw, int nh) {
@@ -120,8 +135,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
 
     public static class DimensionFactory implements LayoutInflater.Factory {
         public Context context;
-        public int width;
-        public int height;
+        public ViewGroup view;
         public int id;
 
         public DimensionFactory(Context context, int id) {
@@ -164,20 +178,26 @@ public class RemoteNotificationCompat extends NotificationCompat {
             final int WIDTH = Arrays.binarySearch(attrsArray, android.R.attr.layout_width);
             final int HEIGHT = Arrays.binarySearch(attrsArray, android.R.attr.layout_height);
 
+            FrameLayout v = new FrameLayout(context);
+
             Resources.Theme theme = context.getTheme();
             TypedArray ta = theme.obtainStyledAttributes(attrs, attrsArray, 0, 0);
             TypedValue out = new TypedValue();
             if (ta.getValue(ID, out)) {
                 int id = out.resourceId;
-                if (id == this.id) {
-                    if (ta.getValue(WIDTH, out))
-                        width = getDimension(context, out);
-                    if (ta.getValue(HEIGHT, out))
-                        height = getDimension(context, out);
-                }
+                if (id == this.id)
+                    view = v;
+                int width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                int height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                if (ta.getValue(WIDTH, out))
+                    width = getDimension(context, out);
+                if (ta.getValue(HEIGHT, out))
+                    height = getDimension(context, out);
+                v.setLayoutParams(new ViewGroup.LayoutParams(width, height));
             }
             ta.recycle();
-            return null;
+
+            return v;
         }
     }
 
