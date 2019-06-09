@@ -14,22 +14,18 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.view.ContextThemeWrapper;
-import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 // Check android notification_template_base.xml for constants
@@ -287,15 +283,18 @@ public class RemoteNotificationCompat extends NotificationCompat {
             return this;
         }
 
-        @TargetApi(16)
         @SuppressLint("RestrictedApi")
         public Builder setAdaptiveIcon(int id) { // android adaptive foreground icon has 72dp out of 108dp
             Context context = theme;
             if (context == null)
                 context = mContext;
-            RemoteNotificationCompat.setAdaptiveIcon(context, compact, id);
-            if (big != null)
-                RemoteNotificationCompat.setAdaptiveIcon(context, big, id);
+            if (Build.VERSION.SDK_INT >= 16) {
+                RemoteNotificationCompat.setAdaptiveIcon(context, compact, id);
+                if (big != null)
+                    RemoteNotificationCompat.setAdaptiveIcon(context, big, id);
+            } else {
+                setIcon(id);
+            }
             return this;
         }
 
@@ -422,9 +421,12 @@ public class RemoteNotificationCompat extends NotificationCompat {
             if (context == null)
                 context = mContext;
             if (compact.getLayoutId() == LOW) {
-                RemoteNotificationCompat.setAdaptiveIcon(context, compact, id);
-                if (big != null) {
-                    RemoteNotificationCompat.setAdaptiveIcon(context, big, id);
+                if (Build.VERSION.SDK_INT >= 16) {
+                    RemoteNotificationCompat.setAdaptiveIcon(context, compact, id);
+                    if (big != null)
+                        RemoteNotificationCompat.setAdaptiveIcon(context, big, id);
+                } else {
+                    setIcon(id);
                 }
                 return this;
             } else {
