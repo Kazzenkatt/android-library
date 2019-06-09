@@ -118,23 +118,20 @@ public class HeaderRecyclerAdapter extends RecyclerView.Adapter implements Wrapp
 
     @Override
     public int getItemViewType(int position) {
-        if (hasHeader() && position == 0) {
+        if (hasHeader() && position == 0)
             return TYPE_HEADER;
-        }
-        if (hasFooter() && position == getItemCount() - 1) {
+        if (hasFooter() && position == getItemCount() - 1)
             return TYPE_FOOTER;
-        }
         return wrapped.getItemViewType(getWrappedPosition(position));
     }
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = null;
-        if (viewType == TYPE_HEADER) {
+        if (viewType == TYPE_HEADER)
             itemView = headerView;
-        } else if (viewType == TYPE_FOOTER) {
+        else if (viewType == TYPE_FOOTER)
             itemView = footerView;
-        }
         if (itemView != null) {
             if (layoutManager instanceof StaggeredGridLayoutManager) {
                 ViewGroup.LayoutParams targetParams = itemView.getLayoutParams();
@@ -155,12 +152,10 @@ public class HeaderRecyclerAdapter extends RecyclerView.Adapter implements Wrapp
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-        if (getItemViewType(position) == TYPE_HEADER || getItemViewType(position) == TYPE_FOOTER) {
+        if (getItemViewType(position) == TYPE_HEADER || getItemViewType(position) == TYPE_FOOTER)
             return;
-        }
-        if (holder instanceof WrapperRecyclerAdapter.ViewHolder) {
+        if (holder instanceof WrapperRecyclerAdapter.ViewHolder)
             ((WrapperRecyclerAdapter.ViewHolder) holder).adapter = this;
-        }
         wrapped.onBindViewHolder(holder, getWrappedPosition(position));
     }
 

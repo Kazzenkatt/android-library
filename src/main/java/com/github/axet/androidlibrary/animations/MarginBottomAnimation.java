@@ -2,6 +2,7 @@ package com.github.axet.androidlibrary.animations;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
 import android.view.animation.Transformation;
 
 public class MarginBottomAnimation extends StepAnimation {
@@ -11,8 +12,8 @@ public class MarginBottomAnimation extends StepAnimation {
 
     int vh;
 
-    public static void apply(final View v, final boolean expand, boolean animate) {
-        apply(new LateCreator() {
+    public static Animation apply(final View v, final boolean expand, boolean animate) {
+        return apply(new LateCreator() {
             @Override
             public MarginBottomAnimation create() {
                 return new MarginBottomAnimation(v, expand);

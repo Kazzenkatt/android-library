@@ -36,10 +36,9 @@ import android.view.animation.Transformation;
  * statement.
  */
 public class MarginAnimation extends StepAnimation {
-
-    ViewGroup.MarginLayoutParams viewLp;
-    ViewGroup.MarginLayoutParams viewLpOrig;
-    int marginSlide;
+    public ViewGroup.MarginLayoutParams viewLp;
+    public ViewGroup.MarginLayoutParams viewLpOrig;
+    public int marginSlide;
 
     public static void apply(final View v, final boolean expand, boolean animate) {
         apply(new LateCreator() {
