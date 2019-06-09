@@ -768,19 +768,25 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             register();
         }
 
-        public void register() {
+        public boolean isOptimization() {
             if (Build.VERSION.SDK_INT >= 23) {
                 if (!isIgnoringBatteryOptimizations(context)) {
                     unregister();
-                    return;
+                    return false;
                 }
             } else {
                 State23 state = getState23(context, key);
                 if (!state.service) {
                     unregister();
-                    return;
+                    return false;
                 }
             }
+            return true;
+        }
+
+        public void register() {
+            if (!isOptimization())
+                return;
             next();
             am.set(next, serviceCheck(context, service));
         }

@@ -34,14 +34,14 @@ import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 //    - Persistent Icon option (OptimizationPreferenceCompat.setIcon() mandatory call)
 // 4) Long Operation Service (Audio Recorder)
 //    - No Battery Optimization settings
-//    - No Persistent Icon option (override PersistentService.updateIcon() to keep intent != null, do not call super.register() - not using optimization settings)
+//    - No Persistent Icon option (override PersistentService.updateIcon() to keep intent != null, ServiceReceiver.isOptimization() {return true})
+// 5) Long Operation no kill check (Hourly Reminder FireAlarmService)
+//    - No Battery Optimization settings
+//    - No Persistent Icon option (override PersistentService.updateIcon() to keep intent != null, override onCreateOptimization() {})
 public class PersistentService extends Service {
     public static final String TAG = PersistentService.class.getSimpleName();
 
-    public static int NOTIFICATION_PERSISTENT_ICON = 1;
-    public static String PREFERENCE_OPTIMIZATION = "optimization";
-    public static String PREFERENCE_NEXT = "next";
-
+    protected int id = 1; // persistent icon id
     protected OptimizationPreferenceCompat.ServiceReceiver optimization;
     protected Notification notification;
 
@@ -53,13 +53,13 @@ public class PersistentService extends Service {
         context.stopService(intent);
     }
 
-    public static boolean isPersistent(Context context, boolean b) {
-        OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, PREFERENCE_OPTIMIZATION);
+    public static boolean isPersistent(Context context, boolean b, String key) {
+        OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, key);
         return (Build.VERSION.SDK_INT < 26 && b) || state.icon;
     }
 
-    public static boolean startIfPersistent(Context context, boolean b, Intent intent) { // if service is optional keep running service for <API26
-        if (isPersistent(context, b)) {
+    public static boolean startIfPersistent(Context context, boolean b, Intent intent, String key) { // if service is optional keep running service for <API26
+        if (isPersistent(context, b, key)) {
             start(context, intent);
             return true;
         } else {
@@ -69,9 +69,12 @@ public class PersistentService extends Service {
     }
 
     public class ServiceReceiver extends OptimizationPreferenceCompat.ServiceReceiver {
-        public ServiceReceiver(Context context, Class<? extends Service> service, String key) {
-            super(context, service, key);
-            filters.addAction(OptimizationPreferenceCompat.ICON_UPDATE);
+        String keyNext;
+
+        public ServiceReceiver(String key, String next) {
+            super(PersistentService.this, PersistentService.this.getClass(), key);
+            this.keyNext = next;
+            this.filters.addAction(OptimizationPreferenceCompat.ICON_UPDATE);
         }
 
         @Override
@@ -87,23 +90,30 @@ public class PersistentService extends Service {
         }
 
         @Override
+        public boolean isOptimization() {
+            return super.isOptimization();
+        }
+
+        @Override
         public void register() {
             super.register();
-            OptimizationPreferenceCompat.setKillCheck(PersistentService.this, next, PREFERENCE_NEXT);
+            OptimizationPreferenceCompat.setKillCheck(context, next, keyNext);
         }
 
         @Override
         public void unregister() {
             super.unregister();
-            OptimizationPreferenceCompat.setKillCheck(PersistentService.this, 0, PREFERENCE_NEXT);
+            OptimizationPreferenceCompat.setKillCheck(context, 0, keyNext);
         }
     }
 
     public static class SettingsReceiver extends BroadcastReceiver {
+        public String key; // "optimization"
         public Intent intent;
         public IntentFilter filters = new IntentFilter();
 
-        public SettingsReceiver(Intent intent) {
+        public SettingsReceiver(Intent intent, String key) {
+            this.key = key;
             this.intent = intent;
             filters.addAction(OptimizationPreferenceCompat.ICON_UPDATE);
         }
@@ -120,7 +130,7 @@ public class PersistentService extends Service {
         public void onReceive(Context context, Intent intent) {
             String a = intent.getAction();
             if (a.equals(OptimizationPreferenceCompat.ICON_UPDATE)) {
-                OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, PREFERENCE_OPTIMIZATION);
+                OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, key);
                 if (state.icon)
                     start(context, this.intent);
                 else
@@ -178,8 +188,6 @@ public class PersistentService extends Service {
     }
 
     public void onCreateOptimization() {
-        optimization = new ServiceReceiver(this, getClass(), PREFERENCE_OPTIMIZATION);
-        optimization.create();
     }
 
     @Nullable
@@ -237,13 +245,12 @@ public class PersistentService extends Service {
 
     public void updateIcon(Intent intent) {
         NotificationManagerCompat nm = NotificationManagerCompat.from(this);
-        OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(this, PREFERENCE_OPTIMIZATION);
-        if (intent != null || state.icon || Build.VERSION.SDK_INT >= 26 && getApplicationInfo().targetSdkVersion >= 26) {
+        if (intent != null || OptimizationPreferenceCompat.getState(this, optimization.key).icon || Build.VERSION.SDK_INT >= 26 && getApplicationInfo().targetSdkVersion >= 26) {
             Notification n = build(intent);
             if (notification == null)
-                startForeground(NOTIFICATION_PERSISTENT_ICON, n);
+                startForeground(id, n);
             else
-                nm.notify(NOTIFICATION_PERSISTENT_ICON, n);
+                nm.notify(id, n);
             notification = n;
         } else {
             hideIcon();
@@ -253,7 +260,7 @@ public class PersistentService extends Service {
     public void hideIcon() {
         NotificationManagerCompat nm = NotificationManagerCompat.from(this);
         stopForeground(false);
-        nm.cancel(NOTIFICATION_PERSISTENT_ICON);
+        nm.cancel(id);
         notification = null;
     }
 }

@@ -25,6 +25,7 @@ import android.widget.ListAdapter;
 import android.widget.ListPopupWindow;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.net.HttpClient;
 
 /**
  * PopupMenu window for ShareActionProvider
@@ -37,13 +38,22 @@ public class PopupShareActionProvider extends ListPopupWindow {
     FrameLayout mMeasureParent;
     Context context;
 
+    public static Intent intent(String s, String t) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType(HttpClient.CONTENTTYPE_TEXT);
+        intent.putExtra(Intent.EXTRA_EMAIL, "");
+        intent.putExtra(Intent.EXTRA_SUBJECT, s);
+        intent.putExtra(Intent.EXTRA_TEXT, t);
+        return intent;
+    }
+
     public static void show(Context context, View share, Intent intent) {
-        if (Build.VERSION.SDK_INT < 11) {
-            context.startActivity(intent);
-        } else {
+        if (Build.VERSION.SDK_INT >= 11) {
             PopupShareActionProvider shareProvider = new PopupShareActionProvider(context, share);
             shareProvider.setShareIntent(intent);
             shareProvider.show();
+        } else {
+            context.startActivity(intent);
         }
     }
 

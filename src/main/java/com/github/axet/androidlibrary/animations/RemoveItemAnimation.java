@@ -39,7 +39,7 @@ public class RemoveItemAnimation extends StepAnimation {
 
     public static void restore(final View v) {
         Animation a = v.getAnimation();
-        if (a != null && a instanceof RemoveItemAnimation) {
+        if (a instanceof RemoveItemAnimation) {
             v.clearAnimation();
             RemoveItemAnimation m = (RemoveItemAnimation) a;
             m.restore();
@@ -53,16 +53,15 @@ public class RemoveItemAnimation extends StepAnimation {
         this.list = list;
         this.run = run;
 
-        handler = new Handler();
-
-        setInterpolator(new AccelerateInterpolator());
-
-        setDuration(duration);
+        this.handler = new Handler();
 
         this.h = v.getHeight();
         this.w = v.getWidth();
         this.lp = v.getLayoutParams();
-        lpOrig = new ViewGroup.LayoutParams(lp);
+        this.lpOrig = new ViewGroup.LayoutParams(lp);
+
+        setInterpolator(new AccelerateInterpolator());
+        setDuration(duration);
     }
 
     @Override
