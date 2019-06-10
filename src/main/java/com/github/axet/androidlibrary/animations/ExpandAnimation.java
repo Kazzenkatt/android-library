@@ -93,9 +93,7 @@ public class ExpandAnimation extends MarginAnimation {
             if (partial)
                 off = (int) (off * i);
             list.scrollBy(0, off);
-        }
-
-        if (convertView.getBottom() > paddedBottom) {
+        } else if (convertView.getBottom() > paddedBottom) {
             int off = convertView.getBottom() - paddedBottom;
             if (partial)
                 off = (int) (off * i);
