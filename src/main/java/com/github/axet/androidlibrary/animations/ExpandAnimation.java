@@ -47,7 +47,6 @@ public class ExpandAnimation extends MarginAnimation {
 
         final int paddedTop = list.getPaddingTop();
         final int paddedBottom = list.getHeight() - list.getPaddingTop() - list.getPaddingBottom();
-
         partial = convertView.getTop() < paddedTop;
         partial |= convertView.getBottom() > paddedBottom;
     }
@@ -68,7 +67,7 @@ public class ExpandAnimation extends MarginAnimation {
         // gone off screen.
         if (Build.VERSION.SDK_INT >= 19) {
             if (!expand && atomicExpander != null && !atomicExpander.hasEnded()) {
-                // do not showChild;
+                // do not adjustChild;
             } else {
                 handler.post(new Runnable() {
                     @Override
