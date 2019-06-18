@@ -204,6 +204,8 @@ public class MediaPlayerCompat {
             return null;
         return new MediaPlayerCompat() {
             android.media.MediaPlayer player = mp;
+            boolean prepared = false;
+            boolean preparedPlay = false;
 
             {
                 setListeners();
@@ -213,6 +215,9 @@ public class MediaPlayerCompat {
                 player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                     @Override
                     public void onPrepared(MediaPlayer mp) {
+                        prepared = true;
+                        if (preparedPlay)
+                            player.start();
                         if (listener != null)
                             listener.onReady();
                     }
@@ -256,11 +261,17 @@ public class MediaPlayerCompat {
 
             @Override
             public boolean getPlayWhenReady() {
+                if (!prepared)
+                    return preparedPlay;
                 return player.isPlaying();
             }
 
             @Override
             public void setPlayWhenReady(boolean b) {
+                if (!prepared) {
+                    preparedPlay = true;
+                    return;
+                }
                 if (b) {
                     if (!player.isPlaying())
                         player.start();
@@ -272,6 +283,8 @@ public class MediaPlayerCompat {
 
             @Override
             public long getDuration() {
+                if (!prepared)
+                    return 0;
                 return player.getDuration();
             }
 
