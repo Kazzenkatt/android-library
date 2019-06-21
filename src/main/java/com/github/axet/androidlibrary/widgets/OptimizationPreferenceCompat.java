@@ -629,9 +629,11 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
 
         public void updateOptimization() {
-            boolean b = isIgnoringBatteryOptimizations(builder.getContext());
-            optimization.setChecked(b);
-            optimization.onBindViewHolder(optimizationHolder);
+            if (optimization != null) { // call show() not from settings activity
+                boolean b = isIgnoringBatteryOptimizations(builder.getContext());
+                optimization.setChecked(b);
+                optimization.onBindViewHolder(optimizationHolder);
+            }
         }
 
         public void show() {
