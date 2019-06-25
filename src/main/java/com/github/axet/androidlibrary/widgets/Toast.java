@@ -131,7 +131,7 @@ public class Toast {
             protected void onDetachedFromWindow() {
                 super.onDetachedFromWindow();
                 if (t.dismissListener != null)
-                    t.dismissListener.onDismiss(t);
+                    t.dismissListener.onDismiss();
             }
         };
         f.addView(v);
