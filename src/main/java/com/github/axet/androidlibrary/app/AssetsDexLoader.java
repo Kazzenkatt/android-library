@@ -104,7 +104,7 @@ public class AssetsDexLoader {
             return getPrivateMethod(ObjectInputStream.class, "newInstance", Class.class, Class.class).invoke(null, clazz, Object.class);
         } else if (Build.VERSION.SDK_INT < 18) {
             throw new NoSuchMethodException();
-        } else { // API19+
+        } else { // API18+
             Class Unsafe = Class.forName("sun.misc.Unsafe");
             return Unsafe.getDeclaredMethod("allocateInstance", Class.class).invoke(Unsafe.getDeclaredMethod("getUnsafe").invoke(null), clazz);
         }
