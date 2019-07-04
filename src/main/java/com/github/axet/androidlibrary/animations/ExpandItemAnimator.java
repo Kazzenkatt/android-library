@@ -1,6 +1,5 @@
 package com.github.axet.androidlibrary.animations;
 
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.RecyclerView;
@@ -28,24 +27,28 @@ public class ExpandItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean animateChange(@NonNull final RecyclerView.ViewHolder oldHolder, @NonNull final RecyclerView.ViewHolder newHolder, @NonNull RecyclerView.ItemAnimator.ItemHolderInfo preInfo, @NonNull RecyclerView.ItemAnimator.ItemHolderInfo postInfo) {
-        while (pending.remove(newHolder))
+        return animateChange(newHolder);
+    }
+
+    public boolean animateChange(final RecyclerView.ViewHolder h) {
+        while (pending.remove(h))
             ;
-        Animation a = apply(newHolder, true);
-        if (a == null) {
-            dispatchAnimationFinished(newHolder); // reduce mIsRecyclableCount
+        if (animations.contains(h))
+            return true;
+        Animation a = apply(h, true);
+        if (a == null)
             return false;
-        }
-        animations.add(newHolder);
+        animations.add(h);
         a.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
-                dispatchChangeStarting(newHolder, false);
+                dispatchChangeStarting(h, false);
             }
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                while (animations.remove(newHolder))
-                    dispatchChangeFinished(newHolder, false); // reduce mIsRecyclableCount
+                while (animations.remove(h))
+                    dispatchChangeFinished(h, false); // reduce mIsRecyclableCount
             }
 
             @Override
@@ -79,8 +82,13 @@ public class ExpandItemAnimator extends DefaultItemAnimator {
     }
 
     public void onBindViewHolder(final RecyclerView.ViewHolder h, int position) {
-        if (Build.VERSION.SDK_INT < 19 || (!pending.contains(h) && !animations.contains(h))) // TODO API<19 do not animate view
-            apply(h, false);
+        if (pending.contains(h)) {
+            animateChange(h); // API19< we need to start animation within onBindViewHolder()
+            return;
+        }
+        if (animations.contains(h))
+            return;
+        apply(h, false);
     }
 
     public void onScrollStateChanged(int state) {
