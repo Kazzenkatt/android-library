@@ -1,7 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Keep;
 import android.support.v4.internal.view.SupportMenuItem;
@@ -13,7 +12,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
-import java.lang.reflect.Field;
+import com.github.axet.androidlibrary.app.AssetsDexLoader;
+
 import java.text.Normalizer;
 import java.util.Locale;
 
@@ -129,9 +129,7 @@ public class SearchView extends android.support.v7.widget.SearchView {
         this.closeButtonListener = listener;
         try {
             Class k = getClass().getSuperclass();
-            Field f = k.getDeclaredField("mOnClickListener");
-            f.setAccessible(true);
-            final OnClickListener l = (OnClickListener) f.get(this);
+            final OnClickListener l = (OnClickListener) AssetsDexLoader.getPrivateField(k, "mOnClickListener").get(this);
             mCloseButton.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View v) {

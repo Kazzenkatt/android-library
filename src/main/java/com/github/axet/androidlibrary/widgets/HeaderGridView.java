@@ -34,8 +34,8 @@ import android.widget.ListAdapter;
 import android.widget.WrapperListAdapter;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.app.AssetsDexLoader;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 /**
@@ -57,9 +57,7 @@ public class HeaderGridView extends GridView {
         if (Build.VERSION.SDK_INT >= 11)
             return grid.getNumColumns();
         try {
-            Field mNumColumns = GridView.class.getDeclaredField("mNumColumns");
-            mNumColumns.setAccessible(true);
-            return mNumColumns.getInt(grid);
+            return AssetsDexLoader.getPrivateField(GridView.class, "mNumColumns").getInt(grid);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
