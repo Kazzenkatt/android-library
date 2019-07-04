@@ -11,7 +11,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.zip.ZipEntry;
@@ -30,8 +33,7 @@ public class AssetsDexLoader {
 
     public static DexFile[] getDexs(ClassLoader l) {
         try {
-            Field mDexs = l.getClass().getDeclaredField("mDexs");
-            mDexs.setAccessible(true);
+            Field mDexs = getPrivateField(l.getClass(), "mDexs");
             return (DexFile[]) mDexs.get(l);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -82,6 +84,30 @@ public class AssetsDexLoader {
         os.close();
         is.close();
         return tmp;
+    }
+
+
+    public static Field getPrivateField(Class cls, String name) throws NoSuchFieldException {
+        Field f = cls.getDeclaredField(name);
+        f.setAccessible(true);
+        return f;
+    }
+
+    public static Method getPrivateMethod(Class c, String name, Class<?>... args) throws NoSuchMethodException {
+        Method m = c.getDeclaredMethod(name, args);
+        m.setAccessible(true);
+        return m;
+    }
+
+    public static Object newInstance(final Class clazz) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
+        if (Build.VERSION.SDK_INT <= 10) {
+            return getPrivateMethod(ObjectInputStream.class, "newInstance", Class.class, Class.class).invoke(null, clazz, Object.class);
+        } else if (Build.VERSION.SDK_INT < 18) {
+            throw new NoSuchMethodException();
+        } else { // API19+
+            Class Unsafe = Class.forName("sun.misc.Unsafe");
+            return Unsafe.getDeclaredMethod("allocateInstance", Class.class).invoke(Unsafe.getDeclaredMethod("getUnsafe").invoke(null), clazz);
+        }
     }
 
     public static ClassLoader deps(Context context, String... deps) {

@@ -11,11 +11,11 @@ import android.support.annotation.IntDef;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.github.axet.androidlibrary.app.AssetsDexLoader;
 import com.github.axet.androidlibrary.app.NotificationManagerCompat;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
 // https://developer.android.com/training/notify-user/channels
@@ -41,9 +41,7 @@ public class NotificationChannelCompat {
     public static void setChannelId(NotificationCompat.Builder builder, String channelId) {
         Class NotificationCompat = NotificationCompat.Builder.class;
         try {
-            Field mPublicVersion = NotificationCompat.getDeclaredField("mPublicVersion");
-            mPublicVersion.setAccessible(true);
-            Notification n = (Notification) mPublicVersion.get(builder);
+            Notification n = (Notification) AssetsDexLoader.getPrivateField(NotificationCompat, "mPublicVersion").get(builder);
             if (n != null)
                 NotificationChannelCompat.setChannelId(n, channelId);
         } catch (NoSuchFieldException e) {
@@ -52,9 +50,7 @@ public class NotificationChannelCompat {
             Log.d(TAG, "unable to set public", e);
         }
         try {
-            Field mNotification = NotificationCompat.getDeclaredField("mNotification"); // protected field on 26+ support libraries
-            mNotification.setAccessible(true);
-            Notification n = (Notification) mNotification.get(builder);
+            Notification n = (Notification) AssetsDexLoader.getPrivateField(NotificationCompat, "mNotification").get(builder); // protected field on 26+ support libraries
             if (n != null)
                 NotificationChannelCompat.setChannelId(n, channelId);
         } catch (NoSuchFieldException e) {
@@ -68,9 +64,7 @@ public class NotificationChannelCompat {
         if (Build.VERSION.SDK_INT >= 26) {
             try {
                 Class Notification = n.getClass();
-                Field f = Notification.getDeclaredField("mChannelId");
-                f.setAccessible(true);
-                f.set(n, channelId);
+                AssetsDexLoader.getPrivateField(Notification, "mChannelId").set(n, channelId);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(e);
             } catch (IllegalAccessException e) {
@@ -83,9 +77,7 @@ public class NotificationChannelCompat {
         if (Build.VERSION.SDK_INT >= 26) {
             try {
                 Class Notification = n.getClass();
-                Field f = Notification.getDeclaredField("mChannelId");
-                f.setAccessible(true);
-                return (String) f.get(n);
+                return (String) AssetsDexLoader.getPrivateField(Notification, "mChannelId").get(n);
             } catch (NoSuchFieldException e) {
                 throw new RuntimeException(e);
             } catch (IllegalAccessException e) {
