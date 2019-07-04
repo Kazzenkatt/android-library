@@ -1,4 +1,4 @@
-package com.github.axet.androidlibrary.widgets;
+package com.github.axet.androidlibrary.sound;
 
 import android.content.Context;
 import android.media.AudioDeviceInfo;
@@ -7,9 +7,13 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.support.v7.media.MediaRouter;
 
+import com.github.axet.androidlibrary.app.ProximityShader;
+
 import java.lang.reflect.Method;
 
 public class ProximityPlayer extends ProximityShader {
+    public static int SPEAKER = AudioManager.STREAM_MUSIC; // loud playback
+    public static int EARPICE = AudioManager.STREAM_VOICE_CALL; // private playback
 
     public int streamType;
 
@@ -58,7 +62,7 @@ public class ProximityPlayer extends ProximityShader {
 
     public ProximityPlayer(Context context) {
         super(context);
-        streamType = AudioManager.STREAM_MUSIC;
+        streamType = SPEAKER;
     }
 
     @Override
@@ -70,19 +74,19 @@ public class ProximityPlayer extends ProximityShader {
     public void onNear() {
         super.onNear();
         turnScreenOff();
-        prepare(AudioManager.STREAM_VOICE_CALL);
+        prepare(EARPICE);
     }
 
     @Override
     public void onFar() {
         super.onFar();
         turnScreenOn();
-        prepare(AudioManager.STREAM_MUSIC);
+        prepare(SPEAKER);
     }
 
     public void prepare(int next) {
         if (!isDeviceMountedSpeaker(context))
-            next = AudioManager.STREAM_MUSIC;
+            next = SPEAKER;
         if (next != streamType) {
             streamType = next;
             prepare();
