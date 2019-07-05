@@ -75,7 +75,7 @@ public class ExpandItemAnimator extends DefaultItemAnimator {
 
     @Override
     public boolean isRunning() {
-        return super.isRunning() || !animations.isEmpty();
+        return super.isRunning() || !animations.isEmpty() || !binding.isEmpty();
     }
 
     @Override
