@@ -35,13 +35,30 @@ public class Firebase {
         return true;
     }
 
+    public static void setLogLevel(Context context, Object level) {
+        try {
+            Class FirebaseApp = Class.forName("com.google.firebase.FirebaseApp");
+            Class FirebaseDatabase = Class.forName("com.google.firebase.database.FirebaseDatabase");
+            Class Level = Class.forName("com.google.firebase.database.Logger$Level");
+            FirebaseApp.getDeclaredMethod("initializeApp", Context.class).invoke(null, context); // to make setLogLevel call works
+            if (level == null)
+                level = Enum.valueOf(Level, "DEBUG");
+            FirebaseDatabase.getDeclaredMethod("setLogLevel", Level).invoke(FirebaseDatabase.getDeclaredMethod("getInstance").invoke(null), level);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void attachBaseContext(Context context) {
         boolean detectedFirebase_10_2 = false;
         try {
-            Class FirebaseDatabase = Class.forName("FirebaseDatabase");
+            Class FirebaseDatabase = Class.forName("com.google.firebase.database.FirebaseDatabase");
             FirebaseDatabase.getMethod("getInstance", String.class); // new method added FirebaseDatabase.getInstance(String url)
             detectedFirebase_10_2 = true;
-        } catch (ClassNotFoundException ignore) {
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         } catch (NoSuchMethodException ignore) {
         }
         if (Build.VERSION.SDK_INT < 14 && detectedFirebase_10_2) { // disable firebase for API14< and firebase10.2+
