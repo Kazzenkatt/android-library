@@ -430,7 +430,7 @@ public class MediaPlayerCompat {
             final Method getAudioUsageForStreamType = Util.getMethod("getAudioUsageForStreamType", int.class);
             final Method getAudioContentTypeForStreamType = Util.getMethod("getAudioContentTypeForStreamType", int.class);
             Class C = forName("com.google.android.exoplayer2.C");
-            final Field TIME_UNSET = C.getField("TIME_UNSET");
+            final long TIME_UNSET = C.getField("TIME_UNSET").getLong(null);
             final Class PlayerView = forName("com.google.android.exoplayer2.ui.PlayerView");
             final Class AudioAttributes$Builder = forName("com.google.android.exoplayer2.audio.AudioAttributes$Builder");
             final Class MediaSource = forName("com.google.android.exoplayer2.source.MediaSource");
@@ -507,7 +507,7 @@ public class MediaPlayerCompat {
                 public long getDuration() {
                     try {
                         long d = (long) getDuration.invoke(player);
-                        if (d == TIME_UNSET.getLong(null))
+                        if (d == TIME_UNSET)
                             return 0;
                         return d;
                     } catch (InvocationTargetException e) {
@@ -618,7 +618,7 @@ public class MediaPlayerCompat {
                 }
             };
             InvocationHandler e = new InvocationHandler() {
-                public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
                     if (playbackState == STATE_READY) {
                         if (mp.listener != null)
                             mp.listener.onReady();
@@ -629,12 +629,22 @@ public class MediaPlayerCompat {
                     }
                 }
 
-                public void onPlayerError(Exception e) {
+                void onPlayerError(Exception e) {
                     e = (Exception) e.getCause();
                     if (UnrecognizedInputFormatException.isInstance(e))
                         e = new UnrecognizedInputFormatException(e);
                     if (mp.listener != null)
                         mp.listener.onError(e);
+                }
+
+                void onTimelineChanged(Object timeline, @Nullable Object manifest, int reason) {
+                    if (mp.listener instanceof ExoListener)
+                        ((ExoListener) mp.listener).onTimelineChanged();
+                }
+
+                void onTracksChanged(Object trackGroups, Object trackSelections) {
+                    if (mp.listener instanceof ExoListener)
+                        ((ExoListener) mp.listener).onTracksChanged();
                 }
 
                 @Override
@@ -645,6 +655,12 @@ public class MediaPlayerCompat {
                             break;
                         case "onPlayerError":
                             onPlayerError((Exception) args[0]);
+                            break;
+                        case "onTimelineChanged":
+                            onTimelineChanged(args[0], args[1], (int) args[2]);
+                            break;
+                        case "onTracksChanged":
+                            onTracksChanged(args[0], args[1]);
                             break;
                     }
                     return null;
@@ -921,6 +937,13 @@ public class MediaPlayerCompat {
             return player.createView();
         }
     }
+
+    public interface ExoListener extends Listener {
+        void onTimelineChanged();
+
+        void onTracksChanged();
+    }
+
 
     public interface Listener {
         void onReady();
