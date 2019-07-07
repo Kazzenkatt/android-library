@@ -159,7 +159,6 @@ public class MediaPlayerCompat {
                 @Override
                 public void onError(Exception e) {
                     if (e instanceof UnrecognizedInputFormatException) {
-                        Log.d(TAG, "onError", e);
                         boolean b = w.player.getPlayWhenReady();
                         w.player.release();
                         w.player = MediaPlayerCompat.createMediaPlayer(context, uri);
