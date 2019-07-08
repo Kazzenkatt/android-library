@@ -713,7 +713,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
-    public static class ServiceReceiver extends BroadcastReceiver {
+    public static class OptimizationReceiver extends BroadcastReceiver {
         public Context context;
         public AlarmManager am;
         public String key;
@@ -730,7 +730,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             }
         };
 
-        public ServiceReceiver(final Context context, final Class<? extends Service> service, String key) {
+        public OptimizationReceiver(final Context context, final Class<? extends Service> service, String key) {
             this.key = key;
             this.context = context;
             this.am = new AlarmManager(context);
@@ -823,6 +823,104 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
+    public static class ServiceReceiver extends OptimizationReceiver {
+        public String keyNext;
+        public OptimizationIcon icon;
+
+        public ServiceReceiver(Service service, String key, String next, int id) {
+            super(service, service.getClass(), key);
+            this.keyNext = next;
+            this.filters.addAction(OptimizationPreferenceCompat.ICON_UPDATE);
+            onCreateIcon(service, id);
+        }
+
+        public void onCreateIcon(Service service, int id) {
+            icon = new OptimizationIcon(service, id, key) {
+                @Override
+                public void updateIcon() { // moving updateIcon() to the ServiceReceiver level
+                    ServiceReceiver.this.updateIcon();
+                }
+
+                @Override
+                public Notification build(Intent intent) { // moving build() to the ServiceReceiver level
+                    return ServiceReceiver.this.build(intent);
+                }
+            };
+            icon.create();
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            super.onReceive(context, intent);
+            String a = intent.getAction();
+            if (a != null && a.equals(OptimizationPreferenceCompat.ICON_UPDATE))
+                updateIcon();
+        }
+
+        public void updateIcon() { // Override with icon.updateIcon(new Intent())
+            icon.updateIcon(null);
+        }
+
+        public Notification build(Intent intent) {
+            return new PersistentIconBuilder(context).setWhen(icon.notification).create().build();
+        }
+
+        @Override
+        public boolean isOptimization() {
+            return super.isOptimization();
+        }
+
+        @Override
+        public void register() {
+            super.register();
+            OptimizationPreferenceCompat.setKillCheck(context, next, keyNext);
+        }
+
+        @Override
+        public void unregister() {
+            super.unregister();
+            OptimizationPreferenceCompat.setKillCheck(context, 0, keyNext);
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            icon.close();
+        }
+    }
+
+    public static class SettingsReceiver extends BroadcastReceiver {
+        public String key; // "optimization"
+        public Intent intent; // start / stop intent
+        public IntentFilter filters = new IntentFilter();
+
+        public SettingsReceiver(Intent intent, String key) {
+            this.key = key;
+            this.intent = intent;
+            filters.addAction(OptimizationPreferenceCompat.ICON_UPDATE);
+        }
+
+        public void register(Context context) {
+            context.registerReceiver(this, filters);
+        }
+
+        public void unregister(Context context) {
+            context.unregisterReceiver(this);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String a = intent.getAction();
+            if (a.equals(OptimizationPreferenceCompat.ICON_UPDATE)) {
+                OptimizationPreferenceCompat.State state = OptimizationPreferenceCompat.getState(context, key);
+                if (state.icon)
+                    OptimizationPreferenceCompat.startService(context, this.intent);
+                else
+                    context.stopService(this.intent);
+            }
+        }
+    }
+
     public static class State23 extends State { // API23<
         public boolean service;
 
@@ -876,98 +974,119 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
-    public static class NotificationIcon {
-        public Notification notification;
-        public NotificationChannelCompat channel;
-        public Service context;
-        public int iconId;
-        public String key;
-        public String text;
-        public String description;
-        public int theme = R.style.AppThemeDarkLib;
-        public int bigID = -1;
-        public int icon = R.drawable.ic_circle;
-
-        public NotificationIcon(Service context, int iconId) {
-            this.context = context;
-            this.iconId = iconId;
-            this.description = context.getString(R.string.optimization_alive);
+    @SuppressLint("RestrictedApi")
+    public static class PersistentIconBuilder extends RemoteNotificationCompat.Low {
+        public PersistentIconBuilder(Context context) {
+            super(context, R.layout.remoteview);
         }
 
-        public NotificationIcon(Service context, int iconId, String key, String text) {
-            this(context, iconId);
-            this.key = key;
-            this.text = text;
+        public PersistentIconBuilder create() {
+            return create(getAppTheme(), getChannelStatus());
         }
 
-        public NotificationIcon(Service context, int iconId, String key, String text, int theme) {
-            this(context, iconId, key, text);
-            this.theme = theme;
-        }
+        public PersistentIconBuilder create(int theme, NotificationChannelCompat channel) {
+            PackageManager pm = mContext.getPackageManager();
+            Intent launch = pm.getLaunchIntentForPackage(mContext.getPackageName());
+            PendingIntent main = PendingIntent.getActivity(mContext, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        public NotificationIcon(Service context, int iconId, String key, String text, int theme, int bigID) {
-            this(context, iconId, key, text, theme);
-            this.bigID = bigID;
-        }
-
-        public NotificationChannelCompat createChannel() {
-            return new NotificationChannelCompat(context, key, text, NotificationManagerCompat.IMPORTANCE_LOW);
-        }
-
-        public void onCreate() {
-            channel = createChannel();
-            if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
-                show(true);
-        }
-
-        public void onDestroy() {
-            if (Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26)
-                show(false);
-        }
-
-        @SuppressLint("RestrictedApi")
-        public Notification build() {
-            String title = AboutPreferenceCompat.getApplicationName(context);
-            String text = description;
-
-            RemoteNotificationCompat.Builder builder;
-
-            if (bigID == -1)
-                builder = new RemoteNotificationCompat.Low(context);
-            else
-                builder = new RemoteNotificationCompat.Low(context, bigID);
-
-            PackageManager pm = context.getPackageManager();
-            Intent intent = pm.getLaunchIntentForPackage(context.getPackageName());
-
-            PendingIntent main = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            builder.setTheme(theme)
+            setTheme(theme)
                     .setChannel(channel)
-                    .setTitle(title)
-                    .setText(text)
-                    .setWhen(notification)
+                    .setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal))
+                    .setTitle(AboutPreferenceCompat.getApplicationName(mContext))
+                    .setText(mContext.getString(R.string.optimization_alive))
                     .setMainIntent(main)
                     .setOngoing(true)
-                    .setSmallIcon(icon);
+                    .setSmallIcon(R.drawable.ic_circle);
 
-            return builder.build();
+            return this;
         }
 
-        public void show(boolean show) {
+        public PersistentIconBuilder setWhen(Notification n) {
+            super.setWhen(n);
+            return this;
+        }
+
+        public int getAppTheme() {
+            return R.style.AppThemeLightLib;
+        }
+
+        public NotificationChannelCompat getChannelStatus() {
+            return new NotificationChannelCompat(mContext, "status", "Status", NotificationManagerCompat.IMPORTANCE_LOW);
+        }
+    }
+
+    public static class NotificationIcon {
+        public Service context;
+        public Notification notification;
+        public int id; // NOTIFICAION_ICON_ID
+
+        public NotificationIcon(Service context, int id) {
+            this.context = context;
+            this.id = id;
+        }
+
+        public void create() { // onCreate()
+            updateIcon();
+        }
+
+        public void close() { // onDestory()
+            hideIcon();
+        }
+
+        public Notification build(Intent intent) {
+            return new PersistentIconBuilder(context).setWhen(notification).create().build();
+        }
+
+        public void updateIcon() { // Override with updateIcon(null), to make default persistent service behaviour
+            updateIcon(new Intent()); // null == hide
+        }
+
+        public boolean isOptimization() {
+            return false;
+        }
+
+        public void updateIcon(Intent intent) {
             NotificationManagerCompat nm = NotificationManagerCompat.from(context);
-            if (!show) {
-                context.stopForeground(false);
-                nm.cancel(iconId);
-                notification = null;
-            } else {
-                Notification n = build();
-                if (notification == null)
-                    context.startForeground(iconId, n);
-                else
-                    nm.notify(iconId, n);
+            if (intent != null || isOptimization()) {
+                Notification n = build(intent);
+                if (notification == null) {
+                    context.startForeground(id, n);
+                } else {
+                    String co = NotificationChannelCompat.getChannelId(notification);
+                    String cn = NotificationChannelCompat.getChannelId(n);
+                    if (co == null && cn != null || co != null && cn == null || co != null && cn != null && !co.equals(cn))
+                        nm.cancel(id);
+                    nm.notify(id, n);
+                }
                 notification = n;
+            } else {
+                hideIcon();
             }
+        }
+
+        public void hideIcon() {
+            NotificationManagerCompat nm = NotificationManagerCompat.from(context);
+            context.stopForeground(false);
+            nm.cancel(id);
+            notification = null;
+        }
+    }
+
+    public static class OptimizationIcon extends NotificationIcon {
+        public String key;
+
+        public OptimizationIcon(Service context, int id, String key) {
+            super(context, id);
+            this.key = key;
+        }
+
+        public boolean isOptimization() {
+            return OptimizationPreferenceCompat.getState(context, key).icon || Build.VERSION.SDK_INT >= 26 && context.getApplicationInfo().targetSdkVersion >= 26;
+        }
+
+        @Override
+        public void updateIcon() { // Override with updateIcon(new Intent())
+            updateIcon(null); // default: null = hide
         }
     }
 

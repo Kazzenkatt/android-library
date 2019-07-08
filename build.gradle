@@ -89,9 +89,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection = 'scm:git:https://gitlab.com/axet/android-library'
-                    developerConnection = 'scm:git:https://gitlab.com/axet/android-library'
-                    url = 'https://gitlab.com/axet/android-library'
+                    connection = 'scm:git:' + pom.url.get()
+                    developerConnection = 'scm:git:' + pom.url.get()
+                    url = pom.url
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.github.axet.androidlibrary.services;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
+import android.app.Notification;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
@@ -17,7 +18,9 @@ import android.util.Log;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.AlarmManager;
+import com.github.axet.androidlibrary.app.NotificationManagerCompat;
 import com.github.axet.androidlibrary.app.SuperUser;
+import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 
 import java.io.IOException;
@@ -187,11 +190,19 @@ public class WifiKeepService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        icon = new OptimizationPreferenceCompat.NotificationIcon(this, NOTIFICATION_ICON, "wifi", "Wifi");
-        icon.icon = ICON;
-        if (DESCRIPTION != null)
-            icon.description = DESCRIPTION;
-        icon.onCreate();
+        icon = new OptimizationPreferenceCompat.NotificationIcon(this, NOTIFICATION_ICON) {
+            @Override
+            public Notification build(Intent intent) {
+                return new OptimizationPreferenceCompat.PersistentIconBuilder(context) {
+                    @SuppressLint("RestrictedApi")
+                    @Override
+                    public NotificationChannelCompat getChannelStatus() {
+                        return new NotificationChannelCompat(mContext, "wifi", "Wifi", NotificationManagerCompat.IMPORTANCE_LOW);
+                    }
+                }.setWhen(notification).create().setIcon(ICON).setText(DESCRIPTION == null ? context.getString(R.string.optimization_alive) : DESCRIPTION).build();
+            }
+        };
+        icon.create();
     }
 
     @Override
@@ -211,7 +222,7 @@ public class WifiKeepService extends Service {
     public void onDestroy() {
         super.onDestroy();
         t = wifi(false);
-        icon.onDestroy();
+        icon.close();
     }
 
     @Nullable
