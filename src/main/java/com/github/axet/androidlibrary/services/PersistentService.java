@@ -27,6 +27,8 @@ import com.github.axet.androidlibrary.widgets.OptimizationPreferenceCompat;
 // 5) LongOperationService no kill check (Hourly Reminder: FireAlarmService)
 //    - No Battery Optimization settings
 //    - No Persistent Icon option (override PersistentService.updateIcon() to keep intent != null, override onCreateOptimization() {})
+//
+// We have to test: <API23, API23+, API26+
 public class PersistentService extends Service {
     public static final String TAG = PersistentService.class.getSimpleName();
 
