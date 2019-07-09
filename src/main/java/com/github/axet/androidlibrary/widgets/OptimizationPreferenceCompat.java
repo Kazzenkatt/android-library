@@ -545,6 +545,10 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         }
     }
 
+    public static boolean isPersistent(Context context, String key, boolean b) {
+        return isPersistent(context, key) || Build.VERSION.SDK_INT < 26 && b;
+    }
+
     public static State23 getState23(Context context, String key) { // <API23
         final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         try {
