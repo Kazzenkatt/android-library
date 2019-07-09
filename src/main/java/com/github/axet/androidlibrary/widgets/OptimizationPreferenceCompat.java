@@ -419,21 +419,23 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     public static WarningBuilder buildKilledWarning(final Context context, boolean showCommons, String key, Class service) {
-        final SettingsReceiver settings = new SettingsReceiver(new Intent(context, service), key);
         WarningBuilder b = buildWarning(context, showCommons, key);
         b.builder.setMessage(R.string.optimization_killed);
-        b.serviceEnable = new Runnable() {
-            @Override
-            public void run() {
-                settings.start(context);
-            }
-        };
-        b.serviceDisable = new Runnable() {
-            @Override
-            public void run() {
-                settings.stop(context);
-            }
-        };
+        if (service != null) {
+            final SettingsReceiver settings = new SettingsReceiver(new Intent(context, service), key);
+            b.serviceEnable = new Runnable() {
+                @Override
+                public void run() {
+                    settings.start(context);
+                }
+            };
+            b.serviceDisable = new Runnable() {
+                @Override
+                public void run() {
+                    settings.stop(context);
+                }
+            };
+        }
         return b;
     }
 
