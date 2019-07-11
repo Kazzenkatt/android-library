@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.app.Activity;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -19,7 +20,10 @@ public class InvalidateOptionsMenuCompat {
             return new Runnable() {
                 @Override
                 public void run() {
-                    ActivityCompat.invalidateOptionsMenu(fragment.getActivity());
+                    Activity a = fragment.getActivity();
+                    if (a == null || a.isFinishing())
+                        return;
+                    ActivityCompat.invalidateOptionsMenu(a);
                 }
             };
         }
