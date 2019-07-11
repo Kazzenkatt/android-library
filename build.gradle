@@ -5,7 +5,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.android.tools.build:gradle:3.4.2'
         classpath 'digital.wup:android-maven-publish:3.6.2'
     }
 }
@@ -28,8 +28,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 579
-        versionName "1.31.4"
+        versionCode 580
+        versionName "1.31.5"
         consumerProguardFiles 'consumer-proguard-rules.pro'
     }
     buildTypes {
