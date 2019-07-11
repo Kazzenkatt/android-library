@@ -28,8 +28,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 580
-        versionName "1.31.5"
+        versionCode 581
+        versionName "1.31.6"
         consumerProguardFiles 'consumer-proguard-rules.pro'
     }
     buildTypes {
