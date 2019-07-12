@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -100,11 +101,17 @@ public class AssetsDexLoader {
         return m;
     }
 
+    public static Constructor getPrivateConstructor(Class c, Class<?>... args) throws NoSuchMethodException {
+        Constructor m = c.getDeclaredConstructor(args);
+        m.setAccessible(true);
+        return m;
+    }
+
     public static Object newInstance(final Class clazz) throws SecurityException, NoSuchMethodException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
         if (Build.VERSION.SDK_INT < 11) { // API10
             return getPrivateMethod(ObjectInputStream.class, "newInstance", Class.class, Class.class).invoke(null, clazz, Object.class);
         } else if (Build.VERSION.SDK_INT < 18) {
-            throw new NoSuchMethodException();  // API11-17
+            throw new NoSuchMethodException(); // API11-17
         } else { // API18+
             Class Unsafe = Class.forName("sun.misc.Unsafe");
             return Unsafe.getDeclaredMethod("allocateInstance", Class.class).invoke(Unsafe.getDeclaredMethod("getUnsafe").invoke(null), clazz);
