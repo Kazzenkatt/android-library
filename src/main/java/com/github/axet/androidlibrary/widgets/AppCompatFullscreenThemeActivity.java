@@ -10,10 +10,18 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.github.axet.androidlibrary.widgets.AppCompatThemeActivity;
-
 public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeActivity {
-    public static final int UI_ANIMATION_DELAY = 300;
+    public static int UI_ANIMATION_DELAY = 300;
+    public static int AUTOHIDE_DELAY = 1500;
+
+    public static int HIDE_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+            | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
+            | View.SYSTEM_UI_FLAG_IMMERSIVE;
+
+    public static int SHOW_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
 
     public final Handler handler = new Handler();
     public Window w;
@@ -51,10 +59,27 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
             }
         });
         decorView = w.getDecorView();
+        if (Build.VERSION.SDK_INT >= 11) {
+            decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
+                @Override
+                public void onSystemUiVisibilityChange(int visibility) {
+                    AppCompatFullscreenThemeActivity.this.onSystemUiVisibilityChange(visibility);
+                }
+            });
+        }
     }
 
     public void toggle() {
         setFullscreen(!fullscreen);
+    }
+
+    public void onSystemUiVisibilityChange(int visibility) {
+        if (Build.VERSION.SDK_INT >= 11) {
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0 && fullscreen && (decorView.getSystemUiVisibility() & HIDE_FLAGS) != HIDE_FLAGS) {
+                handler.removeCallbacks(mHidePart2Runnable);
+                handler.postDelayed(mHidePart2Runnable, AUTOHIDE_DELAY);
+            }
+        }
     }
 
     public void setFullscreen(boolean b) {
@@ -83,17 +108,12 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
 
     public void hideSystemUI() {
         if (Build.VERSION.SDK_INT >= 11)
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN // hide status bar
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE);
+            decorView.setSystemUiVisibility(HIDE_FLAGS);
     }
 
     public void showSystemUI() {
         if (Build.VERSION.SDK_INT >= 11)
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            decorView.setSystemUiVisibility(SHOW_FLAGS);
     }
 
     @Override
