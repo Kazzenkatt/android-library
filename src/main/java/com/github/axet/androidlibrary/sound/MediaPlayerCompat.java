@@ -402,6 +402,7 @@ public class MediaPlayerCompat {
             final int STATE_ENDED = ExoPlayer.getField("STATE_ENDED").getInt(null);
             final Class ExoPlaybackException = forName("com.google.android.exoplayer2.ExoPlaybackException");
             final Class UnrecognizedInputFormatException = forName("com.google.android.exoplayer2.source.UnrecognizedInputFormatException");
+            final Class ParserException = forName("com.google.android.exoplayer2.ParserException");
             final Method getCurrentPosition = Player.getDeclaredMethod("getCurrentPosition");
             final Method seekTo = Player.getDeclaredMethod("seekTo", long.class);
             final Method release = Player.getDeclaredMethod("release");
@@ -630,7 +631,7 @@ public class MediaPlayerCompat {
 
                 void onPlayerError(Exception e) {
                     e = (Exception) e.getCause();
-                    if (UnrecognizedInputFormatException.isInstance(e))
+                    if (UnrecognizedInputFormatException.isInstance(e) || ParserException.isInstance(e))
                         e = new UnrecognizedInputFormatException(e);
                     if (mp.listener != null)
                         mp.listener.onError(e);
