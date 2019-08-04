@@ -10,11 +10,12 @@ import android.support.v7.preference.PreferenceManager;
 import com.github.axet.androidlibrary.R;
 
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 public class MainApplication extends Application {
     public static final String TAG = MainApplication.class.getSimpleName();
 
-    public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     public static MainApplication from(Context context) {
         if (context instanceof Application)
