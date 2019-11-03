@@ -1,13 +1,17 @@
 package com.github.axet.androidlibrary.widgets;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.media.MediaDataSource;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.View;
@@ -17,9 +21,11 @@ import android.widget.ProgressBar;
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.crypto.MD5;
+import com.github.axet.androidlibrary.sound.MediaPlayerCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
@@ -87,17 +93,17 @@ public class CacheImagesAdapter {
     }
 
     public static Bitmap createScaled(InputStream is, int max) { // make image equals max or less
-        SeekInputStream sis = new SeekInputStream(is);
-        Rect size = getImageSize(sis);
+        DoubleReadInputStream dris = new DoubleReadInputStream(is);
+        Rect size = getImageSize(dris);
         if (size == null)
             return null;
-        sis.reset();
+        dris.reread();
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
         if (size.width() < size.height())
             bitmapOptions.inSampleSize = (int) Math.ceil(size.width() / (double) max);
         else
             bitmapOptions.inSampleSize = (int) Math.ceil(size.height() / (double) max);
-        return BitmapFactory.decodeStream(sis, null, bitmapOptions);
+        return BitmapFactory.decodeStream(dris, null, bitmapOptions);
     }
 
     public static Bitmap createScaled(Bitmap bm) { // scaled by min
@@ -139,6 +145,53 @@ public class CacheImagesAdapter {
         return sbm;
     }
 
+    @TargetApi(10)
+    public static Bitmap createVideoThumbnail(Context context, Uri uri) throws IOException {
+        ParcelFileDescriptor pfd = MediaPlayerCompat.getFD(context, uri);
+        FileDescriptor fd = pfd.getFileDescriptor();
+        return createVideoThumbnail(fd);
+    }
+
+    @TargetApi(10)
+    public static Bitmap createVideoThumbnail(FileDescriptor fd) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever(); // API10
+        try {
+            retriever.setDataSource(fd);
+            Bitmap bm = retriever.getFrameAtTime(-1);
+            if (bm == null)
+                return null;
+            return CacheImagesAdapter.createThumbnail(bm);
+        } catch (Exception ignore) {
+        } finally {
+            try {
+                retriever.release();
+            } catch (Exception ignore) {
+            }
+        }
+        return null;
+    }
+
+    @TargetApi(23)
+    public static Bitmap createVideoThumbnail(MediaDataSource source) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        try {
+            retriever.setDataSource(source);
+            Bitmap bm = retriever.getFrameAtTime(-1);
+            if (bm == null)
+                return null;
+            return CacheImagesAdapter.createThumbnail(bm);
+        } catch (Exception ignore) {
+            Log.d(TAG, "read error", ignore);
+        } finally {
+            try {
+                retriever.release();
+            } catch (Exception ignore) {
+                Log.d(TAG, "release error", ignore);
+            }
+        }
+        return null;
+    }
+
     public static boolean isImage(String name) { // supported images by BitmapFactory
         name = name.toLowerCase();
         for (String s : IMAGES) {
@@ -146,6 +199,11 @@ public class CacheImagesAdapter {
                 return true;
         }
         return false;
+    }
+
+    public static boolean isVideo(String name) {
+        String mime = Storage.getTypeByName(name);
+        return mime.startsWith("video/");
     }
 
     public static File getCache(Context context) {
@@ -220,6 +278,8 @@ public class CacheImagesAdapter {
         }
 
         public int read(int pos, byte[] b, int off, int len) {
+            if (pos >= count)
+                return 0;
             len = Math.min(len, count - pos);
             System.arraycopy(buf, pos, b, off, len);
             return len;
@@ -228,16 +288,82 @@ public class CacheImagesAdapter {
         public int getSize() {
             return count;
         }
+
+        public void ensureCapacity(int minCapacity) { // ByteArrayOutputStream.ensureCapacity()
+            if (minCapacity - buf.length > 0)
+                grow(minCapacity);
+        }
+
+        public void grow(int minCapacity) { // ByteArrayOutputStream.grow()
+            int oldCapacity = buf.length;
+            int newCapacity = oldCapacity << 1;
+            if (newCapacity - minCapacity < 0)
+                newCapacity = minCapacity;
+            if (newCapacity < 0) {
+                if (minCapacity < 0) // overflow
+                    throw new OutOfMemoryError();
+                newCapacity = Integer.MAX_VALUE;
+            }
+            buf = Arrays.copyOf(buf, newCapacity);
+        }
+
+        public int write(InputStream is, int len) throws IOException {
+            ensureCapacity(count + len);
+            int total = 0;
+            int l;
+            while (len > 0 && (l = is.read(buf, count, len)) > 0) {
+                count += l;
+                total += l;
+                len -= l;
+            }
+            return total;
+        }
     }
 
-    public static class SeekInputStream extends InputStream { // allow to reread inputstream. only effective if first read was partial and small (few bytes)
+    public static class DoubleReadInputStream extends SeekInputStream { // double read inputstream. only effective if first read was partial and small (few bytes)
+        public boolean reset = false; // clear cache after second read
+
+        public DoubleReadInputStream(InputStream is) {
+            super(is);
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (reset && pos >= cache.getSize())
+                cache = null;
+            return b;
+        }
+
+        @Override
+        public int read(@NonNull byte[] b, int off, int len) throws IOException {
+            int l = super.read(b, off, len);
+            if (reset && pos >= cache.getSize())
+                cache = null;
+            return l;
+        }
+
+        public void reread() { // reset position to zero, free buffer after second read
+            seek(0);
+            reset = true;
+        }
+    }
+
+    public static class SeekInputStream extends InputStream { // seek read inputstream. only effective if read's are small and at the begnning of file (few bytes)
         public InputStream is;
+        public long count; // inputstream position
         public ReadByteArrayOutputStream cache = new ReadByteArrayOutputStream();
         public int pos; // current reading position
-        public boolean reset = false; // clear cache after read
 
         public SeekInputStream(InputStream is) {
             this.is = is;
+            this.count = 0;
+        }
+
+        public void fill(long pos, int size) throws IOException {
+            int ll = (int) (pos + size - cache.getSize());
+            if (ll > 0)
+                count += cache.write(is, ll);
         }
 
         @Override
@@ -245,19 +371,13 @@ public class CacheImagesAdapter {
             if (cache == null) {
                 int b = is.read();
                 pos++;
+                count++;
                 return b;
             } else {
-                if (pos >= cache.getSize()) {
-                    int b = is.read();
-                    cache.write(b);
-                    pos++;
-                    return b;
-                } else {
-                    int b = cache.read(pos++);
-                    if (reset && pos >= cache.getSize())
-                        cache = null;
-                    return b;
-                }
+                fill(pos, 1);
+                int b = cache.read(pos);
+                pos++;
+                return b;
             }
         }
 
@@ -266,33 +386,18 @@ public class CacheImagesAdapter {
             if (cache == null) {
                 int l = is.read(b, off, len);
                 pos += l;
+                count += l;
                 return l;
             } else {
-                if (pos >= cache.getSize()) {
-                    int l = is.read(b, off, len);
-                    cache.write(b, off, l);
-                    pos += l;
-                    return l;
-                } else {
-                    int l = cache.read(pos, b, off, len);
-                    pos += l;
-                    if (reset && pos >= cache.getSize())
-                        cache = null;
-                    if (len > l) {
-                        off += l;
-                        len -= l;
-                        int k = is.read(b, off, len);
-                        pos += k;
-                        return l + k;
-                    }
-                    return l;
-                }
+                fill(pos, len);
+                int l = cache.read(pos, b, off, len);
+                pos += l;
+                return l;
             }
         }
 
-        public void reset() { // reset position to zero
-            pos = 0;
-            reset = true;
+        public void seek(long pos) {
+            this.pos = (int) pos;
         }
     }
 
