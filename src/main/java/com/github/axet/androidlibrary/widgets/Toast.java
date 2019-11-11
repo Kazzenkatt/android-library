@@ -3,12 +3,16 @@ package com.github.axet.androidlibrary.widgets;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.IntDef;
+import android.support.annotation.NonNull;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +22,8 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+
+import com.github.axet.androidlibrary.app.AssetsDexLoader;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -116,6 +122,16 @@ public class Toast {
         return new Toast(context, android.widget.Toast.makeText(context, t, d), d, t);
     }
 
+    public static void setContext(@NonNull View view, @NonNull Context context) {
+        if (Build.VERSION.SDK_INT <= 25) {
+            try {
+                AssetsDexLoader.getPrivateField(View.class, "mContext").set(view, context);
+            } catch (Throwable e) {
+                Log.e(TAG, "setContext", e);
+            }
+        }
+    }
+
     public static Toast onCreate(final Activity a) {
         String m = a.getIntent().getStringExtra("text");
         int d = a.getIntent().getIntExtra("duration", 0);
@@ -147,11 +163,80 @@ public class Toast {
         return t;
     }
 
+    // https://github.com/PureWriter/ToastCompat
+    public static class SafeToastContext extends ContextWrapper {
+        public SafeToastContext(@NonNull Context base) {
+            super(base);
+        }
+
+        @Override
+        public Context getApplicationContext() {
+            return new ApplicationContextWrapper(getBaseContext().getApplicationContext());
+        }
+
+        public static final class ApplicationContextWrapper extends ContextWrapper {
+            public ApplicationContextWrapper(@NonNull Context base) {
+                super(base);
+            }
+
+            @Override
+            public Object getSystemService(@NonNull String name) {
+                if (Context.WINDOW_SERVICE.equals(name)) {
+                    // noinspection ConstantConditions
+                    return new WindowManagerWrapper((WindowManager) getBaseContext().getSystemService(name));
+                }
+                return super.getSystemService(name);
+            }
+        }
+
+        public static final class WindowManagerWrapper implements WindowManager {
+            private final @NonNull
+            WindowManager base;
+
+            public WindowManagerWrapper(@NonNull WindowManager base) {
+                this.base = base;
+            }
+
+            @Override
+            public Display getDefaultDisplay() {
+                return base.getDefaultDisplay();
+            }
+
+            @Override
+            public void removeViewImmediate(View view) {
+                base.removeViewImmediate(view);
+            }
+
+            @Override
+            public void addView(View view, ViewGroup.LayoutParams params) {
+                try {
+                    Log.d(TAG, "WindowManager's addView(view, params) has been hooked.");
+                    base.addView(view, params);
+                } catch (BadTokenException e) {
+                    Log.i(TAG, e.getMessage());
+                } catch (Throwable throwable) {
+                    Log.e(TAG, "[addView]", throwable);
+                }
+            }
+
+            @Override
+            public void updateViewLayout(View view, ViewGroup.LayoutParams params) {
+                base.updateViewLayout(view, params);
+            }
+
+            @Override
+            public void removeView(View view) {
+                base.removeView(view);
+            }
+        }
+    }
+
     public Toast(Context context, android.widget.Toast t, int d, CharSequence m) {
         this.context = context;
         this.toast = t;
         this.d = d;
         this.m = m;
+        setContext(toast.getView(), new SafeToastContext(context));
     }
 
     public void setOnDismissListener(PopupWindow.OnDismissListener l) {
@@ -207,6 +292,7 @@ public class Toast {
                 };
                 f.addView(v);
                 toast.setView(f);
+                setContext(f, new SafeToastContext(context));
                 toast.show();
             }
         };

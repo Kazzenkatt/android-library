@@ -16,6 +16,7 @@ import android.widget.ImageButton;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.app.AssetsDexLoader;
 
 import java.util.Arrays;
 
