@@ -11,7 +11,9 @@ import android.os.Build;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v7.preference.EditTextPreference;
+import android.support.v7.preference.PreferenceViewHolder;
 import android.util.AttributeSet;
+import android.view.View;
 
 import com.github.axet.androidlibrary.app.Storage;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
@@ -23,6 +25,12 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     public String def;
     public Storage storage = new Storage(getContext());
     public OpenStorageChoicer choicer;
+    public View.OnLongClickListener clickListener = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            return StoragePathPreferenceCompat.this.onLongClick();
+        }
+    };
 
     public StoragePathPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
@@ -59,8 +67,18 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     }
 
     @Override
+    public void onBindViewHolder(PreferenceViewHolder holder) {
+        super.onBindViewHolder(holder);
+        holder.itemView.setOnLongClickListener(clickListener);
+    }
+
+    @Override
     public void onClick() {
         onClickDialog();
+    }
+
+    public boolean onLongClick() {
+        return false;
     }
 
     public void onClickDialog() {
