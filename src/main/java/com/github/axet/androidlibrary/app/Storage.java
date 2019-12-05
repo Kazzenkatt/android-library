@@ -37,13 +37,13 @@ import org.apache.commons.io.IOUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.security.MessageDigest;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -352,6 +352,17 @@ public class Storage {
                 return true; // no write access - ejected
         }
         return !p.canRead(); // readonly check
+    }
+
+    public static void touch(File f) {
+        if (f.setLastModified(System.currentTimeMillis())) // not working on android
+            return;
+        try {
+            FileOutputStream os = new FileOutputStream(f, true);
+            os.close();
+        } catch (IOException e) {
+            Log.e(TAG, "touch failed", e);
+        }
     }
 
     // document methods
