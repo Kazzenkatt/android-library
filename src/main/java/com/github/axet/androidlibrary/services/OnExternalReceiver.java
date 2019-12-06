@@ -27,9 +27,9 @@ public class OnExternalReceiver extends BroadcastReceiver {
         Log.d(TAG, "onReceive " + intent);
         if (!isExternal(context))
             return;
-        onBootReceived();
+        onBootReceived(context);
     }
 
-    public void onBootReceived() { // android.intent.action.EXTERNAL_APPLICATIONS_AVAILABLE received on external app == ON BOOT EVENT
+    public void onBootReceived(Context context) { // android.intent.action.EXTERNAL_APPLICATIONS_AVAILABLE received on external app == ON BOOT EVENT
     }
 }
