@@ -72,9 +72,8 @@ public class StoragePathPreference extends EditTextPreference {
     public static String getPath(Object object) {
         String path = getText(object);
 
-        if (path == null || path.isEmpty()) {
+        if (path == null || path.isEmpty())
             path = getDefault();
-        }
 
         return path;
     }
