@@ -585,10 +585,23 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         edit.commit();
     }
 
-    public static boolean needBootWarning(Context context, String bootpref, String installpref) {
+    public static long getInstallTime(Context context) {
+        PackageManager pm = context.getPackageManager();
+        try {
+            PackageInfo info = pm.getPackageInfo(context.getPackageName(), 0);
+            if (info.lastUpdateTime > info.firstInstallTime)
+                return info.lastUpdateTime;
+            else
+                return info.firstInstallTime;
+        } catch (PackageManager.NameNotFoundException e) {
+            return -1;
+        }
+    }
+
+    public static boolean needBootWarning(Context context, String bootpref) {
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         long auto = shared.getLong(bootpref, -1);
-        long install = shared.getLong(installpref, -1);
+        long install = getInstallTime(context);
         if (auto == -1 && install == -1)
             return false; // freshly installed app, never ran before
         long now = System.currentTimeMillis();
@@ -610,12 +623,12 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
                 }).setOnDismissListener(new DialogInterface.OnDismissListener() {
                     @Override
                     public void onDismiss(DialogInterface dialog) {
-                        setBootInstallTime(context, boot, System.currentTimeMillis());
+                        setPrefTime(context, boot, System.currentTimeMillis());
                     }
                 }).create();
     }
 
-    public static void setBootInstallTime(Context context, String pref, long time) {
+    public static void setPrefTime(Context context, String pref, long time) {
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         shared.edit().putLong(pref, time).commit();
     }

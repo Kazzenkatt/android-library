@@ -32,7 +32,7 @@ public class AlarmManager {
         return MainApplication.SIMPLE.format(new Date(time));
     }
 
-    static public String formatDuration(Context context, long diff) {
+    public static String formatDuration(Context context, long diff) {
         int diffMilliseconds = (int) (diff % 1000);
         return MainApplication.formatDuration(context, diff) + "." + diffMilliseconds;
     }
@@ -44,13 +44,12 @@ public class AlarmManager {
             if (c == null) // broadcast
                 return PendingIntent.getBroadcast(context, 0, intent, flags);
             Class<?> klass = Class.forName(c.getClassName());
-            if (Service.class.isAssignableFrom(klass)) {
+            if (Service.class.isAssignableFrom(klass))
                 return PendingIntent.getService(context, 0, intent, flags);
-            } else if (Activity.class.isAssignableFrom(klass)) {
+            else if (Activity.class.isAssignableFrom(klass))
                 return PendingIntent.getActivity(context, 0, intent, flags);
-            } else {
+            else
                 throw new RuntimeException("Unknown PenedingIntent type");
-            }
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -66,13 +65,12 @@ public class AlarmManager {
     public static PendingIntent setExact(Context context, long time, Intent intent) {
         PendingIntent pe = createPendingIntent(context, intent, PendingIntent.FLAG_ONE_SHOT);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (Build.VERSION.SDK_INT >= 23) {
+        if (Build.VERSION.SDK_INT >= 23)
             alarm.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, time, pe); // 15 min interval
-        } else if (Build.VERSION.SDK_INT >= 19) {
+        else if (Build.VERSION.SDK_INT >= 19)
             alarm.setExact(android.app.AlarmManager.RTC_WAKEUP, time, pe);
-        } else {
+        else
             alarm.set(android.app.AlarmManager.RTC_WAKEUP, time, pe);
-        }
         return pe;
     }
 
@@ -83,13 +81,12 @@ public class AlarmManager {
     public static PendingIntent setAlarm(Context context, long time, Intent intent, long showTime, Intent showIntent) {
         PendingIntent pe = createPendingIntent(context, intent, PendingIntent.FLAG_ONE_SHOT);
         android.app.AlarmManager alarm = (android.app.AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (Build.VERSION.SDK_INT >= 21) {
+        if (Build.VERSION.SDK_INT >= 21)
             alarm.setAlarmClock(new android.app.AlarmManager.AlarmClockInfo(showTime, createPendingIntent(context, showIntent, 0)), pe);
-        } else if (Build.VERSION.SDK_INT >= 19) {
+        else if (Build.VERSION.SDK_INT >= 19)
             alarm.setExact(android.app.AlarmManager.RTC_WAKEUP, time, pe);
-        } else {
+        else
             alarm.set(android.app.AlarmManager.RTC_WAKEUP, time, pe);
-        }
         return pe;
     }
 
@@ -195,9 +192,8 @@ public class AlarmManager {
 
     public void update() {
         ArrayList<Alarm> cc = new ArrayList<>(check.values());
-        for (Alarm c : cc) {
+        for (Alarm c : cc)
             checkPost(c.time, c.intent, c.pe);
-        }
     }
 
     public Alarm checkPost(final long time, final Intent intent) {
@@ -265,8 +261,7 @@ public class AlarmManager {
     public void checkCancel(Intent intent) {
         String id = checkId(0, intent);
         Alarm old = check.remove(id);
-        if (old != null) {
+        if (old != null)
             old.close();
-        }
     }
 }
