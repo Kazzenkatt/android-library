@@ -19,12 +19,15 @@ public class OnExternalReceiver extends BroadcastReceiver {
     public static boolean isExternal(Context context) {
         PackageManager pm = context.getPackageManager();
         try {
-            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
-            ApplicationInfo ai = pi.applicationInfo;
-            return (ai.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) == ApplicationInfo.FLAG_EXTERNAL_STORAGE;
+            PackageInfo info = pm.getPackageInfo(context.getPackageName(), 0);
+            return isExternal(info.applicationInfo);
         } catch (PackageManager.NameNotFoundException ignore) {
         }
         return false;
+    }
+
+    public static boolean isExternal(ApplicationInfo info) {
+        return (info.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) == ApplicationInfo.FLAG_EXTERNAL_STORAGE;
     }
 
     public static boolean mountTest(Context context) { // test sdcard and internet access on sdcard (failed mount)
