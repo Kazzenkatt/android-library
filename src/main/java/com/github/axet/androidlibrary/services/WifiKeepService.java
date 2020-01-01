@@ -42,6 +42,7 @@ public class WifiKeepService extends Service {
     public static int ICON = R.drawable.ic_circle;
     public static String DESCRIPTION = null;
     public static String LOCAL = "127.0.0.1";
+    public static String DNS = "google.com";
 
     public static final String WIFI = WifiKeepService.class.getCanonicalName() + ".WIFI";
 
@@ -53,11 +54,10 @@ public class WifiKeepService extends Service {
     public OptimizationPreferenceCompat.NotificationIcon icon;
 
     public static void startIfEnabled(Context context, boolean b) {
-        if (b) {
+        if (b)
             startService(context);
-        } else {
+        else
             stopService(context);
-        }
     }
 
     public static void startService(Context context) {
@@ -77,7 +77,21 @@ public class WifiKeepService extends Service {
         return String.format("%d.%d.%d.%d", (ip & 0xff), (ip >> 8 & 0xff), (ip >> 16 & 0xff), (ip >> 24 & 0xff));
     }
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission") // CHANGE_WIFI_STATE
+    public static void restart(Context context) {
+        final WifiManager w = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE); // must be on application context
+        w.setWifiEnabled(false);
+        w.setWifiEnabled(true);
+    }
+
+    @SuppressLint("MissingPermission") // ACCESS_WIFI_STATE
+    public static int getGatewayIP(Context context) {
+        final WifiManager w = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE); // must be on application context
+        DhcpInfo d = w.getDhcpInfo();
+        return d.gateway;
+    }
+
+    @SuppressLint("MissingPermission") // ACCESS_NETWORK_STATE
     public static void wifi(final Context context) { // network on main thread
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
@@ -89,14 +103,10 @@ public class WifiKeepService extends Service {
             isWiFi = activeNetwork.getType() == ConnectivityManager.TYPE_WIFI;
         }
 
-        final WifiManager w = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        DhcpInfo d = w.getDhcpInfo();
-
-        Runnable restart = new Runnable() {
+        final Runnable restart = new Runnable() {
             @Override
             public void run() {
-                w.setWifiEnabled(false);
-                w.setWifiEnabled(true);
+                restart(context);
             }
         };
         if (!isWiFi) {
@@ -105,7 +115,7 @@ public class WifiKeepService extends Service {
         } else if (!isConnected) {
             Log.d(TAG, "!isConnected");
             restart.run();
-        } else if (pingLocal() && !ping(d.gateway)) {
+        } else if (pingLocal() && !ping(getGatewayIP(context))) {
             Log.d(TAG, "!ping");
             restart.run();
         } else if (!dns()) {
@@ -168,20 +178,26 @@ public class WifiKeepService extends Service {
     public static boolean dns() {
         InetAddress a = null;
         try {
-            a = InetAddress.getByName("google.com");
+            a = InetAddress.getByName(DNS);
         } catch (UnknownHostException ignore) {
         }
         return a != null;
     }
 
+    public static boolean isServiceRunning(Context context, ComponentName name) {
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (name.compareTo(service.service) == 0)
+                return true;
+        }
+        return false;
+    }
+
     // https://forum.fairphone.com/t/help-with-xprivacy-settings-relating-to-google-apps/5741/7
     public static void gtalk(Context context) {
         ComponentName gtalk = new ComponentName("com.google.android.gsf", "com.google.android.gsf.gtalkservice.service.GTalkService");
-        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (gtalk.compareTo(service.service) == 0)
-                return;
-        }
+        if (isServiceRunning(context, gtalk))
+            return;
         try {
             SuperUser.startService(gtalk);
         } catch (RuntimeException e) {
@@ -227,9 +243,8 @@ public class WifiKeepService extends Service {
         if (intent != null) {
             String action = intent.getAction();
             if (action != null) {
-                if (action.equals(WIFI)) {
+                if (action.equals(WIFI))
                     t = wifi(true);
-                }
             }
         }
         return super.onStartCommand(intent, flags, startId);

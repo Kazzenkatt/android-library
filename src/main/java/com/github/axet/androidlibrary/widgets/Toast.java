@@ -61,7 +61,7 @@ public class Toast {
         a.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Error(a, ErrorDialog.toMessage(e));
+                Text(a, ErrorDialog.toMessage(e));
             }
         });
     }
@@ -70,7 +70,7 @@ public class Toast {
         a.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Error(a, msg);
+                Text(a, msg);
             }
         });
     }
@@ -80,7 +80,7 @@ public class Toast {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Error(context, msg);
+                Text(context, msg);
             }
         });
     }
@@ -98,10 +98,10 @@ public class Toast {
 
     public static Toast Error(Context context, Throwable e) {
         Log.e(TAG, "Error", e);
-        return Error(context, ErrorDialog.toMessage(e));
+        return Text(context, ErrorDialog.toMessage(e));
     }
 
-    public static Toast Error(Context context, String msg) {
+    public static Toast Text(Context context, String msg) {
         Toast t = makeText(context, msg, LENGTH_SHORT);
         t.show();
         return t;
