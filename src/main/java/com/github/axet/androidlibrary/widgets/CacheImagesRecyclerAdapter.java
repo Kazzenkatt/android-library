@@ -13,7 +13,7 @@ import java.io.IOException;
 public abstract class CacheImagesRecyclerAdapter<T extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<T> {
     public static final String TAG = CacheImagesRecyclerAdapter.class.getSimpleName();
 
-    Adapter adapter;
+    public Adapter adapter;
 
     public class Adapter extends CacheImagesAdapter {
         public Adapter(Context context) {

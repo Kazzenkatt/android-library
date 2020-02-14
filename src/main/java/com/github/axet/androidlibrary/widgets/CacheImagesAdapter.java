@@ -70,9 +70,9 @@ public class CacheImagesAdapter {
     protected DownloadImageTask current;
 
     public UriImagesExecutor executor = new UriImagesExecutor();
-    public static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<Runnable>(128);
-    public static final ThreadFactory sThreadFactory = new ThreadFactory() {
-        AtomicInteger mCount = new AtomicInteger(1);
+    public final BlockingQueue<Runnable> poolWorkQueue = new LinkedBlockingQueue<Runnable>(128);
+    public final ThreadFactory threadFactory = new ThreadFactory() {
+        public AtomicInteger mCount = new AtomicInteger(1);
 
         public Thread newThread(Runnable r) {
             return new Thread(r, "CacheImagesAdapter #" + mCount.getAndIncrement());
@@ -457,7 +457,7 @@ public class CacheImagesAdapter {
 
     public class UriImagesExecutor extends ThreadPoolExecutor {
         public UriImagesExecutor() {
-            super(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
+            super(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, poolWorkQueue, threadFactory);
             allowCoreThreadTimeOut(true);
         }
 
@@ -500,7 +500,7 @@ public class CacheImagesAdapter {
             task.cancel(true);
             Runnable r = tasks.remove(task);
             if (r != null) {
-                sPoolWorkQueue.remove(r);
+                poolWorkQueue.remove(r);
                 runs.remove(r);
             }
         }
