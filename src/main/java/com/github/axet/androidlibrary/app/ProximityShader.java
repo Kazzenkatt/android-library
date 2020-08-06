@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
 
 public class ProximityShader implements SensorEventListener {
     public static int PROXIMITY_READY = 1000;
-    public static int PROXIMITY_DELAY = 1500; // onNear delay
+    public static int PROXIMITY_DELAY = 700; // onNear delay
 
     public Dialog d;
     public Sensor proximity;
@@ -196,7 +196,6 @@ public class ProximityShader implements SensorEventListener {
     }
 
     public void onNear() {
-        handler.removeCallbacks(near);
     }
 
     public void onFar() {
