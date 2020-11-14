@@ -769,9 +769,8 @@ public class Storage {
         if (Build.VERSION.SDK_INT < 16)
             return true;
         for (String s : ss) {
-            if (ContextCompat.checkSelfPermission(context, s) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(context, s) != PackageManager.PERMISSION_GRANTED)
                 return false;
-            }
         }
         return true;
     }
@@ -1499,6 +1498,8 @@ public class Storage {
             f = fallbackStorage(); // we need to fallback to local storage internal or exernal
         } else if (path.startsWith(ContentResolver.SCHEME_FILE)) {
             f = getFile(Uri.parse(path));
+        } else if (path.isEmpty()) {
+            return Uri.fromFile(getLocalStorage());
         } else {
             f = new File(path);
         }
