@@ -1,14 +1,19 @@
 package com.github.axet.androidlibrary.activities;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBar;
 import android.support.v7.view.WindowCallbackWrapper;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeActivity {
     public static int UI_ANIMATION_DELAY = 300;
@@ -22,6 +27,30 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
             | View.SYSTEM_UI_FLAG_IMMERSIVE;
 
     public static int SHOW_FLAGS = View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+
+    public static void setDecorFitsSystemWindows(Window w, boolean b) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                w.getClass().getMethod("setDecorFitsSystemWindows", boolean.class).invoke(w, b);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void setFitsSystemWindows(Activity a, boolean b) { // set fitsSystemWindows on root view
+        View v = a.findViewById(android.R.id.content);
+        ViewGroup g = (ViewGroup) v;
+        for (int i = 0; i < g.getChildCount(); i++) {
+            View c = g.getChildAt(i);
+            setFitsSystemWindows(c, b);
+        }
+    }
+
+    public void setFitsSystemWindows(View v, boolean b) {
+        if (Build.VERSION.SDK_INT >= 14)
+            v.setFitsSystemWindows(b);
+    }
 
     public final Handler handler = new Handler();
     public Window w;
@@ -68,6 +97,13 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(mShowPart2Runnable);
+        handler.removeCallbacks(mHidePart2Runnable);
+    }
+
     public void toggle() {
         setFullscreen(!fullscreen);
     }
@@ -107,11 +143,13 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
     }
 
     public void hideSystemUI() {
+        setDecorFitsSystemWindows(w, false);
         if (Build.VERSION.SDK_INT >= 11)
             decorView.setSystemUiVisibility(HIDE_FLAGS);
     }
 
     public void showSystemUI() {
+        setDecorFitsSystemWindows(w, true);
         if (Build.VERSION.SDK_INT >= 11)
             decorView.setSystemUiVisibility(SHOW_FLAGS);
     }
