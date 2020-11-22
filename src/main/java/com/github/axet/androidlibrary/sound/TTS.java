@@ -51,7 +51,6 @@ public class TTS extends Sound {
 
     public TTS(Context context) {
         super(context);
-        ttsCreate();
     }
 
     public void ttsCreate() {
