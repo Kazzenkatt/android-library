@@ -61,8 +61,10 @@
     <string name="not_permitted">不允许</string>
     <string name="close">关闭</string>
 
+    <string name="system_default">系统默认</string>
+
     <string-array name="screen_lock_text">
-        <item>系统默认</item>
+        <item>@string/system_default</item>
         <item>保持亮屏</item>
         <item>30秒后关闭</item>
         <item>1分钟后关闭</item>

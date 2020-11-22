@@ -61,8 +61,10 @@
     <string name="not_permitted">Доступ заборонено</string>
     <string name="close">Закрити</string>
 
+    <string name="system_default">Системні налаштування</string>
+
     <string-array name="screen_lock_text">
-        <item>Системні налаштування</item>
+        <item>@string/system_default</item>
         <item>Завжди увімкнений</item>
         <item>Вимкнути через 30 с</item>
         <item>Вимкнути через 1 хв</item>

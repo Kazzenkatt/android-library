@@ -55,8 +55,10 @@
     <string name="not_permitted">לא מורשה</string>
     <string name="close">סגור</string>
 
+    <string name="system_default">ברירת מחדל מערכת</string>
+
     <string-array name="screen_lock_text">
-        <item>ברירת מחדל מערכת</item>
+        <item>@string/system_default</item>
         <item>שמור פועל</item>
         <item>כבה לאחר 30 שניות</item>
         <item>כבה לאחר דקה אחת</item>

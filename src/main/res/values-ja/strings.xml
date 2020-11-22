@@ -53,8 +53,10 @@
     <string name="not_permitted">許可されていません</string>
     <string name="close">Close</string>
 
+    <string name="system_default">System Default</string>
+
     <string-array name="screen_lock_text">
-        <item>System Default</item>
+        <item>@string/system_default</item>
         <item>Keep On</item>
         <item>Off after 30 sec</item>
         <item>Off after 1 min</item>

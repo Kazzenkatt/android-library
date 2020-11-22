@@ -61,8 +61,10 @@
     <string name="not_permitted">Ei sallittu</string>
     <string name="close">Sulje</string>
 
+    <string name="system_default">Järjestelmän oletus</string>
+
     <string-array name="screen_lock_text">
-        <item>Järjestelmän oletus</item>
+        <item>@string/system_default</item>
         <item>Pidä päällä</item>
         <item>Sammuta 30 sekunnin kuluttua</item>
         <item>Sammuta minuutin kuluttua</item>

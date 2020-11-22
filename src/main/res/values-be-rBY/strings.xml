@@ -69,8 +69,10 @@
     <string name="not_permitted">Не дазволена</string>
     <string name="close">Закрыць</string>
 
+    <string name="system_default">Па змаўчанні сістэмы</string>
+
     <string-array name="screen_lock_text">
-        <item>Па змаўчанні сістэмы</item>
+        <item>@string/system_default</item>
         <item>Працягваць</item>
         <item>Выключыць праз 30 сек</item>
         <item>Выключыць праз 1 хв</item>

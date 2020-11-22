@@ -55,8 +55,10 @@
     <string name="not_permitted">不允許</string>
     <string name="close">關閉</string>
 
+    <string name="system_default">系統預設值</string>
+
     <string-array name="screen_lock_text">
-        <item>系統預設值</item>
+        <item>@string/system_default</item>
         <item>保持開啟</item>
         <item>30 秒後關閉</item>
         <item>1 分鐘後關閉</item>
