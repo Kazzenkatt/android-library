@@ -253,7 +253,7 @@ public class AlarmManager {
                 step = delay - step + diffSeconds + diffMilliseconds;
             delay = step - diffSeconds - diffMilliseconds;
         }
-        Log.d(TAG, "delaying " + formatDuration(context, delay) + ", " + formatTime(time));
+        Log.d(TAG, formatTime(time) + ", delaying " + formatDuration(context, delay));
         handler.postDelayed(r, delay);
         return c;
     }

@@ -63,6 +63,11 @@ public class TTS extends Sound {
             locale = l;
             text = t;
         }
+
+        @Override
+        public String toString() {
+            return text + " (" + locale + ")";
+        }
     }
 
     public TTS(Context context) {

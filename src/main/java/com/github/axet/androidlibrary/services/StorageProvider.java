@@ -140,10 +140,12 @@ public class StorageProvider extends ContentProvider {
             uri = Uri.fromFile(f);
         } else {
             File[] ff = OpenFileDialog.getPortableList();
-            for (File f : ff) {
-                if (id.equals(f.getName())) {
-                    File r = new File(f, ss[1]);
-                    uri = Uri.fromFile(r);
+            if (ff != null) {
+                for (File f : ff) {
+                    if (id.equals(f.getName())) {
+                        File r = new File(f, ss[1]);
+                        uri = Uri.fromFile(r);
+                    }
                 }
             }
         }
