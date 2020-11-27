@@ -55,8 +55,10 @@
     <string name="not_permitted">Δεν επιτρέπεται</string>
     <string name="close">Κλείσιμο</string>
 
+    <string name="system_default">Προεπιλογή Συστήματος</string>
+
     <string-array name="screen_lock_text">
-        <item>Προεπιλογή Συστήματος</item>
+        <item>@string/system_default</item>
         <item>Διατήρηση Ενεργό</item>
         <item>Ανενεργό μετά από 30 sec</item>
         <item>Ανενεργό μετά από 1 λεπτό</item>

@@ -61,8 +61,10 @@
     <string name="not_permitted">Nem megengedett</string>
     <string name="close">Bezárás</string>
 
+    <string name="system_default">Alapértelmezett</string>
+
     <string-array name="screen_lock_text">
-        <item>Alapértelmezett</item>
+        <item>@string/system_default</item>
         <item>Állandóan bekapcsolva</item>
         <item>Kikapcsolás 30 másodperc után</item>
         <item>Kikapcsolás 1 perc után</item>

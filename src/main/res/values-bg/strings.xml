@@ -61,8 +61,10 @@
     <string name="not_permitted">Забранено</string>
     <string name="close">Затвори</string>
 
+    <string name="system_default">От системата</string>
+
     <string-array name="screen_lock_text">
-        <item>От системата</item>
+        <item>@string/system_default</item>
         <item>Задръж</item>
         <item>Изключи след 30 сек</item>
         <item>Изключи след 1 мин</item>

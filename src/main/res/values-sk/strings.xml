@@ -59,8 +59,10 @@
     <string name="not_permitted">Nepovolené</string>
     <string name="close">Zatvoriť</string>
 
+    <string name="system_default">Predvolené nastavenie systému</string>
+
     <string-array name="screen_lock_text">
-        <item>Predvolené nastavenie systému</item>
+        <item>@string/system_default</item>
         <item>Ponechať zapnutú</item>
         <item>Vypnúť po 30 sek</item>
         <item>Vypnúť po 1 min</item>

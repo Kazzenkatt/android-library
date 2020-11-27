@@ -308,6 +308,10 @@ public class CacheImagesAdapter {
             f.delete();
     }
 
+    public static void cacheTouch(File cache) {
+        Storage.touch(cache);
+    }
+
     public static class SortDate implements Comparator<File> {
         @Override
         public int compare(File o1, File o2) {

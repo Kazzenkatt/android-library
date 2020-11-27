@@ -32,11 +32,27 @@ public class TTS extends Sound {
     public int restart; // restart tts once if failed. on apk upgrade tts always failed.
     public Runnable onInit; // once
 
-    public static void startTTSConfig(Context context) {
-        Intent intent = new Intent(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (OptimizationPreferenceCompat.isCallable(context, intent))
-            context.startActivity(intent);
+    public static void startTTSInstall(Context context) {
+        try {
+            Intent intent = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (OptimizationPreferenceCompat.isCallable(context, intent))
+                context.startActivity(intent);
+        } catch (AndroidRuntimeException e) {
+            Log.d(TAG, "Unable to load TTS", e);
+            startTTSCheck(context);
+        }
+    }
+
+    public static void startTTSCheck(Context context) {
+        try {
+            Intent intent = new Intent(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (OptimizationPreferenceCompat.isCallable(context, intent))
+                context.startActivity(intent);
+        } catch (AndroidRuntimeException e1) {
+            Log.d(TAG, "Unable to load TTS", e1);
+        }
     }
 
     public static class Speak {
@@ -46,6 +62,11 @@ public class TTS extends Sound {
         public Speak(Locale l, String t) {
             locale = l;
             text = t;
+        }
+
+        @Override
+        public String toString() {
+            return text + " (" + locale + ")";
         }
     }
 
@@ -216,6 +237,9 @@ public class TTS extends Sound {
     public Locale getTTSLocale() {
         Locale locale = getUserLocale();
 
+        if (tts == null)
+            return locale;
+
         if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_NOT_SUPPORTED) {
             String lang = locale.getLanguage();
             locale = new Locale(lang);
@@ -252,20 +276,7 @@ public class TTS extends Sound {
         }
 
         if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_MISSING_DATA) {
-            try {
-                Intent intent = new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                if (OptimizationPreferenceCompat.isCallable(context, intent)) {
-                    context.startActivity(intent);
-                }
-            } catch (AndroidRuntimeException e) {
-                Log.d(TAG, "Unable to load TTS", e);
-                try {
-                    startTTSConfig(context);
-                } catch (AndroidRuntimeException e1) {
-                    Log.d(TAG, "Unable to load TTS", e1);
-                }
-            }
+            startTTSInstall(context);
             return null;
         }
 

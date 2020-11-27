@@ -61,8 +61,10 @@
     <string name="not_permitted">İzin verilmedi</string>
     <string name="close">Kapat</string>
 
+    <string name="system_default">Sistem Varsayılanı</string>
+
     <string-array name="screen_lock_text">
-        <item>Sistem Varsayılanı</item>
+        <item>@string/system_default</item>
         <item>Devam et</item>
         <item>30 sn sonra kapat</item>
         <item>1 dk sonra kapat</item>

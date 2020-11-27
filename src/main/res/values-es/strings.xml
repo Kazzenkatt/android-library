@@ -53,8 +53,10 @@
     <string name="not_permitted">No permitido</string>
     <string name="close">Cerrar</string>
 
+    <string name="system_default">Por defecto del sistema Default</string>
+
     <string-array name="screen_lock_text">
-        <item>Por defecto del sistema Default</item>
+        <item>@string/system_default</item>
         <item>Mantener encendida On</item>
         <item>Apagar en los 30 seg</item>
         <item>Apagar en 1 min</item>

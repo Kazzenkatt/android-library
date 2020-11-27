@@ -15,26 +15,6 @@
     <string name="ShareAction">Udostępnij</string>
     <string name="shared_via">Udostępniono przez %1$s</string>
 
-    <plurals name="days">
-        <item quantity="one">%d dzień</item>
-        <item quantity="other">%d dni</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d godzina</item>
-        <item quantity="other">%d godzin</item>
-    </plurals>
-
-    <plurals name="minutes">
-        <item quantity="one">%d minuta</item>
-        <item quantity="other">%d minut</item>
-    </plurals>
-
-    <plurals name="seconds">
-        <item quantity="one">%d sekunda</item>
-        <item quantity="other">%d sekund</item>
-    </plurals>
-
     <string name="days_symbol">"d"</string>
 
     <string name="size_gb">%1$.1f GB</string>
@@ -61,8 +41,10 @@
     <string name="not_permitted">Niedozwolone</string>
     <string name="close">Zamknij</string>
 
+    <string name="system_default">System</string>
+
     <string-array name="screen_lock_text">
-        <item>System</item>
+        <item>@string/system_default</item>
         <item>Pozostaw włączony</item>
         <item>Wyłącz po 30 sek</item>
         <item>Wyłącz po 1 min</item>
