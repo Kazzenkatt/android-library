@@ -275,6 +275,13 @@ public class HttpClient {
         return null;
     }
 
+    public static String toStackTrace(Throwable e) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        return e.toString();
+    }
+
     public static class SpongyLoader extends AssetsDexLoader.ThreadLoader {
         public SpongyLoader(Context context) {
             super(context, "core", "prov", "bcpkix", "bctls");
@@ -329,10 +336,7 @@ public class HttpClient {
         }
 
         public void setHtml(Throwable e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-            setHtml(sw.toString());
+            setHtml(toStackTrace(e));
         }
 
         public void setHtml(String str) {

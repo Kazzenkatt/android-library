@@ -19,6 +19,7 @@ import android.webkit.WebView;
 import android.widget.TextView;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.net.HttpClient;
 import com.github.axet.androidlibrary.widgets.WebViewCustom;
 
 import org.apache.commons.io.IOUtils;
@@ -104,9 +105,7 @@ public class AboutPreferenceCompat extends DialogPreference {
             String html = IOUtils.toString(is, Charset.defaultCharset());
             web.loadHtmlWithBaseURL("", html, "");
         } catch (Exception e) {
-            StringWriter w = new StringWriter();
-            e.printStackTrace(new PrintWriter(w));
-            web.loadHtmlWithBaseURL("", w.toString(), "");
+            web.loadHtmlWithBaseURL("", HttpClient.toStackTrace(e), "");
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
