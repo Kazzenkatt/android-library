@@ -59,7 +59,7 @@ public class MainApplication extends Application {
             if (base != null)
                 return from(base);
         }
-        if (context.getApplicationInfo().className != null) {
+        if (context.getApplicationInfo().className != null && !context.getApplicationInfo().className.isEmpty()) {
             try {
                 Class App = Class.forName(context.getApplicationInfo().className);
                 if (MainApplication.class.isAssignableFrom(App))
@@ -68,10 +68,10 @@ public class MainApplication extends Application {
                     throw new RuntimeException("manifest has no propper application value");
             } catch (Exception ignore) {
             }
+            throw new RuntimeException("no application context");
         } else {
-            throw new RuntimeException("manifest has no propper application value");
+            throw new RuntimeException("manifest has no application value");
         }
-        throw new RuntimeException("no application context");
     }
 
     public static String formatTime(int tt) {
