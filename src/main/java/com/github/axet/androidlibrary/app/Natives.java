@@ -1,5 +1,6 @@
 package com.github.axet.androidlibrary.app;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Build;
 
@@ -48,6 +49,7 @@ public class Natives {
      * at java.lang.Runtime.loadLibrary(Runtime.java:370)
      * at java.lang.System.loadLibrary(System.java:535)
      */
+    @SuppressLint("UnsafeDynamicallyLoadedCode")
     public static void loadLibrary(final Context context, String libname) {
         String file = search(context, System.mapLibraryName(libname));
         if (file == null)

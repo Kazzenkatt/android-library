@@ -6,6 +6,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.support.v7.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.R;
@@ -59,18 +60,19 @@ public class MainApplication extends Application {
             if (base != null)
                 return from(base);
         }
-        if (context.getApplicationInfo().className != null && !context.getApplicationInfo().className.isEmpty()) {
+        ApplicationInfo info = context.getApplicationInfo();
+        if (info.className == null || info.className.isEmpty()) {
+            throw new RuntimeException("manifest has no application value");
+        } else {
             try {
-                Class App = Class.forName(context.getApplicationInfo().className);
+                Class App = Class.forName(info.className);
                 if (MainApplication.class.isAssignableFrom(App))
-                    throw new RuntimeException("broken application context runtime"); // manifest is ok, but instanse has no class
+                    throw new RuntimeException("broken application context runtime"); // manifest is ok, but instance has no app
                 else
                     throw new RuntimeException("manifest has no propper application value");
             } catch (Exception ignore) {
             }
             throw new RuntimeException("no application context");
-        } else {
-            throw new RuntimeException("manifest has no application value");
         }
     }
 
