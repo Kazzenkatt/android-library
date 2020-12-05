@@ -61,8 +61,10 @@
     <string name="not_permitted">Không được phép</string>
     <string name="close">Đóng</string>
 
+    <string name="system_default">Mặc định</string>
+
     <string-array name="screen_lock_text">
-        <item>Mặc định</item>
+        <item>@string/system_default</item>
         <item>Giữ sáng màn hình</item>
         <item>Tắt sau 30 giây</item>
         <item>Tắt sau 1 phút</item>

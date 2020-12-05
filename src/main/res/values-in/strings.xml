@@ -61,8 +61,10 @@
     <string name="not_permitted">Tidak diizinkan</string>
     <string name="close">Tutup</string>
 
+    <string name="system_default">Default Sistem</string>
+
     <string-array name="screen_lock_text">
-        <item>Default Sistem</item>
+        <item>@string/system_default</item>
         <item>Tetap Nyala</item>
         <item>Mati setelah 30 dtk</item>
         <item>Mati setelah 1 mnt</item>

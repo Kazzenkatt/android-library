@@ -7,8 +7,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
-import com.github.axet.androidlibrary.app.SuperUser;
-
 public class ErrorDialog extends AlertDialog.Builder {
     public static final String TAG = ErrorDialog.class.getSimpleName();
 

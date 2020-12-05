@@ -55,8 +55,10 @@
     <string name="not_permitted">Nicht erlaubt</string>
     <string name="close">Schließen</string>
 
+    <string name="system_default">Systemstandard</string>
+
     <string-array name="screen_lock_text">
-        <item>Systemstandard</item>
+        <item>@string/system_default</item>
         <item>Eingeschaltet lassen</item>
         <item>Abschalten nach 30 Sekunden</item>
         <item>Abschalten nach 1 Minute</item>

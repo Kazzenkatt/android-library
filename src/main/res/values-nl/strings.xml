@@ -61,8 +61,10 @@
     <string name="not_permitted">Niet toegestaan</string>
     <string name="close">Sluit</string>
 
+    <string name="system_default">Systeemstandaard</string>
+
     <string-array name="screen_lock_text">
-        <item>Systeemstandaard</item>
+        <item>@string/system_default</item>
         <item>Houd aan</item>
         <item>Uit na 30 sec</item>
         <item>Uit na 1 min</item>

@@ -61,8 +61,10 @@
     <string name="not_permitted">Não permitido</string>
     <string name="close">Fechar</string>
 
+    <string name="system_default">Definição do sistema</string>
+
     <string-array name="screen_lock_text">
-        <item>Definição do sistema</item>
+        <item>@string/system_default</item>
         <item>Manter ecrã ligado</item>
         <item>Desligar após 30 segundos</item>
         <item>Desligar após 1 min</item>

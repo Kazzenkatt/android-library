@@ -61,8 +61,10 @@
     <string name="not_permitted">Ikke tillatt</string>
     <string name="close">Lukk</string>
 
+    <string name="system_default">Systemets standard</string>
+
     <string-array name="screen_lock_text">
-        <item>Systemets standard</item>
+        <item>@string/system_default</item>
         <item>Hold den påskrudd</item>
         <item>Av etter 30 sek</item>
         <item>Av etter 1 min</item>

@@ -55,8 +55,10 @@
     <string name="not_permitted">Action non autorisée</string>
     <string name="close">Fermer</string>
 
+    <string name="system_default">Valeur par défault du système</string>
+
     <string-array name="screen_lock_text">
-        <item>Valeur par défault du système</item>
+        <item>@string/system_default</item>
         <item>Maintenir allumé</item>
         <item>Éteindre après 30 sec</item>
         <item>Éteindre après 1 min</item>

@@ -61,8 +61,10 @@
     <string name="not_permitted">Ikke tilladt</string>
     <string name="close">Luk</string>
 
+    <string name="system_default">System Default</string>
+
     <string-array name="screen_lock_text">
-        <item>System Default</item>
+        <item>@string/system_default</item>
         <item>Altid tændt</item>
         <item>Sluk efter 30 sec</item>
         <item>Sluk efter 1 min</item>

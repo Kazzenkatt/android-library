@@ -61,8 +61,10 @@
     <string name="not_permitted">Ez da onartzen</string>
     <string name="close">Itxi</string>
 
+    <string name="system_default">Sistemaren lehenetsia</string>
+
     <string-array name="screen_lock_text">
-        <item>Sistemaren lehenetsia</item>
+        <item>@string/system_default</item>
         <item>Mantendu aktibo</item>
         <item>Desaktibatu 30 seg igarotzean</item>
         <item>Desaktibatu 1 min igarotzean</item>

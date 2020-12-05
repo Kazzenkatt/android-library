@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.app.Application;
 import android.app.Service;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.support.v7.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.R;
@@ -18,13 +20,60 @@ public class MainApplication extends Application {
     public static final SimpleDateFormat SIMPLE = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
 
     public static MainApplication from(Context context) {
-        if (context instanceof Application)
+        if (context instanceof MainApplication)
             return (MainApplication) context;
-        if (context instanceof Service)
-            return (MainApplication) ((Service) context).getApplication();
-        if (context instanceof Activity)
-            return (MainApplication) ((Activity) context).getApplication();
-        return (MainApplication) context.getApplicationContext();
+        if (context instanceof Service) {
+            Application app = ((Service) context).getApplication();
+            if (app instanceof MainApplication)
+                return (MainApplication) app;
+        }
+        if (context instanceof Activity) {
+            Application app = ((Activity) context).getApplication();
+            if (app instanceof MainApplication)
+                return (MainApplication) app;
+        }
+        Context app = context.getApplicationContext();
+        if (app instanceof MainApplication)
+            return (MainApplication) app;
+        try {
+            Class ContextImpl = Class.forName("android.app.ContextImpl");
+            if (ContextImpl.isInstance(context)) {
+                Object apk = AssetsDexLoader.getPrivateField(ContextImpl, "mPackageInfo").get(context);
+                Class LoadedApk = Class.forName("android.app.LoadedApk");
+                if (apk != null) {
+                    Application a = (Application) AssetsDexLoader.getPrivateMethod(LoadedApk, "getApplication").invoke(apk);
+                    if (a instanceof MainApplication)
+                        return (MainApplication) a;
+                }
+                Class ActivityThread = Class.forName("android.app.ActivityThread");
+                Object thread = AssetsDexLoader.getPrivateField(ContextImpl, "mMainThread").get(context);
+                if (thread != null) {
+                    Application a = (Application) AssetsDexLoader.getPrivateMethod(ActivityThread, "getApplication").invoke(thread);
+                    if (a instanceof MainApplication)
+                        return (MainApplication) a;
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        if (context instanceof ContextWrapper) {
+            Context base = ((ContextWrapper) context).getBaseContext();
+            if (base != null)
+                return from(base);
+        }
+        ApplicationInfo info = context.getApplicationInfo();
+        if (info.className == null || info.className.isEmpty()) {
+            throw new RuntimeException("manifest has no application value");
+        } else {
+            try {
+                Class App = Class.forName(info.className);
+                if (MainApplication.class.isAssignableFrom(App))
+                    throw new RuntimeException("broken application context runtime"); // manifest is ok, but instance has no app
+                else
+                    throw new RuntimeException("manifest has no propper application value");
+            } catch (Exception ignore) {
+            }
+            throw new RuntimeException("no application context");
+        }
     }
 
     public static String formatTime(int tt) {
@@ -71,15 +120,14 @@ public class MainApplication extends Application {
         int diffHours = (int) (diff / (60 * 60 * 1000) % 24);
         int diffDays = (int) (diff / (24 * 60 * 60 * 1000));
 
-        if (diffDays > 0) {
+        if (diffDays > 0)
             str = context.getResources().getQuantityString(R.plurals.days, diffDays, diffDays);
-        } else if (diffHours > 0) {
+        else if (diffHours > 0)
             str = context.getResources().getQuantityString(R.plurals.hours, diffHours, diffHours);
-        } else if (diffMinutes > 0) {
+        else if (diffMinutes > 0)
             str = context.getResources().getQuantityString(R.plurals.minutes, diffMinutes, diffMinutes);
-        } else if (diffSeconds > 0) {
+        else if (diffSeconds > 0)
             str = context.getResources().getQuantityString(R.plurals.seconds, diffSeconds, diffSeconds);
-        }
 
         return str;
     }

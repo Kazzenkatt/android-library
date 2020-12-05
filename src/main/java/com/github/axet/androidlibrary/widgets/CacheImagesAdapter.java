@@ -53,7 +53,7 @@ public class CacheImagesAdapter {
 
     public static int CACHE_MB = 30;
     public static int CACHE_DAYS = 30;
-    public static String CACHE_NAME = "cacheimages_";
+    public static String CACHE_NAME = "cacheadapter_";
 
     public static String[] IMAGES = new String[]{"webp", "png", "jpg", "jpeg", "gif", "bmp"};
 
@@ -280,11 +280,10 @@ public class CacheImagesAdapter {
         long total = 0;
         for (File f : ff) {
             long last = f.lastModified();
-            if (last < c.getTimeInMillis()) {
+            if (last < c.getTimeInMillis())
                 f.delete();
-            } else {
+            else
                 total += f.length();
-            }
         }
         Arrays.sort(ff, new SortDate());
         for (int i = 0; i < ff.length && total > CACHE_MB * 1024 * 1024; i++) {
@@ -307,6 +306,10 @@ public class CacheImagesAdapter {
             return;
         for (File f : ff)
             f.delete();
+    }
+
+    public static void cacheTouch(File cache) {
+        Storage.touch(cache);
     }
 
     public static class SortDate implements Comparator<File> {
