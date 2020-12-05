@@ -63,6 +63,7 @@ public class Storage {
 
     public final static String STORAGE_PRIMARY = "primary"; // sdcard name
     public final static String STORAGE_HOME = "home"; // 'Documents' folder on internal sdcard
+    public final static String STORAGE_DOWNLOADS = "downloads"; // 'Downloads' folder on internal sdcard
 
     public static final String CONTENTTYPE_OCTETSTREAM = "application/octet-stream";
     public static final String CONTENTTYPE_OPUS = "audio/opus";
@@ -389,6 +390,8 @@ public class Storage {
             return "[i]";
         else if (s.equals(STORAGE_HOME))
             return "[h]";
+        else if (s.equals(STORAGE_DOWNLOADS))
+            return "[d]";
         else
             return "[e]"; // 12f1-2211
     }
@@ -541,8 +544,10 @@ public class Storage {
             String[] ss = id.split(COLON, 2); // 1D13-0F08:private
             if (ss.length > 1) // has colon
                 return saf + getDocumentStorage(ss[0]) + CSS + ss[1];
+            else if (!id.contains(COLON)) // isDocumentHomeUri
+                return saf + getDocumentStorage(id) + CSS;
             else
-                return id + CSS; // uknown device path. new saf location?
+                return id + CSS; // unknown device path. new saf location?
         }
     }
 
