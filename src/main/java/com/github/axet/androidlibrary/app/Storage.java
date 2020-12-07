@@ -69,7 +69,8 @@ public class Storage {
     public static final String CONTENTTYPE_OPUS = "audio/opus";
     public static final String CONTENTTYPE_OGG = "audio/ogg";
     public static final String CONTENTTYPE_FB2 = "application/x-fictionbook";
-    public static final String CONTENTTYPE_RAR = "application/x-rar-compressed";
+    public static final String CONTENTTYPE_XRAR = "application/x-rar-compressed";
+    public static final String CONTENTTYPE_RAR = "application/rar";
 
     public static final String SCHEME_PACKAGE = "package";
 
