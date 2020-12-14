@@ -108,7 +108,7 @@ public class OpenChoicer {
         File ext = Environment.getExternalStorageDirectory();
         if (ext == null)
             return true;
-        if (!readonly && isExternalSDPortable(context)) // does external SD card formatted as portable?
+        if (!readonly && isExternalSDPortable(context)) // does external SD card formatted as portable? internal sdcard hidden, use SAF to see booth
             return true;
         if (path != null && path.startsWith(ContentResolver.SCHEME_CONTENT)) // showed saf before?
             return true;

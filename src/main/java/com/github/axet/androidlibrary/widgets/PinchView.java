@@ -31,14 +31,14 @@ public class PinchView extends FrameLayout implements GestureDetector.OnGestureL
     Rect box; // box is smaller then 'page rect', cut by layout bounds, scrolling offscreen can increase scroll distance
     float sx;
     float sy;
-    Bitmap bm;
+    public Bitmap bm;
     Rect src;
     GestureDetectorCompat gestures;
     int rotation = 0;
 
-    View toolbar;
-    ImageView image;
-    MarginLayoutParams lp;
+    public View toolbar;
+    public ImageView image;
+    public MarginLayoutParams lp;
 
     public static Rect getImageBounds(ImageView imageView) {
         RectF bounds = new RectF();

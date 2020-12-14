@@ -120,7 +120,7 @@ public abstract class AppCompatFullscreenThemeActivity extends AppCompatThemeAct
             }
         });
         decorView = w.getDecorView();
-        if (Build.VERSION.SDK_INT >= 11) {
+        if (Build.VERSION.SDK_INT >= 11 && Build.VERSION.SDK_INT < 30) {
             decorView.setOnSystemUiVisibilityChangeListener(new View.OnSystemUiVisibilityChangeListener() {
                 @Override
                 public void onSystemUiVisibilityChange(int visibility) {
