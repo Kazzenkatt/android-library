@@ -7,24 +7,45 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.transition.Transition;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
+import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.PopupWindow;
+
+import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.widgets.RemoteViewsCompat;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public static String TAG = AppCompatThemeActivity.class.getSimpleName();
 
+    public static String OVERRIDE_PENDING_TRANSITION = "OVERRIDE_PENDING_TRANSITION";
+
     public int themeId;
+    public int manifestThemeid;
+
+    public ActivityAnimations animations;
 
     public static void showLocked(Window w) {
         w.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
@@ -56,6 +77,38 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public static void moveTaskToBack(Activity a) {
         a.moveTaskToBack(true);
         a.overridePendingTransition(0, 0);
+    }
+
+    public static class ActivityAnimations {
+        public int activityCloseEnterAnimation;
+        public int activityCloseExitAnimation;
+        public int activityOpenEnterAnimation;
+        public int activityOpenExitAnimation;
+        public int windowEnterAnimation;
+        public int windowExitAnimation;
+        public int windowShowAnimation;
+        public int windowHideAnimation;
+
+        public ActivityAnimations(Resources.Theme theme) {
+            RemoteViewsCompat.StyledAttrs w = new RemoteViewsCompat.StyledAttrs(theme, new int[]{android.R.attr.windowAnimationStyle});
+            int windowAnimationStyleResId = w.getResourceId(android.R.attr.windowAnimationStyle, 0);
+            w.close();
+            w = new RemoteViewsCompat.StyledAttrs(theme, windowAnimationStyleResId, new int[]{
+                    android.R.attr.activityCloseEnterAnimation, android.R.attr.activityCloseExitAnimation,
+                    android.R.attr.activityOpenEnterAnimation, android.R.attr.activityOpenExitAnimation,
+                    android.R.attr.windowEnterAnimation, android.R.attr.windowExitAnimation,
+                    android.R.attr.windowShowAnimation, android.R.attr.windowHideAnimation
+            });
+            activityCloseEnterAnimation = w.getResourceId(android.R.attr.activityCloseEnterAnimation, 0);
+            activityCloseExitAnimation = w.getResourceId(android.R.attr.activityCloseExitAnimation, 0);
+            activityOpenEnterAnimation = w.getResourceId(android.R.attr.activityOpenEnterAnimation, 0);
+            activityOpenExitAnimation = w.getResourceId(android.R.attr.activityOpenExitAnimation, 0);
+            windowEnterAnimation = w.getResourceId(android.R.attr.windowEnterAnimation, 0);
+            windowExitAnimation = w.getResourceId(android.R.attr.windowExitAnimation, 0);
+            windowShowAnimation = w.getResourceId(android.R.attr.windowShowAnimation, 0);
+            windowHideAnimation = w.getResourceId(android.R.attr.windowHideAnimation, 0);
+            w.close();
+        }
     }
 
     public static class ScreenReceiver extends BroadcastReceiver {
@@ -115,6 +168,23 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public void setAppTheme(int id) {
         super.setTheme(id);
         themeId = id;
+        try {
+            if (manifestThemeid == 0)
+                manifestThemeid = getPackageManager().getActivityInfo(this.getComponentName(), PackageManager.GET_META_DATA).getThemeResource();
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.w(TAG, e);
+        }
+        updateAnimatinos();
+    }
+
+    @Override
+    public void setTheme(int resid) {
+        super.setTheme(resid);
+    }
+
+    public void updateAnimatinos() { // animations should be manually invoked for @android:style/Theme.Translucent
+        Resources.Theme theme = getTheme();
+        animations = new ActivityAnimations(theme);
     }
 
     public abstract int getAppTheme();
@@ -154,6 +224,19 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         setAppTheme(getAppTheme());
         super.onCreate(savedInstanceState);
+        if (manifestThemeid != themeId && !getIntent().getBooleanExtra(OVERRIDE_PENDING_TRANSITION, false))
+            overridePendingTransition(animations.activityOpenEnterAnimation, animations.activityOpenExitAnimation);
+        else
+            getIntent().removeExtra(OVERRIDE_PENDING_TRANSITION);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        if (manifestThemeid != themeId && !getIntent().getBooleanExtra(OVERRIDE_PENDING_TRANSITION, false))
+            overridePendingTransition(animations.activityCloseEnterAnimation, animations.activityCloseExitAnimation);
+        else
+            getIntent().removeExtra(OVERRIDE_PENDING_TRANSITION);
     }
 
     @Override
@@ -169,8 +252,11 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     }
 
     public void restartActivity() {
+        getIntent().putExtra(OVERRIDE_PENDING_TRANSITION, true);
+        Bundle bundle = new Bundle();
+        onSaveInstanceState(bundle);
         finish();
-        startActivity(new Intent(this, getClass()));
+        startActivity(new Intent(this, getClass()).putExtra(OVERRIDE_PENDING_TRANSITION, true));
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 

@@ -845,7 +845,7 @@ public class Storage {
         for (String s : ss) {
             if (ContextCompat.checkSelfPermission(a, s) != PackageManager.PERMISSION_GRANTED) {
                 try {
-                    ActivityCompat.requestPermissions(a, ss, code);
+                    ActivityCompat.requestPermissions(a, ss, code); // API23
                 } catch (ActivityNotFoundException e) {
                     permittedForce = true;
                     return true;
@@ -864,7 +864,7 @@ public class Storage {
         for (String s : ss) {
             if (ContextCompat.checkSelfPermission(f.getContext(), s) != PackageManager.PERMISSION_GRANTED) {
                 try {
-                    f.requestPermissions(ss, code);
+                    f.requestPermissions(ss, code); // API23
                 } catch (ActivityNotFoundException e) {
                     permittedForce = true;
                     return true;

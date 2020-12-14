@@ -16,12 +16,56 @@ import android.widget.ImageButton;
 import android.widget.RemoteViews;
 
 import com.github.axet.androidlibrary.R;
-import com.github.axet.androidlibrary.app.AssetsDexLoader;
 
 import java.util.Arrays;
 
 public class RemoteViewsCompat {
     public static final String TAG = RemoteViewsCompat.class.getSimpleName();
+
+    public static class StyledAttrs {
+        public int[] aa;
+        public TypedArray ta;
+
+        public StyledAttrs(int[] aa) {
+            this.aa = aa;
+            Arrays.sort(this.aa); // know bug https://stackoverflow.com/questions/19034597
+        }
+
+        public StyledAttrs(Resources.Theme theme, int[] aa) {
+            this(aa);
+            ta = theme.obtainStyledAttributes(this.aa);
+        }
+
+        public StyledAttrs(Resources.Theme theme, int id, int[] aa) {
+            this(aa);
+            ta = theme.obtainStyledAttributes(id, this.aa);
+        }
+
+        public StyledAttrs(Resources.Theme theme, AttributeSet attrs, int[] aa) {
+            this(aa);
+            ta = theme.obtainStyledAttributes(attrs, this.aa, 0, 0);
+        }
+
+        public int getResourceId(int id, int def) {
+            return ta.getResourceId(find(id), def);
+        }
+
+        public boolean getValue(int id, TypedValue out) {
+            return ta.getValue(find(id), out);
+        }
+
+        public boolean hasValue(int id) {
+            return ta.hasValue(find(id));
+        }
+
+        public int find(int id) {
+            return Arrays.binarySearch(aa, id);
+        }
+
+        public void close() {
+            ta.recycle();
+        }
+    }
 
     public static class ThemeFactory implements LayoutInflater.Factory {
         public Context context;
@@ -37,36 +81,29 @@ public class RemoteViewsCompat {
             if (Build.VERSION.SDK_INT >= 21 && this.context != context) // API21+ and 'android:theme' applied = ignore
                 return null;
 
-            int[] attrsArray = new int[]{
+            Resources.Theme theme = context.getTheme();
+
+            StyledAttrs w = new StyledAttrs(theme, attrs, new int[]{
                     android.R.attr.id,
                     android.R.attr.background,
                     android.R.attr.tint,
                     android.R.attr.textColor,
-            };
+            });
 
-            Arrays.sort(attrsArray); // know bug https://stackoverflow.com/questions/19034597
-
-            final int ID = Arrays.binarySearch(attrsArray, android.R.attr.id);
-            final int BACKGROUND = Arrays.binarySearch(attrsArray, android.R.attr.background);
-            final int TEXTCOLOR = Arrays.binarySearch(attrsArray, android.R.attr.textColor);
-            final int TINT = Arrays.binarySearch(attrsArray, android.R.attr.tint);
-
-            Resources.Theme theme = context.getTheme();
-            TypedArray ta = theme.obtainStyledAttributes(attrs, attrsArray, 0, 0);
             TypedValue out = new TypedValue();
-            if (ta.getValue(ID, out)) {
+            if (w.getValue(android.R.attr.id, out)) {
                 int id = out.resourceId;
-                if (ta.getValue(BACKGROUND, out))
+                if (w.getValue(android.R.attr.background, out))
                     setBackgroundColor(view, id, getColor(context, out));
-                if (ta.getValue(TEXTCOLOR, out))
+                if (w.getValue(android.R.attr.textColor, out))
                     view.setTextColor(id, getColor(context, out));
-                if (ta.getValue(TINT, out))
+                if (w.getValue(android.R.attr.tint, out))
                     setImageViewTint(view, id, getColor(context, out));
                 if (name.equals(Button.class.getSimpleName())) {
                     if (Build.VERSION.SDK_INT <= 10) { // seems like API10 and below does not support notification buttons
                         view.setViewVisibility(id, View.GONE);
                     } else {
-                        if (!ta.hasValue(BACKGROUND)) { // no background set
+                        if (!w.hasValue(android.R.attr.background)) { // no background set
                             int res = getButtonBackground(theme, context);
                             if (res != 0)
                                 setBackgroundResource(view, id, res);
@@ -77,7 +114,7 @@ public class RemoteViewsCompat {
                     if (Build.VERSION.SDK_INT <= 10) { // seems like API10 and below does not support notification buttons
                         view.setViewVisibility(id, View.GONE);
                     } else {
-                        if (!ta.hasValue(BACKGROUND)) { // no background set
+                        if (!w.hasValue(android.R.attr.background)) { // no background set
                             int res = getImageButtonBackground(theme, context);
                             if (res != 0)
                                 setBackgroundResource(view, id, res);
@@ -85,7 +122,7 @@ public class RemoteViewsCompat {
                     }
                 }
             }
-            ta.recycle();
+            w.close();
             return null;
         }
 
