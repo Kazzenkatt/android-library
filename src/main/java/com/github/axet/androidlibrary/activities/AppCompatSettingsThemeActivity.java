@@ -1,9 +1,14 @@
 package com.github.axet.androidlibrary.activities;
 
+import android.annotation.SuppressLint;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
@@ -11,6 +16,8 @@ import android.support.v7.preference.PreferenceManager;
 
 import com.github.axet.androidlibrary.preferences.NameFormatPreferenceCompat;
 import com.github.axet.androidlibrary.preferences.SeekBarPreference;
+
+import java.util.List;
 
 public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActivity implements SharedPreferences.OnSharedPreferenceChangeListener, PreferenceFragmentCompat.OnPreferenceDisplayDialogCallback {
 
@@ -52,6 +59,28 @@ public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActiv
         shared.registerOnSharedPreferenceChangeListener(this);
     }
 
+    public void showSettingsFragment(PreferenceFragmentCompat pref) {
+        getSupportFragmentManager().beginTransaction().replace(android.R.id.content, pref).commit();
+    }
+
+    @SuppressLint("RestrictedApi")
+    public PreferenceFragmentCompat getSettingsFragment() {
+        List<Fragment> ff = getSupportFragmentManager().getFragments();
+        if (ff == null)
+            return null;
+        for (Fragment f : ff) {
+            if (f instanceof PreferenceFragmentCompat && f.isVisible())
+                return (PreferenceFragmentCompat) f;
+        }
+        return null;
+    }
+
+    protected void setupActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null)
+            actionBar.setDisplayHomeAsUpEnabled(true);
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -72,9 +101,7 @@ public abstract class AppCompatSettingsThemeActivity extends AppCompatThemeActiv
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(getAppThemeKey())) {
+        if (key.equals(getAppThemeKey()))
             restartActivity();
-        }
     }
-
 }
