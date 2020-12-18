@@ -14,6 +14,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public static String TAG = AppCompatThemeActivity.class.getSimpleName();
 
+    public static String SAVE_INSTANCE_STATE = "SAVE_INSTANCE_STATE";
     public static String OVERRIDE_PENDING_TRANSITION = "OVERRIDE_PENDING_TRANSITION";
 
     public int themeId;
@@ -223,7 +225,7 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setAppTheme(getAppTheme());
-        super.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState == null ? getIntent().getBundleExtra(SAVE_INSTANCE_STATE) : savedInstanceState);
         if (manifestThemeid != themeId && !getIntent().getBooleanExtra(OVERRIDE_PENDING_TRANSITION, false))
             overridePendingTransition(animations.activityOpenEnterAnimation, animations.activityOpenExitAnimation);
         else
@@ -252,11 +254,17 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     }
 
     public void restartActivity() {
+        Bundle out = new Bundle();
+        onSaveInstanceState(out);
+        restartActivity(new Intent(this, getClass())
+                .putExtra(OVERRIDE_PENDING_TRANSITION, true)
+                .putExtra(SAVE_INSTANCE_STATE, out));
+    }
+
+    public void restartActivity(Intent intent) {
         getIntent().putExtra(OVERRIDE_PENDING_TRANSITION, true);
-        Bundle bundle = new Bundle();
-        onSaveInstanceState(bundle);
         finish();
-        startActivity(new Intent(this, getClass()).putExtra(OVERRIDE_PENDING_TRANSITION, true));
+        startActivity(intent);
         overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
