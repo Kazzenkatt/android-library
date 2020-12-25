@@ -50,6 +50,7 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public int manifestThemeid;
 
     public ActivityAnimations animations;
+    public Handler handler = new Handler();
 
     public static void showLocked(Window w) {
         w.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
@@ -256,7 +257,7 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
     }
 
     public void restartActivity() {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() { // possible fix FragmentManager ensureExecReady crash
                 Bundle out = new Bundle();
