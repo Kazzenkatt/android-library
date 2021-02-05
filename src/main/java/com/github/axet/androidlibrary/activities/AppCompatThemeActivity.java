@@ -12,6 +12,7 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -224,19 +225,10 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         super.attachBaseContext(newBase);
     }
 
-    public Bundle onSavedBundle(Bundle savedInstanceState) {
-        try {
-            return savedInstanceState == null ? getIntent().getBundleExtra(SAVE_INSTANCE_STATE) : savedInstanceState;
-        } catch (Exception e) {
-            Log.w(TAG, e); // crashing on restroting bundle (NoSuchMethod exception or BadParcelableException or AssertionError
-            return null;
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setAppTheme(getAppTheme());
-        super.onCreate(onSavedBundle(savedInstanceState));
+        super.onCreate(savedInstanceState == null ? intent.getBundleExtra(SAVE_INSTANCE_STATE) : savedInstanceState);
         if (manifestThemeid != themeId && !getIntent().getBooleanExtra(OVERRIDE_PENDING_TRANSITION, false))
             overridePendingTransition(animations.activityOpenEnterAnimation, animations.activityOpenExitAnimation);
         else

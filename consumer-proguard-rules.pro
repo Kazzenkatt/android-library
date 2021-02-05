@@ -32,3 +32,5 @@
 
 -dontwarn de.innosystec.unrar.**
 -dontwarn org.apache.commons.**
+
+-keepclassmembers class * implements android.os.Parcelable { public static final android.os.Parcelable$Creator CREATOR; } # crash save instance
