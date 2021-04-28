@@ -56,6 +56,7 @@ public class ZipSAF extends NativeStorage {
         ParcelFileDescriptor fd;
         FileChannel c;
         FileInputStream fis;
+
         FileOutputStream fos;
 
         public File(Context context, Uri u, String mode) throws FileNotFoundException {
@@ -69,6 +70,24 @@ public class ZipSAF extends NativeStorage {
                 fos = new FileOutputStream(fd.getFileDescriptor());
                 c = fos.getChannel();
             }
+        }
+
+        @Override
+        public int skipBytes(int i) throws IOException {
+            seek(c.position() + i);
+            return i;
+        }
+
+        @Override
+        public int read() throws IOException {
+            byte[] b = new byte[1];
+            read(b);
+            return b[0];
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            write(new byte[]{(byte) b}, 0, 1);
         }
 
         @Override
