@@ -138,6 +138,11 @@ public class OpenFileDialog extends AlertDialog.Builder {
         });
     }
 
+    public static void hideKeyboard(Context context, View input) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(input.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    }
+
     protected static void cache(Context context) {
         cache(context.getExternalCacheDir());
         if (Build.VERSION.SDK_INT >= 19) {
@@ -643,8 +648,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         }
 
         public void hide() {
-            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-            imm.hideSoftInputFromWindow(input.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+            hideKeyboard(getContext(), input);
         }
 
         @Override
