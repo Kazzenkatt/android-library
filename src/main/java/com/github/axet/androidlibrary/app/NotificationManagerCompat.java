@@ -94,4 +94,25 @@ public class NotificationManagerCompat {
             throw e;
         }
     }
+
+    public void notify(String tag, int id, Notification n) {
+        try {
+            nmc.notify(tag, id, n);
+        } catch (Exception e) {
+            if (Build.VERSION.SDK_INT >= 16 && n.bigContentView != null) { // API16+
+                Throwable c = e;
+                while (c != null) {
+                    if (c instanceof TransactionTooLargeException) { // API15+
+                        Log.e(TAG, "notify", e);
+                        n.contentView = n.bigContentView;
+                        n.bigContentView = null;
+                        nmc.notify(tag, id, n);
+                        return;
+                    }
+                    c = c.getCause();
+                }
+            }
+            throw e;
+        }
+    }
 }
