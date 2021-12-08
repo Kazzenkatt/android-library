@@ -23,8 +23,8 @@ public class TTSPreferenceCompat extends ListPreference {
     ArrayList<CharSequence> value;
 
     public static void addLocale(HashSet<Locale> list, Locale l) {
-        for(Locale m : list) {
-            if(m.toString().equals(l.toString()))
+        for (Locale m : list) {
+            if (m.toString().equals(l.toString()))
                 return;
         }
         list.add(l);
@@ -51,6 +51,17 @@ public class TTSPreferenceCompat extends ListPreference {
             }
         }
         return list;
+    }
+
+    public static String formatLocale(Locale l) {
+        String n = l.getDisplayLanguage();
+        String v = l.toString();
+        String t;
+        if (n == null || n.isEmpty() || n.equals(v))
+            t = v;
+        else
+            t = String.format("%s (%s)", n, v);
+        return t;
     }
 
     public TTSPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -82,7 +93,7 @@ public class TTSPreferenceCompat extends ListPreference {
             ll.add(Locale.US);
         }
         for (Locale l : ll) {
-            text.add(l.getDisplayLanguage());
+            text.add(formatLocale(l));
             value.add(l.toString());
         }
         setEntries(text.toArray(new CharSequence[0]));
