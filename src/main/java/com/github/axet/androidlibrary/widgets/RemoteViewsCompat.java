@@ -1,9 +1,13 @@
 package com.github.axet.androidlibrary.widgets;
 
 import android.annotation.SuppressLint;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.view.ContextThemeWrapper;
@@ -336,9 +340,58 @@ public class RemoteViewsCompat extends RemoteViews {
     }
 
     @Override
-    public void setTextViewText(int viewId, CharSequence text) {
+    public void setCharSequence(int viewId, String methodName, CharSequence value) {
         if (view.findViewById(viewId) == null) // API9 crash if view does not exists
             return;
-        super.setTextViewText(viewId, text);
+        super.setCharSequence(viewId, methodName, value);
+    }
+
+    @Override
+    public void setString(int viewId, String methodName, String value) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setString(viewId, methodName, value);
+    }
+
+    @Override
+    public void setInt(int viewId, String methodName, int value) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setInt(viewId, methodName, value);
+    }
+
+    @Override
+    public void setBitmap(int viewId, String methodName, Bitmap value) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setBitmap(viewId, methodName, value);
+    }
+
+    @Override
+    public void setIntent(int viewId, String methodName, Intent value) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setIntent(viewId, methodName, value);
+    }
+
+    @Override
+    public void setIcon(int viewId, String methodName, Icon value) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setIcon(viewId, methodName, value);
+    }
+
+    @Override
+    public void setViewPadding(int viewId, int left, int top, int right, int bottom) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setViewPadding(viewId, left, top, right, bottom);
+    }
+
+    @Override
+    public void setOnClickPendingIntent(int viewId, PendingIntent pendingIntent) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setOnClickPendingIntent(viewId, pendingIntent);
     }
 }
