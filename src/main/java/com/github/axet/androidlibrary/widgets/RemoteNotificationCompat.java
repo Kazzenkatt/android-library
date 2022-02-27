@@ -208,8 +208,8 @@ public class RemoteNotificationCompat extends NotificationCompat {
 
     public static class Builder extends NotificationCompat.Builder {
         public NotificationChannelCompat channel;
-        public RemoteViews compact;
-        public RemoteViews big;
+        public RemoteViewsCompat compact;
+        public RemoteViewsCompat big;
         public ContextThemeWrapper theme;
 
         protected Builder(Context context) {
@@ -217,7 +217,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
         }
 
         public Builder(Context context, int layoutId) {
-            super(context);
+            this(context);
             create(layoutId);
         }
 
@@ -228,7 +228,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
 
         @SuppressLint("RestrictedApi")
         public void create(int layoutId) {
-            compact = new RemoteViews(mContext.getPackageName(), layoutId);
+            compact = new RemoteViewsCompat(mContext, mContext.getPackageName(), layoutId);
             setCustomContentView(compact);
             if (Build.VERSION.SDK_INT >= 21)
                 setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -237,7 +237,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
         @SuppressLint("RestrictedApi")
         public void create(int layoutId, int bigId) {
             create(layoutId);
-            big = new RemoteViews(mContext.getPackageName(), bigId);
+            big = new RemoteViewsCompat(mContext, mContext.getPackageName(), bigId);
             setCustomBigContentView(big);
         }
 

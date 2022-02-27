@@ -19,8 +19,12 @@ import com.github.axet.androidlibrary.R;
 
 import java.util.Arrays;
 
-public class RemoteViewsCompat {
+public class RemoteViewsCompat extends RemoteViews {
     public static final String TAG = RemoteViewsCompat.class.getSimpleName();
+
+    public Context context;
+    public View view;
+    public LayoutInflater inflater;
 
     public static class StyledAttrs {
         public int[] aa;
@@ -322,5 +326,19 @@ public class RemoteViewsCompat {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public RemoteViewsCompat(Context context, String packageName, int layoutId) {
+        super(packageName, layoutId);
+        this.context = context;
+        inflater = LayoutInflater.from(context);
+        view = inflater.inflate(layoutId, null);
+    }
+
+    @Override
+    public void setTextViewText(int viewId, CharSequence text) {
+        if (view.findViewById(viewId) == null) // API9 crash if view does not exists
+            return;
+        super.setTextViewText(viewId, text);
     }
 }

@@ -23,7 +23,7 @@ public class Sound {
     public static final int DEFAULT_AUDIOFORMAT = AudioFormat.ENCODING_PCM_16BIT;
     public static final int DEFAULT_RATE = 16000;
 
-    public static int[] RATES = new int[]{8000, 11025, 16000, 22050, 44100, 48000};
+    public static int[] RATES = new int[]{8000, 11025, 16000, 22050, 44100, 48000, 96000, 144000, 192000};
 
     public static final String ZEN_MODE = "zen_mode";
     public static final int ZEN_MODE_OFF = 0;
@@ -51,30 +51,26 @@ public class Sound {
 
     public static int getValidRecordRate(int format, int in, int rate) {
         int i = Arrays.binarySearch(RATES, rate);
-        if (i < 0) {
+        if (i < 0)
             i = -i - 2;
-        }
         for (; i >= 0; i--) {
             int r = RATES[i];
             int bufferSize = AudioRecord.getMinBufferSize(r, in, format);
-            if (bufferSize > 0) {
+            if (bufferSize > 0)
                 return r;
-            }
         }
         return -1;
     }
 
     public static int getValidAudioRate(int format, int out, int rate) {
         int i = Arrays.binarySearch(RATES, rate);
-        if (i < 0) {
+        if (i < 0)
             i = -i - 2;
-        }
         for (; i >= 0; i--) {
             int r = RATES[i];
             int bufferSize = AudioTrack.getMinBufferSize(r, out, format);
-            if (bufferSize > 0) {
+            if (bufferSize > 0)
                 return r;
-            }
         }
         return -1;
     }
