@@ -152,7 +152,6 @@ public class AudioTrack extends android.media.AudioTrack {
         public int hz; // sample rate
         public int c; // AudioFormat.CHANNEL_OUT_MONO or AudioFormat.CHANNEL_OUT_STEREO
         public int a; // AudioFormat.ENCODING_PCM_16BIT
-        public int f = Sound.DEFAULT_AUDIOFORMAT; // format
 
         public int getChannels() {
             switch (c) {
@@ -168,7 +167,7 @@ public class AudioTrack extends android.media.AudioTrack {
         @TargetApi(21)
         public AudioFormat getAudioFormat() {
             AudioFormat.Builder builder = new AudioFormat.Builder();
-            builder.setEncoding(f);
+            builder.setEncoding(a);
             builder.setSampleRate(hz);
             builder.setChannelMask(c);
             return builder.build();
