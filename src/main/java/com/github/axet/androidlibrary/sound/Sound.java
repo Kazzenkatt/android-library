@@ -31,6 +31,9 @@ public class Sound {
     public static final int ZEN_MODE_NO_INTERRUPTIONS = 2;
     public static final int ZEN_MODE_ALARMS = 3;
 
+    public static final int ENCODING_PCM_24BIT_PACKED = 0x00000015;
+    public static final int ENCODING_PCM_32BIT = 0x00000016;
+
     public static final long LAST = 1000; // last delay
 
     public Context context;
@@ -46,14 +49,14 @@ public class Sound {
         toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 200);
     }
 
-    public static int getValidRecordRate(int in, int rate) {
+    public static int getValidRecordRate(int format, int in, int rate) {
         int i = Arrays.binarySearch(RATES, rate);
         if (i < 0) {
             i = -i - 2;
         }
         for (; i >= 0; i--) {
             int r = RATES[i];
-            int bufferSize = AudioRecord.getMinBufferSize(r, in, DEFAULT_AUDIOFORMAT);
+            int bufferSize = AudioRecord.getMinBufferSize(r, in, format);
             if (bufferSize > 0) {
                 return r;
             }
@@ -61,14 +64,14 @@ public class Sound {
         return -1;
     }
 
-    public static int getValidAudioRate(int out, int rate) {
+    public static int getValidAudioRate(int format, int out, int rate) {
         int i = Arrays.binarySearch(RATES, rate);
         if (i < 0) {
             i = -i - 2;
         }
         for (; i >= 0; i--) {
             int r = RATES[i];
-            int bufferSize = AudioTrack.getMinBufferSize(r, out, DEFAULT_AUDIOFORMAT);
+            int bufferSize = AudioTrack.getMinBufferSize(r, out, format);
             if (bufferSize > 0) {
                 return r;
             }
