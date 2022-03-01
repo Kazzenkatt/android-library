@@ -171,7 +171,7 @@ public class MainApplication extends Application {
             Class.forName("android.support.multidex.MultiDex").getMethod("install", Context.class).invoke(null, this);
         } catch (Exception ignore) {
         }
-        PrefStorage.create(base);
+        Prefs.create(base);
     }
 
     public int getVersion(String key, int id) {

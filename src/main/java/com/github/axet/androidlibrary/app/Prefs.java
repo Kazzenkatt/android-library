@@ -8,10 +8,9 @@ import android.util.Log;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
-import java.util.UUID;
 
-public class PrefStorage {
-    private static final String TAG = PrefStorage.class.getSimpleName();
+public class Prefs {
+    private static final String TAG = Prefs.class.getSimpleName();
 
     public static PrefsMap DELAYED = new PrefsMap();
 
@@ -21,7 +20,7 @@ public class PrefStorage {
 
     public static Class<?> getCallingClass() {
         StackTraceElement[] ss = Thread.currentThread().getStackTrace();
-        String k = PrefStorage.class.getCanonicalName();
+        String k = Prefs.class.getCanonicalName();
         int i = 1;
         for (; i < ss.length; i++) {
             StackTraceElement s = ss[i];
@@ -45,22 +44,42 @@ public class PrefStorage {
     }
 
     public static String PrefString(int key) {
-        return DELAYED.add(getCallingClass(), key);
+        String s = new String();
+        DELAYED.add(getCallingClass(), key, s);
+        return s;
     }
 
-    public static PrefStorage from(Context context) {
-        return new PrefStorage(context);
+    public static Long PrefLong(int key) {
+        Long l = new Long(Long.MIN_VALUE);
+        DELAYED.add(getCallingClass(), key, l);
+        return l;
+    }
+
+    public static Integer PrefInt(int key) {
+        Integer l = new Integer(Integer.MIN_VALUE);
+        DELAYED.add(getCallingClass(), key, l);
+        return l;
+    }
+
+    public static Boolean PrefBool(int key) {
+        Boolean b = new Boolean(Boolean.FALSE);
+        DELAYED.add(getCallingClass(), key, b);
+        return b;
+    }
+
+    public static Prefs from(Context context) {
+        return new Prefs(context);
     }
 
     public static class PrefDelayed {
-        public Class c;
-        public UUID uuid;
+        public Class c; // st
+        public int hash; // System.identityHashCode
         public int key;
 
-        public PrefDelayed(Class c, int key, UUID u) {
+        public PrefDelayed(Class c, int key, int h) {
             this.c = c;
             this.key = key;
-            this.uuid = u;
+            this.hash = h;
         }
     }
 
@@ -69,10 +88,10 @@ public class PrefStorage {
             for (Integer k : keySet()) {
                 PrefDelayed d = get(k);
                 for (Field f : d.c.getDeclaredFields()) {
-                    if (Modifier.isStatic(f.getModifiers()) && f.getType().equals(String.class)) {
+                    if (Modifier.isStatic(f.getModifiers())) {
                         try {
-                            String v = (String) f.get(null);
-                            if (v != null && v.equals(d.uuid.toString())) {
+                            Object v = f.get(null);
+                            if (System.identityHashCode(v) == d.hash) {
                                 String dv = context.getString(d.key);
                                 f.setAccessible(true);
                                 f.set(null, dv);
@@ -85,21 +104,19 @@ public class PrefStorage {
             }
         }
 
-        public String add(Class c, int key) {
-            UUID u = UUID.randomUUID();
-            PrefDelayed d = new PrefDelayed(c, key, u);
+        public void add(Class<?> c, int key, Object o) {
+            PrefDelayed d = new PrefDelayed(c, key, System.identityHashCode(o));
             put(key, d);
-            return u.toString();
         }
     }
 
     public SharedPreferences shared;
 
-    public PrefStorage(Context context) {
+    public Prefs(Context context) {
         shared = PreferenceManager.getDefaultSharedPreferences(context);
     }
 
-    public PrefStorage(SharedPreferences shared) {
+    public Prefs(SharedPreferences shared) {
         this.shared = shared;
     }
 }
