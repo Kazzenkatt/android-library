@@ -248,8 +248,7 @@ public class AudioTrack extends android.media.AudioTrack {
         }
 
         public void write(int pos, short... ss) {
-            for (int i = 0; i < ss.length; i++)
-                buffer.shorts[pos + i] = ss[i];
+            System.arraycopy(ss, 0, buffer.shorts, pos, ss.length);
         }
 
         public void write(int pos, short s, int cn) {
