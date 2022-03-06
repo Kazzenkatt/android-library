@@ -37,9 +37,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,7 +52,9 @@ import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -165,6 +169,10 @@ public class HttpClient {
     public static void init() { // if you do not have 'LinearAlloc exceeded capacity' issue
         init(HttpClient.class.getClassLoader());
     }
+    
+    public static void allowRestrictedHeaders() {
+        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+    }
 
     public static HttpURLConnection openConnection(Uri uri) {
         return openConnection(uri, null);
@@ -187,63 +195,66 @@ public class HttpClient {
         try {
             if (i > 5)
                 throw new RuntimeException("Circular redirect exception");
-            URL base = url;
             InetAddress[] aa = InetAddress.getAllByName(url.getHost());
-            int h = 0;
-            HttpURLConnection conn = null;
-            while (h < aa.length) {
-                String host = null;
-                if (aa.length > 1) {
-                    host = base.getHost();
-                    InetAddress a = aa[h];
-                    String auth = a.getHostAddress();
-                    if (a instanceof Inet6Address)
-                        auth = "[" + auth + "]";
-                    Uri.Builder b = Uri.parse(url.toString()).buildUpon();
-                    b.encodedAuthority(auth);
-                    url = new URL(b.build().toString());
-                }
-                conn = (HttpURLConnection) url.openConnection();
-                if (host != null) {
-                    conn.setRequestProperty("host", host);
-                    if (conn instanceof HttpsURLConnection) {
-                        HttpsURLConnection hs = (HttpsURLConnection) conn;
-                        final String m = host;
-                        final HostnameVerifier vf = hs.getHostnameVerifier();
-                        hs.setHostnameVerifier(new HostnameVerifier() {
-                            @Override
-                            public boolean verify(String s, SSLSession sslSession) {
-                                return vf.verify(m, sslSession);
-                            }
-                        });
+            if (aa.length < 2) {
+                return openConnection(i, url, null, useragent);
+            } else {
+                int k = 0;
+                int last = aa.length - 1;
+                for (; k < last; k++) {
+                    try {
+                        InetAddress a = aa[k];
+                        return openConnection(i, url, a, useragent);
+                    } catch (SocketTimeoutException | SSLPeerUnverifiedException ignore) {
                     }
                 }
-                conn.setConnectTimeout(HttpClient.CONNECTION_TIMEOUT);
-                conn.setReadTimeout(HttpClient.CONNECTION_TIMEOUT);
-                conn.setInstanceFollowRedirects(false);
-                if (useragent != null)
-                    conn.setRequestProperty("User-Agent", useragent);
-                try {
-                    switch (conn.getResponseCode()) {
-                        case HttpURLConnection.HTTP_MOVED_PERM:
-                        case HttpURLConnection.HTTP_MOVED_TEMP:
-                            String location = conn.getHeaderField("Location");
-                            location = URLDecoder.decode(location, Charset.defaultCharset().name());
-                            url = new URL(base, location);  // Deal with relative URLs
-                            return openConnection(i + 1, url, useragent);
-
-                    }
-                    break;
-                } catch (SocketTimeoutException ignore) {
-                    h++;
-                }
+                InetAddress a = aa[k];
+                return openConnection(i, url, a, useragent);
             }
-            if (conn == null)
-                throw new SocketTimeoutException("Unable to connect");
-            return conn;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static HttpURLConnection openConnection(int i, URL url, final InetAddress a, String useragent) throws IOException {
+        Log.d(TAG, "openConnection: " + url + " (" + a + ")");
+        HttpURLConnection conn;
+        final URL base = url;
+        if (a != null) {
+            String auth = a.getHostAddress();
+            if (a instanceof Inet6Address)
+                auth = "[" + auth + "]";
+            url = new URL(Uri.parse(url.toString()).buildUpon().encodedAuthority(auth).build().toString());
+        }
+        conn = (HttpURLConnection) url.openConnection();
+        if (a != null) {
+            conn.setRequestProperty("Host", a.getHostName());
+            if (conn instanceof HttpsURLConnection) {
+                final HttpsURLConnection hs = (HttpsURLConnection) conn;
+                final HostnameVerifier old = hs.getHostnameVerifier();
+                hs.setHostnameVerifier(new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String s, SSLSession sslSession) {
+                        return old.verify(a.getHostName(), sslSession);
+                    }
+                });
+            }
+        }
+        conn.setConnectTimeout(HttpClient.CONNECTION_TIMEOUT);
+        conn.setReadTimeout(HttpClient.CONNECTION_TIMEOUT);
+        conn.setInstanceFollowRedirects(false);
+        if (useragent != null)
+            conn.setRequestProperty("User-Agent", useragent);
+        switch (conn.getResponseCode()) {
+            case HttpURLConnection.HTTP_MOVED_PERM:
+            case HttpURLConnection.HTTP_MOVED_TEMP:
+                String location = conn.getHeaderField("Location");
+                location = URLDecoder.decode(location, Charset.defaultCharset().name());
+                url = new URL(base, location);  // Deal with relative URLs
+                return openConnection(i + 1, url, useragent);
+
+        }
+        return conn;
     }
 
     public static String formatCookie(Cookie c) {
