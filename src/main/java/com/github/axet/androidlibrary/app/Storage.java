@@ -375,22 +375,24 @@ public class Storage {
 
     // document methods
     //
-    // tree - content://com.android.externalstorage.documents/tree/A598-18E4%3A
+    // SAF1 - root uri's (getDocumentTreeUri(SAF2 or SAF3 uri's) or Intent.ACTION_OPEN_DOCUMENT_TREE or takePersistableUriPermission(SAF1)):
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A
     //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222
     //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222%2Feeee
-    // actions: takePersistableUriPermission, query throws UnsupportedOperationException
     //
-    // document - content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3A
-    //            content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3Aeeee
-    //            content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222
-    //            content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222%2Feeee
-    //            content://com.android.externalstorage.documents/tree/A598-18E4%3A222%2Feeee/document/A598-18E4%3A222%2Feeee%2Fhhhh
-    // actions: query returns current document info
+    // SAF2 - tree uri's (getDocumentChild(SAF2 or SAF3 uri's) or ContentResolver.query(SAF2)):
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3A
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3Aeeee
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222%2Feeee
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222%2Feeee/document/A598-18E4%3A222%2Feeee%2Fhhhh
     //
-    // childrens - content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3A/children
-    //             content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222/children
-    //             content://com.android.externalstorage.documents/tree/A598-18E4%3A222%2Feeee/document/A598-18E4%3A222%2Feeee/children
-    // actions: query returns documents list or empty cursor
+    // SAF3 - document uri's (getDocumentFile(SAF2 or SAF3) or createDocumentFile(SAF2 or SAF3) or isDocumentUri()):
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A/document/A598-18E4%3A/children
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222/document/A598-18E4%3A222/children
+    //        content://com.android.externalstorage.documents/tree/A598-18E4%3A222%2Feeee/document/A598-18E4%3A222%2Feeee/children
+    //
+    // SAF4 - list root/document uri's (buildChildDocumentsUriUsingTree(SAF2) or ContentResolver.query(SAF4))
 
     public static String getDocumentStorage(String s) {
         if (s.equals(STORAGE_PRIMARY))
