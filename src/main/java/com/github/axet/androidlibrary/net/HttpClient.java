@@ -99,6 +99,7 @@ import cz.msebera.android.httpclient.message.BasicNameValuePair;
 import cz.msebera.android.httpclient.protocol.HttpContext;
 import cz.msebera.android.httpclient.protocol.HttpCoreContext;
 import cz.msebera.android.httpclient.protocol.HttpRequestExecutor;
+import cz.msebera.android.httpclient.ssl.SSLContexts;
 import cz.msebera.android.httpclient.util.Asserts;
 import cz.msebera.android.httpclient.util.EntityUtils;
 
@@ -169,7 +170,7 @@ public class HttpClient {
     public static void init() { // if you do not have 'LinearAlloc exceeded capacity' issue
         init(HttpClient.class.getClassLoader());
     }
-    
+
     public static void allowRestrictedHeaders() {
         System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
     }
@@ -330,6 +331,26 @@ public class HttpClient {
         PrintWriter pw = new PrintWriter(sw);
         e.printStackTrace(pw);
         return e.toString();
+    }
+
+    public static SSLConnectionSocketFactory getSSLSocketFactory() {
+        SSLContext sc;
+        HostnameVerifier host;
+        if (Build.VERSION.SDK_INT <= 19) {
+            try {
+                sc = SSLContext.getInstance("TLS");
+                sc.init(null, TRUST_ALL, new SecureRandom());
+                host = HOST_ALL;
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            } catch (KeyManagementException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            sc = SSLContexts.createDefault();
+            host = SSLConnectionSocketFactory.getDefaultHostnameVerifier();
+        }
+        return new SSLConnectionSocketFactory(sc, host);
     }
 
     public static class SpongyLoader extends AssetsDexLoader.ThreadLoader {
@@ -682,17 +703,7 @@ public class HttpClient {
         // Caused by: javax.net.ssl.SSLException: Connection closed by peer
         // at com.android.org.conscrypt.NativeCrypto.SSL_do_handshake(Native Method)
         // at com.android.org.conscrypt.OpenSSLSocketImpl.startHandshake(OpenSSLSocketImpl.java:405)
-        if (Build.VERSION.SDK_INT <= 19) {
-            try {
-                SSLContext sc = SSLContext.getInstance("TLS");
-                sc.init(null, TRUST_ALL, new SecureRandom());
-                builder.setSSLSocketFactory(new SSLConnectionSocketFactory(sc, HOST_ALL));
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            } catch (KeyManagementException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        builder.setSSLSocketFactory(getSSLSocketFactory());
 
         httpclient = build(builder);
     }
@@ -958,6 +969,26 @@ public class HttpClient {
             return new DownloadResponse(httpClientContext, httpPost, response);
         } catch (RuntimeException e) {
             throw e;
+        } finally {
+            request = null;
+        }
+    }
+
+    public DownloadResponse postResponse(String base, String url, HttpPost httpPost) {
+        try {
+            CloseableHttpResponse response = execute(base, httpPost);
+            return new DownloadResponse(httpClientContext, httpPost, response);
+        } catch (RuntimeException e) {
+            throw e;
+        } finally {
+            request = null;
+        }
+    }
+
+    public DownloadResponse executeResponse(String base, HttpRequestBase r) {
+        try {
+            CloseableHttpResponse response = execute(base, r);
+            return new DownloadResponse(httpClientContext, r, response);
         } finally {
             request = null;
         }
