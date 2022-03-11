@@ -228,6 +228,7 @@ public class AssetsDexLoader {
             public String v;
             public String dex;
             public String md5;
+            public long size;
             public ArrayList<Library> deps = new ArrayList<>();
 
             public String getId() {
@@ -279,6 +280,7 @@ public class AssetsDexLoader {
                     info.id = o.getString("id");
                     info.v = o.getString("v");
                     info.dex = o.getString("asset");
+                    info.size = o.optLong("size");
                     info.md5 = o.optString("md5");
                     JSONArray deps = o.optJSONArray("deps");
                     if (deps != null && deps.length() > 0)
