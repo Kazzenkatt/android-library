@@ -462,7 +462,7 @@ public class AssetsDexLoader {
     }
 
     public static class JsonThreadLoader extends ThreadLoader {
-        Json json;
+        public Json json;
 
         public JsonThreadLoader(Context context) {
             super(context);
@@ -503,7 +503,7 @@ public class AssetsDexLoader {
 
         @Override
         public ClassLoader deps() {
-            Json json = new Json(context);
+            json = new Json(context);
             return AssetsDexLoader.deps(context, json, deps);
         }
     }

@@ -52,10 +52,6 @@ public class ErrorDialog extends AlertDialog.Builder {
         });
     }
 
-    public static void Post(final Activity context, final Throwable e) {
-        Post((Context) context, e);
-    }
-
     public static void Post(final Context context, final Throwable e) {
         Log.e(TAG, "Error", e);
         Handler handler = new Handler(Looper.getMainLooper());
