@@ -287,7 +287,9 @@ public class TTS extends Sound {
                 locale = new Locale(lang);
             }
             if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_NOT_SUPPORTED)
-                locale = new Locale("en"); // 'system default lang' tts voice not supported. use 'en'
+                locale = Locale.US; // 'system default lang' tts voice not supported. use 'en_US'
+            if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_NOT_SUPPORTED)
+                locale = Locale.ENGLISH; // 'system default lang' tts voice not supported. use 'en'
             if (tts.isLanguageAvailable(locale) == TextToSpeech.LANG_NOT_SUPPORTED)
                 return null; // 'en' not supported? do not speak
         }
@@ -306,17 +308,49 @@ public class TTS extends Sound {
         return playSpeech(speak.locale, speak.text);
     }
 
-    public boolean playSpeech(Locale locale, String speak) {
-        if (tts.setLanguage(locale) != TextToSpeech.LANG_AVAILABLE) {
-            Locale d = Locale.getDefault();
-            Toast.makeText(context, String.format(TTS_LANG_FAILED, locale), Toast.LENGTH_LONG).show();
-            if (tts.setLanguage(d) != TextToSpeech.LANG_AVAILABLE) {
-                d = Locale.ENGLISH;
-                Toast.makeText(context, String.format(TTS_LANG_FAILED, d), Toast.LENGTH_LONG).show();
-            }
-            if (tts.setLanguage(d) != TextToSpeech.LANG_AVAILABLE)
-                Toast.makeText(context, String.format(TTS_LANG_FAILED, d), Toast.LENGTH_LONG).show();
+    public String ttsLangError(Locale locale, int d) {
+        String str = "";
+        switch (d) {
+            case TextToSpeech.LANG_AVAILABLE:
+                break;
+            case TextToSpeech.LANG_COUNTRY_AVAILABLE:
+                break;
+            case TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE:
+                break;
+            case TextToSpeech.LANG_NOT_SUPPORTED:
+                str = String.format(TTS_LANG_FAILED, locale) + " (not supported)";
+                break;
+            case TextToSpeech.LANG_MISSING_DATA:
+                str = String.format(TTS_LANG_FAILED, locale) + " (missing data)";
+                break;
+            default:
+                str = String.format(TTS_LANG_FAILED, locale) + " (unknown error) " + d;
         }
+        return str;
+    }
+
+    public void setLanguage(Locale locale) {
+        int l = tts.setLanguage(locale);
+        if (l < 0) {
+            Toast.makeText(context, ttsLangError(locale, l), Toast.LENGTH_LONG).show();
+            Locale d = Locale.getDefault();
+            l = tts.setLanguage(d);
+            if (l < 0) {
+                d = Locale.US;
+                l = tts.setLanguage(d);
+                if (l < 0) {
+                    Toast.makeText(context, ttsLangError(d, l), Toast.LENGTH_LONG).show();
+                    d = Locale.ENGLISH;
+                    l = tts.setLanguage(d);
+                    if (l < 0)
+                        Toast.makeText(context, ttsLangError(d, l), Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+    }
+
+    public boolean playSpeech(Locale locale, String speak) {
+        setLanguage(locale); // live
         if (Build.VERSION.SDK_INT >= 21) {
             Bundle params = new Bundle();
             params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, getSoundChannel().streamType);
