@@ -65,11 +65,7 @@ public class AudioTrack extends android.media.AudioTrack {
         if (Build.VERSION.SDK_INT >= 21) {
             AudioAttributes.Builder b = new AudioAttributes.Builder();
             b.setUsage(usage);
-            try {
-                b.setContentType(ct);
-            } catch (RuntimeException e) { // bugged devices does not support CONTENT_TYPE_SONIFICATION
-                Log.w(TAG, e);
-            }
+            b.setContentType(ct);
             AudioAttributes a = b.build();
             return new AudioTrack(a, buffer, len);
         } else {
