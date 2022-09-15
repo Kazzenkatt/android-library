@@ -9,7 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.DhcpInfo;
+import android.net.LinkProperties;
 import android.net.NetworkInfo;
+import android.net.RouteInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.IBinder;
@@ -24,6 +26,8 @@ import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -85,10 +89,49 @@ public class WifiKeepService extends Service {
     }
 
     @SuppressLint("MissingPermission") // ACCESS_WIFI_STATE
-    public static int getGatewayIP(Context context) {
+    public static String getGatewayIP(Context context) {
         final WifiManager w = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE); // must be on application context
-        DhcpInfo d = w.getDhcpInfo();
-        return d.gateway;
+        if (w != null) {
+            DhcpInfo d = w.getDhcpInfo();
+            if (d != null)
+                return format(d.gateway); // TODO no support for ipv6
+        }
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (Build.VERSION.SDK_INT >= 21) {
+            LinkProperties linkProperties = cm.getLinkProperties(cm.getActiveNetwork());
+            if (linkProperties == null)
+                return null; // not connected to any network
+            for (RouteInfo routeInfo : linkProperties.getRoutes()) {
+                if (routeInfo.isDefaultRoute() && routeInfo.getGateway() != null) {
+                    try {
+                        return InetAddress.getByAddress(routeInfo.getGateway().getAddress()).getHostAddress();
+                    } catch (UnknownHostException e) {
+                        Log.w(TAG, e);
+                    }
+                }
+            }
+        } else {
+            try {
+                Class SystemProperties = Class.forName("android.os.SystemProperties");
+                Method method = SystemProperties.getMethod("get", new Class[]{String.class});
+                String v = (String) method.invoke(null, new Object[]{"wifi.interface"});
+                if (v != null && !v.isEmpty()) {
+                    String ip = (String) method.invoke(null, new Object[]{"dhcp." + v + ".gateway"});
+                    return ip;
+                }
+            } catch (RuntimeException e) {
+                Log.w(TAG, e);
+            } catch (ClassNotFoundException e) {
+                Log.w(TAG, e);
+            } catch (InvocationTargetException e) {
+                Log.w(TAG, e);
+            } catch (NoSuchMethodException e) {
+                Log.w(TAG, e);
+            } catch (IllegalAccessException e) {
+                Log.w(TAG, e);
+            }
+        }
+        return null;
     }
 
     @SuppressLint("MissingPermission") // ACCESS_NETWORK_STATE
