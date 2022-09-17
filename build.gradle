@@ -27,8 +27,8 @@ android {
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 675
-        versionName "1.35.26"
+        versionCode 676
+        versionName "1.35.27"
         consumerProguardFiles 'consumer-proguard-rules.pro'
     }
     buildTypes {
@@ -115,6 +115,7 @@ dependencies {
     api 'com.android.support:appcompat-v7:25.3.1'
     api 'com.android.support:preference-v7:25.3.1'
     api 'com.android.support:mediarouter-v7:25.3.1'
+    api 'com.android.support:design:25.3.1'
     api 'com.linkedin.dexmaker:dexmaker:2.28.1'
     api 'cz.msebera.android:httpclient:4.4.1.2'
     api 'commons-codec:commons-codec:1.10'
