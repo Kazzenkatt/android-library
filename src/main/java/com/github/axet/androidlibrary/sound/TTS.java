@@ -8,11 +8,9 @@ import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
-import android.support.annotation.NonNull;
 import android.util.AndroidRuntimeException;
 import android.util.Log;
 
-import com.android.dx.Local;
 import com.github.axet.androidlibrary.app.AlarmManager;
 import com.github.axet.androidlibrary.preferences.OptimizationPreferenceCompat;
 import com.github.axet.androidlibrary.widgets.Toast;
@@ -22,9 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
-import java.util.MissingResourceException;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,7 +36,7 @@ public class TTS extends Sound {
     public static final String TTS_INIT = TTS.class.getCanonicalName() + ".TTS_INIT";
 
     public TextToSpeech tts;
-    public Runnable delayed; // delayedSpeach. tts may not be initalized, on init done, run delayed.run()
+    public Runnable delayedTTS; // delayedSpeach. tts may not be initalized, on init done, run delayed.run()
     public int restart; // restart tts once if failed. on apk upgrade tts always failed.
     public Runnable onInit; // once
 
@@ -176,9 +172,9 @@ public class TTS extends Sound {
         handler.removeCallbacks(onInit);
         onInit = null;
 
-        done(delayed);
-        handler.removeCallbacks(delayed);
-        delayed = null;
+        done(delayedTTS);
+        handler.removeCallbacks(delayedTTS);
+        delayedTTS = null;
     }
 
     public void close() { // external close
@@ -193,17 +189,17 @@ public class TTS extends Sound {
         }
         handler.removeCallbacks(onInit);
         onInit = null;
-        dones.remove(delayed);
-        handler.removeCallbacks(delayed);
-        delayed = null;
+        dones.remove(delayedTTS);
+        handler.removeCallbacks(delayedTTS);
+        delayedTTS = null;
     }
 
     public void playSpeech(final Speak speak, final Runnable done) {
         dones.add(done);
 
-        dones.remove(delayed);
-        handler.removeCallbacks(delayed);
-        delayed = null;
+        dones.remove(delayedTTS);
+        handler.removeCallbacks(delayedTTS);
+        delayedTTS = null;
 
         if (tts == null)
             ttsCreate();
@@ -212,9 +208,9 @@ public class TTS extends Sound {
         final Runnable clear = new Runnable() {
             @Override
             public void run() {
-                dones.remove(delayed);
-                handler.removeCallbacks(delayed);
-                delayed = null;
+                dones.remove(delayedTTS);
+                handler.removeCallbacks(delayedTTS);
+                delayedTTS = null;
                 done(done);
             }
         };
@@ -233,9 +229,9 @@ public class TTS extends Sound {
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            dones.remove(delayed);
-                            handler.removeCallbacks(delayed);
-                            delayed = null;
+                            dones.remove(delayedTTS);
+                            handler.removeCallbacks(delayedTTS);
+                            delayedTTS = null;
                         }
                     });
                 }
@@ -276,9 +272,9 @@ public class TTS extends Sound {
         if (!playSpeech(speak)) {
             Log.d(TAG, TTS_WAIT);
             Toast.makeText(context, TTS_WAIT, Toast.LENGTH_SHORT).show();
-            dones.remove(delayed);
-            handler.removeCallbacks(delayed);
-            delayed = new Runnable() {
+            dones.remove(delayedTTS);
+            handler.removeCallbacks(delayedTTS);
+            delayedTTS = new Runnable() {
                 @Override
                 public void run() {
                     Log.d(TAG, "delayed run()");
@@ -292,22 +288,22 @@ public class TTS extends Sound {
                             Log.d(TAG, TTS_FAILED_RESTART);
                             restart++;
                             Toast.makeText(context, TTS_FAILED_RESTART, Toast.LENGTH_SHORT).show();
-                            dones.remove(delayed);
-                            handler.removeCallbacks(delayed);
-                            delayed = new Runnable() {
+                            dones.remove(delayedTTS);
+                            handler.removeCallbacks(delayedTTS);
+                            delayedTTS = new Runnable() {
                                 @Override
                                 public void run() {
                                     playSpeech(speak, done);
                                 }
                             };
-                            dones.add(delayed);
-                            handler.postDelayed(delayed, DELAYED_DELAY);
+                            dones.add(delayedTTS);
+                            handler.postDelayed(delayedTTS, DELAYED_DELAY);
                         }
                     }
                 }
             };
-            dones.add(delayed);
-            handler.postDelayed(delayed, DELAYED_DELAY);
+            dones.add(delayedTTS);
+            handler.postDelayed(delayedTTS, DELAYED_DELAY);
         }
     }
 
