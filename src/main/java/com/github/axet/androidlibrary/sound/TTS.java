@@ -372,7 +372,24 @@ public class TTS extends Sound {
     public boolean playSpeech(Speak speak) {
         if (onInit != null)
             return false;
-        return playSpeech(speak.locale, speak.text);
+        setLanguage(speak.locale); // live
+        String u = Integer.toString(speak.hashCode());
+        if (Build.VERSION.SDK_INT >= 21) {
+            Bundle params = new Bundle();
+            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, getSoundChannel().streamType);
+            params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, getVolume());
+            if (tts.speak(speak.text, TextToSpeech.QUEUE_FLUSH, params, u) != TextToSpeech.SUCCESS)
+                return false;
+        } else {
+            HashMap<String, String> params = new HashMap<>();
+            params.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(getSoundChannel().streamType));
+            params.put(TextToSpeech.Engine.KEY_PARAM_VOLUME, Float.toString(getVolume()));
+            params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, u);
+            if (tts.speak(speak.text, TextToSpeech.QUEUE_FLUSH, params) != TextToSpeech.SUCCESS)
+                return false;
+        }
+        restart = 0;
+        return true;
     }
 
     public void sort(ArrayList<Locale> ll) {
@@ -421,27 +438,6 @@ public class TTS extends Sound {
         return d;
     }
 
-    public boolean playSpeech(Locale locale, String speak) {
-        setLanguage(locale); // live
-        String u = Integer.toString(speak.hashCode());
-        if (Build.VERSION.SDK_INT >= 21) {
-            Bundle params = new Bundle();
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, getSoundChannel().streamType);
-            params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, getVolume());
-            if (tts.speak(speak, TextToSpeech.QUEUE_FLUSH, params, u) != TextToSpeech.SUCCESS)
-                return false;
-        } else {
-            HashMap<String, String> params = new HashMap<>();
-            params.put(TextToSpeech.Engine.KEY_PARAM_STREAM, String.valueOf(getSoundChannel().streamType));
-            params.put(TextToSpeech.Engine.KEY_PARAM_VOLUME, Float.toString(getVolume()));
-            params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, u);
-            if (tts.speak(speak, TextToSpeech.QUEUE_FLUSH, params) != TextToSpeech.SUCCESS)
-                return false;
-        }
-        restart = 0;
-        return true;
-    }
-
     public void onStart(String utteranceId) {
     }
 
@@ -449,6 +445,7 @@ public class TTS extends Sound {
     }
 
     public void onDone(String utteranceId) {
+        Log.d(TAG, "onDone " + utteranceId);
         Runnable r = utterance.get(utteranceId);
         if (r != null) {
             done(r);
@@ -457,6 +454,7 @@ public class TTS extends Sound {
     }
 
     public void onError(String utteranceId) {
+        Log.d(TAG, "onError " + utteranceId);
         Runnable r = utterance.get(utteranceId);
         if (r != null) {
             done(r);
