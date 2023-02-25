@@ -1,4 +1,4 @@
-3.6.0 and later no longer supports SDK9
+3.6.0 and later no longer supports SDK9.
 
 NoClassDefFoundError: java.util.Objects
 
@@ -17,6 +17,10 @@ Causing a crash due to calling Objects.requireNonNull(test) inside (compiler tim
 Keep using:
 
 classpath 'com.android.tools.build:gradle:3.5.4'
+
+Gradle notes:
+
+gradle-plugin:3.5.4 requires gradle 5.4.1+
 
 Links:
 
