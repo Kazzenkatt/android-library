@@ -17,3 +17,7 @@ Causing a crash due to calling Objects.requireNonNull(test) inside (compiler tim
 Keep using:
 
 classpath 'com.android.tools.build:gradle:3.5.4'
+
+Links:
+
+* https://developer.android.com/studio/releases/gradle-plugin
