@@ -942,6 +942,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 final EditTextDialog edit = new EditTextDialog(getContext());
+                edit.setTitle(R.string.legacy_title);
                 edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
