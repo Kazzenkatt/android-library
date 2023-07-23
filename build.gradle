@@ -1,34 +1,32 @@
 buildscript {
     repositories {
         mavenLocal()
-        jcenter()
+        mavenCentral()
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.4' // see notes-gradle-4.0.0.txt
+        classpath 'com.android.tools.build:gradle:3.5.4'
         classpath 'digital.wup:android-maven-publish:3.6.2'
     }
 }
 
 repositories {
     mavenLocal()
-    jcenter()
+    mavenCentral()
     google()
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'digital.wup.android-maven-publish' // 'gradle publishToMavenLocal' and 'publish' tasks
 
 android {
     compileSdkVersion 25
-
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 677
-        versionName "1.35.28"
+        versionCode 678
+        versionName "1.35.29"
         consumerProguardFiles 'consumer-proguard-rules.pro'
     }
     buildTypes {
@@ -122,6 +120,6 @@ dependencies {
     api 'org.jsoup:jsoup:1.14.3'
     api 'commons-io:commons-io:2.5' // older android requires 2.5
     api('net.i2p.android.ext:floatingactionbutton:1.10.1') { exclude group: 'com.android.support' }
-    api('com.github.axet:java-unrar:1.7.0-4') { exclude group: 'commons-logging', module: 'commons-logging' }
+    api('com.github.axet:java-unrar:1.7.0-4') { exclude group: 'commons-logging' }
     api 'com.github.axet:zip4j:2.9.0-1'
 }
