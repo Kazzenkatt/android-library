@@ -24,6 +24,7 @@ import com.github.axet.androidlibrary.widgets.WebViewCustom;
 
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -57,7 +58,7 @@ public class AboutPreferenceCompat extends DialogPreference {
 
     public static String getVersion(PackageManager pm, Context context) throws PackageManager.NameNotFoundException {
         PackageInfo pInfo = pm.getPackageInfo(context.getPackageName(), 0);
-        return V + pInfo.versionName;
+        return pInfo.versionName;
     }
 
     public static void setName(TextView t) {
@@ -90,7 +91,30 @@ public class AboutPreferenceCompat extends DialogPreference {
         return title;
     }
 
+    public static String loadStringResource(Context context, int id) {
+        try {
+            Resources res = context.getResources();
+            InputStream is = res.openRawResource(id);
+            return IOUtils.toString(is, Charset.defaultCharset());
+        } catch (RuntimeException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static WebViewCustom buildView(Context context, int id) {
+        try {
+            String html = loadStringResource(context, id);
+            return buildView(context, html);
+        } catch (Exception e) {
+            return buildView(context, HttpClient.toStackTrace(e));
+        }
+    }
+
+    public static String replaceVersion(Context context, String html) {
+        return html.replaceAll("%%VERSION%%", getVersion(context));
+    }
+
+    public static WebViewCustom buildView(Context context, String html) {
         WebViewCustom web = new WebViewCustom(context) {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, final String url) {
@@ -99,14 +123,7 @@ public class AboutPreferenceCompat extends DialogPreference {
             }
         };
         web.getSettings().setBuiltInZoomControls(false);
-        try {
-            Resources res = context.getResources();
-            InputStream is = res.openRawResource(id);
-            String html = IOUtils.toString(is, Charset.defaultCharset());
-            web.loadHtmlWithBaseURL("", html, "");
-        } catch (Exception e) {
-            web.loadHtmlWithBaseURL("", HttpClient.toStackTrace(e), "");
-        }
+        web.loadHtmlWithBaseURL("", html, "");
         return web;
     }
 
@@ -197,7 +214,7 @@ public class AboutPreferenceCompat extends DialogPreference {
             id = a.getResourceId(R.styleable.AboutPreferenceCompat_html, -1);
         }
         setPersistent(false);
-        setSummary(getApplicationName(getContext()) + " " + getVersion(getContext()));
+        setSummary(getApplicationName(getContext()) + " " + V + getVersion(getContext()));
         setTitle(getContext().getString(R.string.menu_about));
     }
 
