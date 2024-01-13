@@ -1,8 +1,12 @@
 package com.github.axet.androidlibrary.preferences;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Build;
 import android.os.LocaleList;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
 import android.util.AttributeSet;
 import android.view.inputmethod.InputMethodInfo;
@@ -11,16 +15,31 @@ import android.view.inputmethod.InputMethodSubtype;
 
 import com.github.axet.androidlibrary.R;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 public class TTSPreferenceCompat extends ListPreference {
     public static String ZZ = "[Developer] Accented English";
+
+    public static void showTTS(Context context) {
+        if (Build.VERSION.SDK_INT >= 14) {
+            Intent intent = new Intent();
+            intent.setAction("com.android.settings.TTS_SETTINGS");
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        } else {
+            ComponentName componentToLaunch = new ComponentName(
+                    "com.android.settings",
+                    "com.android.settings.TextToSpeechSettings");
+            Intent intent = new Intent();
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setComponent(componentToLaunch);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        }
+    }
 
     public static void addLocale(HashSet<Locale> list, Locale l) {
         String s = l.toString();
@@ -134,5 +153,33 @@ public class TTSPreferenceCompat extends ListPreference {
     protected void notifyChanged() {
         super.notifyChanged();
         setSummary(getEntry());
+    }
+
+    @Override
+    protected void onClick() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getTitle());
+        String e = getValue();
+        int i = findIndexOfValue(e);
+        builder.setSingleChoiceItems(getEntries(), i, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                setValue(getEntryValues()[which].toString());
+                dialog.dismiss();
+            }
+        });
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.setNeutralButton("TTS", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                showTTS(getContext());
+            }
+        });
+        builder.show();
     }
 }
