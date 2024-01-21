@@ -4,16 +4,20 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.LocaleList;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
 import android.util.AttributeSet;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
+import android.widget.Button;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.widgets.ThemeUtils;
 
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -155,8 +159,7 @@ public class TTSPreferenceCompat extends ListPreference {
         setSummary(getEntry());
     }
 
-    @Override
-    protected void onClick() {
+    protected void onClick() { // TODO use onPreferenceDisplayDialog
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle(getTitle());
         String e = getValue();
@@ -174,12 +177,18 @@ public class TTSPreferenceCompat extends ListPreference {
                 dialog.dismiss();
             }
         });
-        builder.setNeutralButton("TTS", new DialogInterface.OnClickListener() {
+        builder.setNeutralButton(" ", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 showTTS(getContext());
             }
         });
-        builder.show();
+        AlertDialog d = builder.create();
+        d.show();
+        Drawable s = getContext().getDrawable(R.drawable.ic_open_in_new_black_24dp);
+        s = DrawableCompat.wrap(s);
+        DrawableCompat.setTint(s, ThemeUtils.getThemeColor(getContext(), android.R.attr.colorAccent));
+        Button n = d.getButton(DialogInterface.BUTTON_NEUTRAL);
+        n.setCompoundDrawablesWithIntrinsicBounds(s, null, null, null);
     }
 }

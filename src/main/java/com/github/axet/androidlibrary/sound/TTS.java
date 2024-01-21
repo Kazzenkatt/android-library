@@ -375,8 +375,7 @@ public class TTS extends Sound {
         if (onInit != null)
             return false;
         if (!engine.equals(tts.getDefaultEngine())) {
-            tts.shutdown();
-            tts = null;
+            closeTTS();
             ttsCreate();
             return false;
         }
