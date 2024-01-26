@@ -10,11 +10,12 @@ import android.os.LocaleList;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
+import android.text.SpannableStringBuilder;
+import android.text.style.ImageSpan;
 import android.util.AttributeSet;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
-import android.widget.Button;
 
 import com.github.axet.androidlibrary.R;
 import com.github.axet.androidlibrary.widgets.ThemeUtils;
@@ -110,6 +111,22 @@ public class TTSPreferenceCompat extends ListPreference {
         return String.format("%s (%s)", n, v);
     }
 
+    public static CharSequence getImageText(final Context context, int res, final int tint) {
+        SpannableStringBuilder t = new SpannableStringBuilder();
+        t.append(" ");
+        ImageSpan img = new ImageSpan(context, res) {
+            @Override
+            public Drawable getDrawable() {
+                Drawable d = super.getDrawable();
+                d = DrawableCompat.wrap(d);
+                DrawableCompat.setTint(d, ThemeUtils.getThemeColor(context, tint));
+                return d;
+            }
+        };
+        t.setSpan(img, t.length() - 1, t.length(), 0);
+        return t;
+    }
+
     public TTSPreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         create();
@@ -177,7 +194,7 @@ public class TTSPreferenceCompat extends ListPreference {
                 dialog.dismiss();
             }
         });
-        builder.setNeutralButton(" ", new DialogInterface.OnClickListener() {
+        builder.setNeutralButton(getImageText(getContext(), R.drawable.ic_open_in_new_black_24dp, android.R.attr.colorAccent), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 showTTS(getContext());
@@ -185,10 +202,5 @@ public class TTSPreferenceCompat extends ListPreference {
         });
         AlertDialog d = builder.create();
         d.show();
-        Drawable s = getContext().getDrawable(R.drawable.ic_open_in_new_black_24dp);
-        s = DrawableCompat.wrap(s);
-        DrawableCompat.setTint(s, ThemeUtils.getThemeColor(getContext(), android.R.attr.colorAccent));
-        Button n = d.getButton(DialogInterface.BUTTON_NEUTRAL);
-        n.setCompoundDrawablesWithIntrinsicBounds(s, null, null, null);
     }
 }
