@@ -996,9 +996,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
         } else if (config.reset) {
             setNeutralButton(R.string.reset_to_default, new DialogInterface.OnClickListener() {
                 @Override
-                public void onClick(DialogInterface dialog2, int which) {
+                public void onClick(DialogInterface dialog, int which) {
                     setCurrentPath(null);
-                    dialog2.dismiss();
                     AlertDialog a = (AlertDialog) dialog;
                     a.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
                 }
