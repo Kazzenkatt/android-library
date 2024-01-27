@@ -94,7 +94,7 @@ public class MainApplication extends Application {
         }
     }
 
-    public static String formatDuration(Context context, long diff) {
+    public static String formatDuration(Context context, long diff, boolean days, boolean hours, boolean ms) {
         int diffMilliseconds = (int) (diff % 1000);
         int diffSeconds = (int) (diff / 1000 % 60);
         int diffMinutes = (int) (diff / (60 * 1000) % 60);
@@ -103,14 +103,21 @@ public class MainApplication extends Application {
 
         String str = "";
 
-        if (diffDays > 0)
+        if (diffDays > 0 || days)
             str = diffDays + context.getString(R.string.days_symbol) + " " + formatTime(diffHours) + ":" + formatTime(diffMinutes) + ":" + formatTime(diffSeconds);
-        else if (diffHours > 0)
+        else if (diffHours > 0 || hours)
             str = formatTime(diffHours) + ":" + formatTime(diffMinutes) + ":" + formatTime(diffSeconds);
         else
             str = formatTime(diffMinutes) + ":" + formatTime(diffSeconds);
 
+        if (ms)
+            str += "." + diffMilliseconds;
+
         return str;
+    }
+
+    public static String formatDuration(Context context, long diff) {
+        return formatDuration(context, diff, false, false, false);
     }
 
     public static String formatLeft(Context context, int diff) {
