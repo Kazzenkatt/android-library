@@ -92,4 +92,6 @@
         <item>Φωτεινό</item>
         <item>Σκοτεινό</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

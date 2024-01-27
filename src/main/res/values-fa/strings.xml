@@ -82,4 +82,6 @@
         <item>پوسته روشن</item>
         <item>پوسته تاریک</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

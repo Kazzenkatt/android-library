@@ -83,4 +83,6 @@
         <item>亮色佈景主題</item>
         <item>暗色佈景主題</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

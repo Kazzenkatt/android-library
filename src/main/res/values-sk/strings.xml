@@ -87,4 +87,6 @@
         <item>Svetlý vzhľad</item>
         <item>Tmavý vzhľad</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

@@ -84,4 +84,6 @@
         <item>Jasny motyw</item>
         <item>Ciemny motyw</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

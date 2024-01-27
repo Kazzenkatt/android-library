@@ -81,4 +81,6 @@
         <item>テーマ ホワイト</item>
         <item>テーマ ダーク</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

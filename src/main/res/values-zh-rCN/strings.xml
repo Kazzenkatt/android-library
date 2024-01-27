@@ -84,4 +84,6 @@
         <item>明亮主题</item>
         <item>黑暗主题</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

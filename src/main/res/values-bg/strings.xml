@@ -84,5 +84,7 @@
         <item>Светло</item>
         <item>Тъмно</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>
 

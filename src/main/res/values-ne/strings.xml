@@ -83,4 +83,6 @@
         <item>उज्यालो थिम</item>
         <item>अँघ्यारो थिम</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

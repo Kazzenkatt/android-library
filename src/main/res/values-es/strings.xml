@@ -81,4 +81,6 @@
         <item>Tema claro</item>
         <item>Tema oscuro</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

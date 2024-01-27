@@ -83,4 +83,6 @@
         <item>Chủ đề trắng</item>
         <item>Chủ đề đen</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

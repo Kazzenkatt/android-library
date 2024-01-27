@@ -84,4 +84,6 @@
         <item>ערכת עיצוב בהירה</item>
         <item>ערכת עיצוב כהה</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>

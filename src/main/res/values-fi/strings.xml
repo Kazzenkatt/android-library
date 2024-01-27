@@ -84,4 +84,6 @@
         <item>Vaalea</item>
         <item>Tumma</item>
     </string-array>
+
+    <string name="reset_to_default">Reset</string>
 </resources>
