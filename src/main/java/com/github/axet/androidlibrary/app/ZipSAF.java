@@ -249,8 +249,12 @@ public class ZipSAF extends NativeStorage {
     @Override
     public boolean renameTo(NativeStorage f) {
         String name = Storage.getDocumentName(context, ((ZipSAF) f).u);
-        Uri m = DocumentsContract.renameDocument(context.getContentResolver(), u, name);
-        return m != null;
+        try {
+            Uri m = DocumentsContract.renameDocument(context.getContentResolver(), u, name);
+            return m != null;
+        } catch (FileNotFoundException e) {
+            return false;
+        }
     }
 
     @Override
@@ -272,7 +276,11 @@ public class ZipSAF extends NativeStorage {
 
     @Override
     public boolean delete() {
-        return DocumentsContract.deleteDocument(context.getContentResolver(), u);
+        try {
+            return DocumentsContract.deleteDocument(context.getContentResolver(), u);
+        } catch (FileNotFoundException e) {
+            return false;
+        }
     }
 
     @Override
