@@ -21,7 +21,7 @@ apply plugin: 'signing'
 apply plugin: 'digital.wup.android-maven-publish' // 'gradle publishToMavenLocal' and 'publish' tasks
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 31
     defaultConfig {
         minSdkVersion 9
         targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
