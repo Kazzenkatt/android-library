@@ -37,7 +37,7 @@ public class OpenChoicer {
 
     public Context context;
     public OpenFileDialog.DIALOG_TYPE type;
-    public OpenFileDialog.Config config;
+    public OpenFileDialog.Config config = new OpenFileDialog.Config();
     public Uri old;
     public Activity a;
     public Fragment f;

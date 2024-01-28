@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -97,7 +98,7 @@ public class Storage {
     protected ContentResolver resolver;
 
     public static class PermissionDenied extends RuntimeException {
-        public PermissionDenied(){
+        public PermissionDenied() {
             super("Permission denied");
         }
     }
@@ -328,7 +329,16 @@ public class Storage {
 
     public static boolean isSame(File f, File t) {
         try {
-            return f.getCanonicalPath().equals(t.getCanonicalPath());
+            if (f.equals(t))
+                return true;
+            if (f.getCanonicalPath().equals(t.getCanonicalPath()))
+                return true;
+            long ls = ino(f);
+            long lt = ino(t);
+            if (ls != -1 && lt != -1 && ls == lt)
+                return true;
+            else
+                return false;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -386,6 +396,17 @@ public class Storage {
             os.close();
         } catch (IOException e) {
             Log.e(TAG, "touch failed", e);
+        }
+    }
+
+    public static long ino(File file) {
+        try {
+            if (Build.VERSION.SDK_INT >= 26)
+                return (Long) Files.getAttribute(file.toPath(), "unix:ino");
+            else
+                return -1;
+        } catch (UnsupportedOperationException | IllegalArgumentException | IOException e) {
+            return -1;
         }
     }
 
@@ -591,7 +612,8 @@ public class Storage {
             ParcelFileDescriptor pfd = resolver.openFileDescriptor(docTreeUri, "r");
             StructStatVfs stats = Os.fstatvfs(pfd.getFileDescriptor());
             return stats.f_bavail * stats.f_bsize;
-        } catch (Exception e) { // IllegalArgumentException | FileNotFoundException | ErrnoException | NullPointerException (readExceptionWithFileNotFoundExceptionFromParcel)
+        } catch (
+                Exception e) { // IllegalArgumentException | FileNotFoundException | ErrnoException | NullPointerException (readExceptionWithFileNotFoundExceptionFromParcel)
             return 0;
         }
     }
@@ -992,7 +1014,8 @@ public class Storage {
             int privateFlags = (int) AssetsDexLoader.getPrivateField(info.getClass(), "privateFlags").get(info);
             if ((privateFlags & PRIVATE_FLAG_REQUEST_LEGACY_EXTERNAL_STORAGE) == PRIVATE_FLAG_REQUEST_LEGACY_EXTERNAL_STORAGE)
                 return true; // requestLegacyExternalStorage enabled
-        } catch (PackageManager.NameNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (PackageManager.NameNotFoundException | NoSuchFieldException |
+                 IllegalAccessException e) {
             Log.w(TAG, e);
         }
         return false;
@@ -1104,12 +1127,14 @@ public class Storage {
         if (Build.VERSION.SDK_INT >= 21 && s.equals(ContentResolver.SCHEME_CONTENT)) {
             return DocumentsContract.renameDocument(resolver, f, t);
         } else if (s.equals(ContentResolver.SCHEME_FILE)) {
-            File f1 = getFile(f);
-            File ff = new File(f1.getParent(), t);
-            if (ff.exists())
-                ff = getNextFile(ff);
-            f1.renameTo(ff);
-            return Uri.fromFile(ff);
+            File fs = getFile(f);
+            File ft = new File(fs.getParent(), t);
+            if (isSame(fs, ft))
+                return Uri.fromFile(ft);
+            if (ft.exists())
+                ft = getNextFile(ft);
+            fs.renameTo(ft);
+            return Uri.fromFile(ft);
         } else {
             throw new UnknownUri();
         }
