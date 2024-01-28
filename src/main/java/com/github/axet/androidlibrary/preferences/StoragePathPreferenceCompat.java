@@ -53,12 +53,16 @@ public class StoragePathPreferenceCompat extends EditTextPreference {
     }
 
     public void create() {
-        choicer = new OpenStorageChoicer(storage, OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, false) {
+        choicer = new OpenStorageChoicer(storage, OpenFileDialog.DIALOG_TYPE.FOLDER_DIALOG, new OpenFileDialog.Config(false, true, true)) {
             @Override
             public void onResult(Uri uri) {
-                if (callChangeListener(uri.toString())) {
-                    setText(uri.toString());
-                }
+                String s;
+                if (uri == null)
+                    s = new File(StoragePathPreference.getDefault(), def).getAbsolutePath();
+                else
+                    s = uri.toString();
+                if (callChangeListener(s))
+                    setText(s);
             }
         };
         choicer.def = def;

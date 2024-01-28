@@ -28,6 +28,11 @@ public class OpenStorageChoicer extends OpenChoicer {
         this.storage = storage;
     }
 
+    public OpenStorageChoicer(Storage storage, OpenFileDialog.DIALOG_TYPE type, OpenFileDialog.Config config) {
+        super(type, config);
+        this.storage = storage;
+    }
+
     public OpenStorageChoicer(Storage storage, OpenFileDialog.DIALOG_TYPE type, boolean readonly, String def) {
         super(type, readonly);
         this.storage = storage;

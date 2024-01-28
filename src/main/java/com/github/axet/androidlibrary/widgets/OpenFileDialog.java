@@ -988,6 +988,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                                     a.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
                                 } else {
                                     dialog2.dismiss();
+                                    dialog.dismiss();
                                 }
                             } else {
                                 setCurrentPath(new File(s));
