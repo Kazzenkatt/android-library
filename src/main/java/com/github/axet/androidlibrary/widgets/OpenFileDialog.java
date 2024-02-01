@@ -98,8 +98,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
     protected int paddingTop;
     protected Runnable changeFolder;
 
-    // file / folder readonly dialog selection or output directory? also shows readonly folder tooltip.
-    protected boolean readonly = false;
+    protected boolean readonly;
     // allow select files, or just select directory
     protected DIALOG_TYPE type = DIALOG_TYPE.BOOTH;
 
@@ -684,7 +683,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
     public OpenFileDialog(Context context, DIALOG_TYPE type, boolean readonly) {
         this(context, type);
-        setReadonly(readonly);
+        this.readonly = readonly;
     }
 
     public int dp2px(int dp) {
@@ -938,21 +937,6 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
         listView.setAdapter(adapter);
 
-        setNeutralButton(getContext().getString(R.string.manual_path), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                final EditTextDialog edit = new EditTextDialog(getContext());
-                edit.setTitle(R.string.legacy_title);
-                edit.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        setCurrentPath(new File(edit.getText()));
-                    }
-                });
-                edit.show();
-            }
-        });
-
         final AlertDialog d = super.create();
 
         onshow = new DialogInterface.OnShowListener() {
@@ -996,11 +980,6 @@ public class OpenFileDialog extends AlertDialog.Builder {
         adapter.selectedIndex = i;
     }
 
-    // dialog to set output directory / file or readonly dialog?
-    public void setReadonly(boolean b) {
-        readonly = b;
-    }
-
     // file select dialog or directory select dialog?
     public void setSelectFiles(DIALOG_TYPE type) {
         this.type = type;
@@ -1024,7 +1003,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
     public void setCurrentPath(File path) {
         currentPath = path;
-        if (adapter != null) { // created?
+        if (adapter != null) {
             adapter.currentPath = path;
             rebuildFiles();
         }

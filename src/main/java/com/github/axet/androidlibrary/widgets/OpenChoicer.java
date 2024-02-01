@@ -299,11 +299,10 @@ public class OpenChoicer {
                         if (!ff.isDirectory())
                             ff = ff.getParentFile();
                         Button b2 = d.getButton(AlertDialog.BUTTON_POSITIVE);
-                        if (!ff.canWrite()) {
+                        if (!ff.canWrite())
                             b2.setEnabled(false);
-                        } else {
+                        else
                             b2.setEnabled(true);
-                        }
                     }
                 });
             }
@@ -322,7 +321,10 @@ public class OpenChoicer {
             @Override
             public void onClick(DialogInterface d, int which) {
                 File f = dialog.getCurrentPath();
-                onResult(Uri.fromFile(f), false);
+                if (f == null)
+                    onResult(null, false);
+                else
+                    onResult(Uri.fromFile(f), false);
             }
         });
         dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {

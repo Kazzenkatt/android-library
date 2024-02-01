@@ -9,7 +9,7 @@ import com.github.axet.androidlibrary.app.Storage;
 import java.io.File;
 
 public class OpenStorageChoicer extends OpenChoicer {
-    public String def; // default name (for default location) can be null
+    public String def; // Default Button. default name (for default location) can be null
     public Storage storage;
 
     public static String getDefault() {

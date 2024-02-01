@@ -41,6 +41,7 @@ public class TTS extends Sound {
     public int restart; // restart tts once if failed. on apk upgrade tts always failed.
     public Runnable onInit; // once
     public TreeMap<String, Runnable> utterance = new TreeMap<>();
+    String engine; // current engiine
 
     public static void startTTSInstall(Context context) {
         try {
@@ -160,6 +161,7 @@ public class TTS extends Sound {
                 handler.post(onInit);
             }
         });
+        engine = tts.getDefaultEngine();
     }
 
     public void onInit() {
@@ -372,6 +374,11 @@ public class TTS extends Sound {
     public boolean playSpeech(Speak speak) {
         if (onInit != null)
             return false;
+        if (!engine.equals(tts.getDefaultEngine())) {
+            closeTTS();
+            ttsCreate();
+            return false;
+        }
         setLanguage(speak.locale); // live
         String u = Integer.toString(speak.hashCode());
         if (Build.VERSION.SDK_INT >= 21) {
