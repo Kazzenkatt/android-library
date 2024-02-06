@@ -88,6 +88,20 @@ public class WifiKeepService extends Service {
         w.setWifiEnabled(true);
     }
 
+    public static String getprop(String prop) {
+        try {
+            Class SystemProperties = Class.forName("android.os.SystemProperties");
+            Method method = SystemProperties.getMethod("get", new Class[]{String.class});
+            return (String) method.invoke(null, new Object[]{prop});
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static String getWifiInterface() {
+        return getprop("wifi.interface");
+    }
+
     @SuppressLint("MissingPermission") // ACCESS_WIFI_STATE
     public static String getGatewayIP(Context context) {
         final WifiManager w = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE); // must be on application context
@@ -112,22 +126,10 @@ public class WifiKeepService extends Service {
             }
         } else {
             try {
-                Class SystemProperties = Class.forName("android.os.SystemProperties");
-                Method method = SystemProperties.getMethod("get", new Class[]{String.class});
-                String v = (String) method.invoke(null, new Object[]{"wifi.interface"});
-                if (v != null && !v.isEmpty()) {
-                    String ip = (String) method.invoke(null, new Object[]{"dhcp." + v + ".gateway"});
-                    return ip;
-                }
+                String v = getWifiInterface();
+                if (v != null && !v.isEmpty())
+                    return getprop("dhcp." + v + ".gateway");
             } catch (RuntimeException e) {
-                Log.w(TAG, e);
-            } catch (ClassNotFoundException e) {
-                Log.w(TAG, e);
-            } catch (InvocationTargetException e) {
-                Log.w(TAG, e);
-            } catch (NoSuchMethodException e) {
-                Log.w(TAG, e);
-            } catch (IllegalAccessException e) {
                 Log.w(TAG, e);
             }
         }
