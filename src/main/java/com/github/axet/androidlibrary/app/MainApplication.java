@@ -166,14 +166,17 @@ public class MainApplication extends Application {
     public static int getTheme(Context context, String key, int light, int dark) {
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         String theme = shared.getString(key, "");
-        if (theme.isEmpty() || theme.equals(context.getString(R.string.Theme_System))) {
-            int system = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (system == Configuration.UI_MODE_NIGHT_YES)
-                return dark;
-            else
-                return light;
-        }
+        if (theme.isEmpty() || theme.equals(context.getString(R.string.Theme_System)))
+            return getTheme(context, light, dark);
         if (theme.equals(context.getString(R.string.Theme_Dark)))
+            return dark;
+        else
+            return light;
+    }
+
+    public static int getTheme(Context context, int light, int dark) {
+        int system = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (system == Configuration.UI_MODE_NIGHT_YES)
             return dark;
         else
             return light;
