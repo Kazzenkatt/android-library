@@ -82,6 +82,7 @@
         <item>@string/system_default</item>
         <item>Vaalea</item>
         <item>Tumma</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

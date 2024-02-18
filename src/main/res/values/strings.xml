@@ -82,5 +82,6 @@
         <item>@string/system_default</item>
         <item>Theme White</item>
         <item>Theme Dark</item>
+        <item>Theme Dark Black</item>
     </string-array>
 </resources>

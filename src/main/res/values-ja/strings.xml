@@ -79,6 +79,7 @@
         <item>@string/system_default</item>
         <item>テーマ ホワイト</item>
         <item>テーマ ダーク</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>
