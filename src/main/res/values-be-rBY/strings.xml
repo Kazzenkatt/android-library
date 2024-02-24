@@ -90,6 +90,7 @@
         <item>@string/system_default</item>
         <item>Светлая тэма</item>
         <item>Цёмная тэма</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

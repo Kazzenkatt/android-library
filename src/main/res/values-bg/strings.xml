@@ -82,6 +82,7 @@
         <item>@string/system_default</item>
         <item>Светло</item>
         <item>Тъмно</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

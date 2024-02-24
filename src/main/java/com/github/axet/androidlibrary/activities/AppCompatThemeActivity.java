@@ -7,39 +7,27 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.content.res.TypedArray;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
-import android.os.BadParcelableException;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
-import android.os.PersistableBundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.transition.Transition;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
-import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.PopupWindow;
 
 import com.github.axet.androidlibrary.R;
+import com.github.axet.androidlibrary.app.MainApplication;
 import com.github.axet.androidlibrary.widgets.RemoteViewsCompat;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 public abstract class AppCompatThemeActivity extends AppCompatActivity {
     public static String TAG = AppCompatThemeActivity.class.getSimpleName();
@@ -170,6 +158,9 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         }
     }
 
+    public AppCompatThemeActivity() {
+    }
+
     public void setAppTheme(int id) {
         super.setTheme(id);
         themeId = id;
@@ -192,7 +183,9 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         animations = new ActivityAnimations(theme);
     }
 
-    public abstract int getAppTheme();
+    public int getAppTheme() {
+        return MainApplication.getTheme(this, R.style.AppThemeLightLib, R.style.AppThemeDarkLib, R.style.AppThemeDarkBlackLib);
+    }
 
     @SuppressLint("RestrictedApi")
     public int getAppThemeBar(Toolbar toolbar) { // old api, need to set theme excplitly for toolbar
@@ -225,8 +218,19 @@ public abstract class AppCompatThemeActivity extends AppCompatActivity {
         super.attachBaseContext(newBase);
     }
 
+    public void checkTranslucent() { // TODO figure it out, how to create transparent initial activity window / themed (black or white) window
+        PackageManager pm = getPackageManager();
+        try {
+            ActivityInfo ai = pm.getActivityInfo(getComponentName(), 0);
+            if (ai.theme != android.R.style.Theme_Translucent_NoTitleBar)
+                Log.d(TAG, "Please set android:theme=\"@android:style/Theme.Translucent.NoTitleBar\" for themed activity to prevent white blinking on activity start");
+        } catch (PackageManager.NameNotFoundException ignored) {
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        checkTranslucent();
         setAppTheme(getAppTheme());
         super.onCreate(savedInstanceState == null ? getIntent().getBundleExtra(SAVE_INSTANCE_STATE) : savedInstanceState);
         if (manifestThemeId != themeId && !getIntent().getBooleanExtra(OVERRIDE_PENDING_TRANSITION, false))

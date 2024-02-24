@@ -80,6 +80,7 @@
         <item>@string/system_default</item>
         <item>پوسته روشن</item>
         <item>پوسته تاریک</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

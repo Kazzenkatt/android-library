@@ -85,6 +85,7 @@
         <item>@string/system_default</item>
         <item>Svetlý vzhľad</item>
         <item>Tmavý vzhľad</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

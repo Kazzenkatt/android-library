@@ -82,6 +82,7 @@
         <item>@string/system_default</item>
         <item>Helles Aussehen</item>
         <item>Dunkles Aussehen</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

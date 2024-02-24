@@ -164,19 +164,41 @@ public class MainApplication extends Application {
     }
 
     public static int getTheme(Context context, String key, int light, int dark) {
+        return getTheme(context, key, light, dark, -1);
+    }
+
+    public static int getTheme(Context context, String key, int light, int dark, int black) {
         SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(context);
         String theme = shared.getString(key, "");
-        if (theme.isEmpty() || theme.equals(context.getString(R.string.Theme_System))) {
-            int system = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-            if (system == Configuration.UI_MODE_NIGHT_YES)
-                return dark;
-            else
-                return light;
-        }
-        if (theme.equals(context.getString(R.string.Theme_Dark)))
+        if (theme.isEmpty() || theme.equals(context.getString(R.string.Theme_System)))
+            return getTheme(context, light, dark, black);
+        if (theme.equals(context.getString(R.string.Theme_Dark))) {
             return dark;
-        else
+        } else if (theme.equals(context.getString(R.string.Theme_Dark_Black))) {
+            if (black != -1)
+                return black;
+            else
+                return dark;
+        }
+        return light;
+    }
+
+    public static int getTheme(Context context, int light, int dark) {
+        return getTheme(context, light, dark, -1);
+    }
+
+    public static int getTheme(Context context, int light, int dark, int black) {
+        int system = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        if (system == Configuration.UI_MODE_NIGHT_YES) {
+            if (black != -1) {
+                String v = LineageSettings.System.getString(context.getContentResolver(), LineageSettings.BERRY_DARK_OVERLAY);
+                if (v != null && v.equals(LineageSettings.OVERLAY_BLACK))
+                    return black;
+            }
+            return dark;
+        } else {
             return light;
+        }
     }
 
     @Override

@@ -87,6 +87,7 @@
         <item>@string/system_default</item>
         <item>Тема Светлый</item>
         <item>Тема Темный</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

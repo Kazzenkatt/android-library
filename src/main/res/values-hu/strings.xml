@@ -82,6 +82,7 @@
         <item>@string/system_default</item>
         <item>Világos téma</item>
         <item>Sötét téma</item>
+        <item>Theme Dark Black</item>
     </string-array>
 
 </resources>

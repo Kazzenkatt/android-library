@@ -2,7 +2,7 @@
 
     <style name="Translucent" parent="@android:style/Theme.Translucent.NoTitleBar" />
 
-   <!-- @android:style/TextAppearance.Toast -->
+    <!-- @android:style/TextAppearance.Toast -->
     <style name="TextAppearance_Toast" parent="@android:style/TextAppearance">
         <item name="android:fontFamily">sans-serif-condensed</item>
     </style>
@@ -30,6 +30,10 @@
         <item name="android:windowIsFloating">false</item>
     </style>
 
+    <style name="AppThemeLightDialogLib" parent="@style/Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">@color/colorAccentLight</item>
+    </style>
+
     <style name="toolbar_icon_text">
         <item name="android:layout_marginTop">8dp</item>
         <item name="android:paddingLeft">5dp</item>
@@ -45,6 +49,20 @@
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
         <item name="android:windowIsTranslucent">false</item>
         <item name="android:windowIsFloating">false</item>
+    </style>
+
+    <style name="AppThemeDarkDialogLib" parent="@style/Theme.AppCompat.Dialog.Alert">
+        <item name="colorAccent">@color/colorAccentDark</item>
+        <item name="android:background">@color/background_material_dark</item>
+    </style>
+
+    <style name="AppThemeDarkBlackLib" parent="AppThemeDarkLib">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <style name="AppThemeDarkBlackDialogLib" parent="@style/Theme.AppCompat.Dialog.Alert">
+        <item name="colorAccent">@color/colorAccentDark</item>
+        <item name="android:background">@color/background_material_dark</item>
     </style>
 
 </resources>
