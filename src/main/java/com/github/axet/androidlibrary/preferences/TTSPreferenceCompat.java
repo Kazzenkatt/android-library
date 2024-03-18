@@ -10,6 +10,7 @@ import android.os.LocaleList;
 import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.ListPreference;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ImageSpan;
 import android.util.AttributeSet;
@@ -112,18 +113,17 @@ public class TTSPreferenceCompat extends ListPreference {
     }
 
     public static CharSequence getImageText(final Context context, int res, final int tint) {
+        Drawable d = context.getResources().getDrawable(res);
+        d = DrawableCompat.wrap(d);
+        DrawableCompat.setTint(d, ThemeUtils.getThemeColor(context, tint));
+        return getImageText(d);
+    }
+
+    public static CharSequence getImageText(Drawable d) {
         SpannableStringBuilder t = new SpannableStringBuilder();
-        t.append(" ");
-        ImageSpan img = new ImageSpan(context, res) {
-            @Override
-            public Drawable getDrawable() {
-                Drawable d = super.getDrawable();
-                d = DrawableCompat.wrap(d);
-                DrawableCompat.setTint(d, ThemeUtils.getThemeColor(context, tint));
-                return d;
-            }
-        };
-        t.setSpan(img, t.length() - 1, t.length(), 0);
+        t.append("!");
+        ImageSpan img = new ImageSpan(d);
+        t.setSpan(img, t.length() - 1, t.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return t;
     }
 
