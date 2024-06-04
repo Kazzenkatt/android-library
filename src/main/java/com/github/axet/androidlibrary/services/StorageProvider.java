@@ -273,6 +273,9 @@ public class StorageProvider extends ContentProvider {
         public void close() throws IOException {
             is.close();
         }
+
+        public void onClose(File tmp, IOException e) { // SDK19+ / RW only
+        }
     }
 
     public static class ParcelInputStream extends ParcelFileDescriptor {
@@ -701,7 +704,17 @@ public class StorageProvider extends ContentProvider {
                         Log.d(TAG, "copy close error", e);
                     }
                 }
-                return ParcelFileDescriptor.open(tmp, FileProvider.modeToMode(mode));
+                if (Build.VERSION.SDK_INT >= 19) {
+                    final File finalTmp = tmp;
+                    return ParcelFileDescriptor.open(tmp, FileProvider.modeToMode(mode), handler, new ParcelFileDescriptor.OnCloseListener() {
+                        @Override
+                        public void onClose(IOException e) {
+                            is.onClose(finalTmp, e);
+                        }
+                    });
+                } else {
+                    return ParcelFileDescriptor.open(tmp, FileProvider.modeToMode(mode));
+                }
             }
         } catch (IOException e) {
             throw fnfe(e);
