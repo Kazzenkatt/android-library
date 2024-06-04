@@ -84,11 +84,12 @@ public class ErrorDialog extends AlertDialog.Builder {
     }
 
     public static void unhandled(Context context, Thread t, Throwable e) {
-        saveCrash(context, e);
-        if (context instanceof Application)
+        if (context instanceof Application) {
+            saveCrash(context, e);
             Toast.makeText(context, ERROR + " " + toMessage(e), Toast.LENGTH_SHORT).show();
-        else
+        } else {
             Error(context, e);
+        }
     }
 
     public static Throwable getCause(Throwable e) { // get to the bottom
