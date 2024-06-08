@@ -48,6 +48,7 @@ import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -111,6 +112,15 @@ public class OpenFileDialog extends AlertDialog.Builder {
         }
     };
 
+    public static <T> void addAll(Collection<T> list, Collection<T> ee) {
+        if (Build.VERSION.SDK_INT < 11) {
+            for (T f : ee)
+                list.add(f); // API11< has no Collection.addAll()
+        } else {
+            list.addAll(ee);
+        }
+    }
+
     public static long getTotalBytes(StatFs fs) {
         if (Build.VERSION.SDK_INT >= 18)
             return fs.getTotalBytes();
@@ -162,11 +172,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
             TreeSet<File> list = new TreeSet<>();
             list.add(old);
             Set<File> tmp = CACHE.put(path, list);
-            if (tmp != null) {
-                for (File f : tmp) {
-                    list.add(f);
-                }
-            }
+            if (tmp != null)
+                addAll(list, tmp);
             old = path;
             path = path.getParentFile();
         }
@@ -570,12 +577,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
             try {
                 List<File> ff = cache(currentPath, null);
                 if (ff != null) {
-                    if (Build.VERSION.SDK_INT < 11) {
-                        for (File f : ff)
-                            files.add(f); // API11< has no Collection.addAll()
-                    } else {
-                        files.addAll(ff);
-                    }
+                    addAll(files, ff);
                     Collections.sort(files, new SortFiles());
                 }
             } catch (RuntimeException e) {
