@@ -597,6 +597,15 @@ public class OpenFileDialog extends AlertDialog.Builder {
         public File open(String name) {
             return new File(currentPath, name);
         }
+
+        public File delete(int pos) {
+            File ff = files.get(pos);
+            ff.delete();
+            CACHE.remove(ff);
+            CACHE.get(ff.getParentFile()).remove(ff);
+            scan();
+            return ff;
+        }
     }
 
     public static class EditTextDialog extends AlertDialog.Builder {
@@ -876,12 +885,8 @@ public class OpenFileDialog extends AlertDialog.Builder {
                                 return true;
                             }
                             if (item.getTitle().equals(getContext().getString(R.string.filedialog_delete))) {
-                                File ff = adapter.files.get(position);
-                                ff.delete();
-                                CACHE.remove(ff);
-                                CACHE.get(ff.getParentFile()).remove(ff);
+                                File ff = adapter.delete(position);
                                 toast(getContext().getString(R.string.filedialog_folderdeleted, ff.getName()));
-                                adapter.scan();
                                 return true;
                             }
                             return false;
