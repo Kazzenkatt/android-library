@@ -80,6 +80,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
     protected static int FOLDER_ICON = R.drawable.ic_folder;
     protected static int FILE_ICON = R.drawable.ic_file;
+    public static int PADDING = 14;
 
     protected static Map<File, Set<File>> CACHE = new TreeMap<>(); // cache folders, keep folder visible, when android shows _none_
 
@@ -89,14 +90,11 @@ public class OpenFileDialog extends AlertDialog.Builder {
     protected TextView path;
     protected TextView message;
     protected RecyclerView listView;
+    protected StorageAdapter storage;
     protected FileAdapter adapter;
     protected DialogInterface.OnShowListener onshow;
     protected DialogInterface.OnClickListener neutral;
 
-    protected int paddingLeft;
-    protected int paddingRight;
-    protected int paddingBottom;
-    protected int paddingTop;
     protected Runnable changeFolder;
 
     protected boolean readonly;
@@ -261,21 +259,23 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
     public static class StorageAdapter implements ListAdapter {
         ArrayList<File> list = new ArrayList<>();
-        OpenFileDialog builder;
+        Context context;
+        boolean readonly;
 
-        public StorageAdapter(OpenFileDialog b) {
-            this.builder = b;
+        public StorageAdapter(Context context, boolean readonly) {
+            this.context = context;
+            this.readonly = readonly;
             File ext = Environment.getExternalStorageDirectory();
             cache(ext);
-            if (ext == null || (!builder.readonly && !ext.canWrite()))
-                ext = getLocalInternal(builder.getContext());
+            if (ext == null || (!readonly && !ext.canWrite()))
+                ext = getLocalInternal(context);
             add(ext);
-            File data = getDataDir(builder.getContext());
-            File datae = builder.getContext().getExternalCacheDir();
+            File data = getDataDir(context);
+            File datae = context.getExternalCacheDir();
             if (datae != null)
                 datae = datae.getParentFile();
             if (Build.VERSION.SDK_INT >= 19) {
-                File[] ff = getLocalExternals(builder.getContext(), builder.readonly);
+                File[] ff = getLocalExternals(context, readonly);
                 if (ff != null) {
                     for (File f : ff) {
                         if (f == null)
@@ -296,7 +296,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
                                 p = f;
                                 f = f.getParentFile();
                             }
-                            if (!builder.readonly) { // help user find writable root if algorithm above failed
+                            if (!readonly) { // help user find writable root if algorithm above failed
                                 for (int i = pp.size() - 1; i >= 0; i--) {
                                     p = pp.get(i);
                                     if (p.canWrite()) {
@@ -328,7 +328,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
         boolean add(File f) {
             if (f == null)
                 return false;
-            if (!builder.readonly && !f.canWrite())
+            if (!readonly && !f.canWrite())
                 return false;
             for (int i = 0; i < list.size(); i++) {
                 String s = list.get(i).getPath();
@@ -396,23 +396,25 @@ public class OpenFileDialog extends AlertDialog.Builder {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
-                LayoutInflater inflater = LayoutInflater.from(builder.getContext());
+                LayoutInflater inflater = LayoutInflater.from(context);
 
-                final LinearLayout titlebar = new LinearLayout(builder.getContext());
+                int padding = ThemeUtils.dp2px(context, PADDING);
+
+                final LinearLayout titlebar = new LinearLayout(context);
                 titlebar.setOrientation(LinearLayout.HORIZONTAL);
-                titlebar.setPadding(builder.paddingLeft, 0, builder.paddingRight, 0);
+                titlebar.setPadding(padding, 0, padding, 0);
                 titlebar.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 TextView title = (TextView) inflater.inflate(android.R.layout.simple_list_item_1, null);
                 title.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                title.setPadding(0, builder.paddingTop, 0, builder.paddingBottom);
+                title.setPadding(0, padding, 0, padding);
                 title.setTag("text");
 
-                PathMax textMax = new PathMax(builder.getContext(), title);
+                PathMax textMax = new PathMax(context, title);
                 textMax.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 titlebar.addView(textMax);
 
-                TextView free = new TextView(builder.getContext());
+                TextView free = new TextView(context);
                 free.setTag("free");
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 lp.gravity = Gravity.CENTER;
@@ -426,7 +428,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
             TextView title = (TextView) convertView.findViewWithTag("text");
             title.setText(f.getPath());
             TextView free = (TextView) convertView.findViewWithTag("free");
-            free.setText(MainApplication.formatSize(builder.getContext(), Storage.getFree(f)));
+            free.setText(MainApplication.formatSize(context, Storage.getFree(f)));
 
             return convertView;
         }
@@ -685,20 +687,12 @@ public class OpenFileDialog extends AlertDialog.Builder {
         super(context);
         this.type = type;
         currentPath = Environment.getExternalStorageDirectory();
-        paddingLeft = dp2px(14);
-        paddingRight = dp2px(14);
-        paddingTop = dp2px(14);
-        paddingBottom = dp2px(14);
         cache(context);
     }
 
     public OpenFileDialog(Context context, DIALOG_TYPE type, boolean readonly) {
         this(context, type);
         this.readonly = readonly;
-    }
-
-    public int dp2px(int dp) {
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getContext().getResources().getDisplayMetrics());
     }
 
     protected void toast(String msg) {
@@ -710,16 +704,17 @@ public class OpenFileDialog extends AlertDialog.Builder {
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
         int dp2 = ThemeUtils.dp2px(getContext(), 2);
+        int padding = ThemeUtils.dp2px(getContext(), PADDING);
 
         // title layout
         final LinearLayout titlebar = new LinearLayout(getContext());
         titlebar.setOrientation(LinearLayout.HORIZONTAL);
-        titlebar.setPadding(paddingLeft, 0, paddingRight, 0);
+        titlebar.setPadding(padding, 0, padding, 0);
         titlebar.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         path = (TextView) inflater.inflate(android.R.layout.simple_list_item_1, null);
         path.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        path.setPadding(0, paddingTop, dp2, paddingBottom);
+        path.setPadding(0, padding, dp2, padding);
 
         PathMax textMax = new PathMax(getContext(), path);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
@@ -743,7 +738,6 @@ public class OpenFileDialog extends AlertDialog.Builder {
         titlebar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final StorageAdapter storage = new StorageAdapter(OpenFileDialog.this);
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                 builder.setSingleChoiceItems(storage, storage.find(adapter.currentPath), new DialogInterface.OnClickListener() {
                     @Override
@@ -763,7 +757,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
             TextView t = new AppCompatTextView(getContext());
             TextViewCompat.setTextAppearance(t, R.style.TextAppearance_AppCompat_Title);
             t.setText(title);
-            t.setPadding(paddingLeft, paddingTop, paddingRight, 0);
+            t.setPadding(padding, padding, padding, 0);
             titlebarVert.addView(t);
             titlebarVert.addView(titlebar);
             setCustomTitle(titlebarVert);
@@ -775,7 +769,11 @@ public class OpenFileDialog extends AlertDialog.Builder {
         final LinearLayout main = new LinearLayout(getContext());
         main.setOrientation(LinearLayout.VERTICAL);
         main.setMinimumHeight(getLinearLayoutMinHeight(getContext()));
-        main.setPadding(paddingLeft, 0, paddingRight, 0);
+        main.setPadding(padding, 0, padding, 0);
+
+        if (storage == null) {
+            storage = new StorageAdapter(getContext(), readonly);
+        }
 
         if (adapter == null) {
             adapter = new FileAdapter(getContext(), currentPath);
@@ -817,7 +815,7 @@ public class OpenFileDialog extends AlertDialog.Builder {
 
             if (!readonly) { // show new folder button
                 AppCompatButton textView = new AppCompatButton(getContext());
-                textView.setPadding(paddingLeft, 0, paddingRight, 0);
+                textView.setPadding(padding, 0, padding, 0);
                 textView.setText(R.string.filedialog_newfolder);
                 textView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 textView.setOnClickListener(new View.OnClickListener() {
