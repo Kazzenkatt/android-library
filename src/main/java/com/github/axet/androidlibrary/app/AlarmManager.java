@@ -32,6 +32,13 @@ public class AlarmManager {
         return MainApplication.SIMPLE.format(new Date(time));
     }
 
+    public static String formatNano(long time) {
+        long t = time / 1000000;
+        long ms = time % 1000000000 / 1000000;
+        long ns = time % 1000000;
+        return MainApplication.SIMPLE.format(new Date(t)) + String.format(".%03d", ms) + String.format(".%06d", ns);
+    }
+
     public static String formatDuration(Context context, long diff) {
         int diffMilliseconds = (int) (diff % 1000);
         return MainApplication.formatDuration(context, diff) + "." + diffMilliseconds;
