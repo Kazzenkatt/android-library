@@ -134,12 +134,19 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         if (BOOT != 0)
             return BOOT;
         ArrayList<Pair<Long, Long>> list = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            long start = System.currentTimeMillis();
-            long el = SystemClock.elapsedRealtime();
-            long end = System.currentTimeMillis();
-            long d = end - start;
-            list.add(new Pair<>(d, end - el));
+        for (int i = 0; i < 12; i++) {
+            long start = System.nanoTime();
+            long first = System.currentTimeMillis() * 1000 * 1000;
+            long el;
+            if (Build.VERSION.SDK_INT >= 17)
+                el = SystemClock.elapsedRealtimeNanos();
+            else
+                el = SystemClock.elapsedRealtime() * 1000 * 1000;
+            long last = System.currentTimeMillis() * 1000 * 1000;
+            long end = System.nanoTime();
+            if (first != last)
+                continue;
+            list.add(new Pair<>(end - start, last - el));
         }
         Collections.sort(list, new Comparator<Pair<Long, Long>>() {
             @Override
@@ -157,7 +164,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             count++;
             i++;
         }
-        long time = total / count / 1000 * 1000;
+        long time = total / count / 1000 / 1000 / 1000 * 1000;
         BOOT = time;
         return time;
     }
