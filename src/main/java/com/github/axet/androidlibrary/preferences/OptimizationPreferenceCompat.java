@@ -130,7 +130,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         return true;
     }
 
-    public static long getBootTime() { // rounded time, to keep it stable
+    public static long getBootTime() { // rounded time, to keep it a bit more stable
         if (BOOT != 0)
             return BOOT;
         ArrayList<Pair<Long, Long>> list = new ArrayList<>();
@@ -157,7 +157,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             count++;
             i++;
         }
-        long time = total / count;
+        long time = total / count / 1000 * 1000;
         BOOT = time;
         return time;
     }
