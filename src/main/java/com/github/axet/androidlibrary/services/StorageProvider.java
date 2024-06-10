@@ -1,6 +1,7 @@
 package com.github.axet.androidlibrary.services;
 
 import android.annotation.TargetApi;
+import android.content.ClipDescription;
 import android.content.ContentProvider;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -95,6 +96,14 @@ public class StorageProvider extends ContentProvider {
                 return e.getMessage();
             }
         }.initCause(e);
+    }
+
+    public static Intent shareIntent(Context context, String subj, String text) {
+        Intent intent = new Intent(android.content.Intent.ACTION_SEND);
+        intent.setType(ClipDescription.MIMETYPE_TEXT_PLAIN);
+        intent.putExtra(android.content.Intent.EXTRA_SUBJECT, subj);
+        intent.putExtra(android.content.Intent.EXTRA_TEXT, text);
+        return Intent.createChooser(intent, context.getString(R.string.shared_via, AboutPreferenceCompat.getApplicationName(context)));
     }
 
     public static boolean isExternal(Uri uri) { // need to share()
