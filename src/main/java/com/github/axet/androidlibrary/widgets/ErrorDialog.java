@@ -88,7 +88,7 @@ public class ErrorDialog extends AlertDialog.Builder {
     public static void unhandled(Context context, Thread t, Throwable e) {
         if (context instanceof Application) {
             File f = saveCrash(context, e);
-            Toast.makeText(context, ERROR + " " + toMessage(e) + "\nFull report: " + f.getName(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, ERROR + " " + toMessage(e) + "\nFile: " + f.getName(), Toast.LENGTH_SHORT).show();
         } else {
             Error(context, e);
         }
