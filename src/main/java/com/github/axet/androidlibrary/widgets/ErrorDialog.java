@@ -33,8 +33,6 @@ public class ErrorDialog extends AlertDialog.Builder {
 
     public static Thread.UncaughtExceptionHandler OLD;
 
-    public File error;
-
     public static StringBuilder fullCrash(Context context, Throwable e) {
         StringBuilder sb = new StringBuilder();
         sb.append(AboutPreferenceCompat.getApplicationName(context));
@@ -52,6 +50,10 @@ public class ErrorDialog extends AlertDialog.Builder {
     public static File saveCrash(Context context, Throwable e) {
         Log.e(TAG, "Error", e);
         StringBuilder sb = fullCrash(context, e);
+        return saveCrash(context, sb);
+    }
+
+    public static File saveCrash(Context context, StringBuilder sb) {
         File d = context.getFilesDir();
         d = new File(d, "crash_" + System.currentTimeMillis() + ".txt");
         try {
@@ -85,11 +87,16 @@ public class ErrorDialog extends AlertDialog.Builder {
 
     public static void unhandled(Context context, Thread t, Throwable e) {
         if (context instanceof Application) {
-            saveCrash(context, e);
+            File f = saveCrash(context, e);
+            crashToast(context, f);
             Toast.makeText(context, ERROR + " " + toMessage(e), Toast.LENGTH_SHORT).show();
         } else {
             Error(context, e);
         }
+    }
+
+    public static void crashToast(Context context, File f) {
+        Toast.makeText(context, "Crash report saved to: " + f, Toast.LENGTH_SHORT).show();
     }
 
     public static Throwable getCause(Throwable e) { // get to the bottom
@@ -114,27 +121,10 @@ public class ErrorDialog extends AlertDialog.Builder {
         return msg;
     }
 
-    public ErrorDialog(@NonNull Context context, Throwable e) {
-        this(context, toMessage(e));
-    }
-
-    public ErrorDialog(@NonNull Context context, String msg) {
+    public ErrorDialog(@NonNull final Context context) {
         super(context);
         setTitle(ERROR);
-        setMessage(msg);
         setIcon(android.R.drawable.ic_dialog_alert);
-        if (error != null) {
-            setNeutralButton(TTSPreferenceCompat.getImageText(context, R.drawable.ic_open_in_new_black_24dp, R.attr.colorAccent), new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    String name = "crash.txt";
-                    Uri uri = Uri.fromFile(error);
-                    Intent share = StorageProvider.getProvider().shareIntent(uri, Storage.getTypeByName(name), Storage.getNameNoExt(name));
-                    if (!OptimizationPreferenceCompat.startActivity(getContext(), share))
-                        android.widget.Toast.makeText(getContext(), "Unsupported", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
         setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -142,13 +132,37 @@ public class ErrorDialog extends AlertDialog.Builder {
         });
     }
 
+    public ErrorDialog(@NonNull final Context context, final Throwable e) {
+        this(context);
+        final StringBuilder sb = fullCrash(context, e);
+        final File f = saveCrash(context, sb);
+        crashToast(context, f);
+        final String msg = toMessage(e);
+        setMessage(msg);
+        setNeutralButton(TTSPreferenceCompat.getImageText(context, R.drawable.ic_open_in_new_black_24dp, R.attr.colorAccent), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String name = "crash.txt";
+                Intent share = StorageProvider.shareIntent(context, name, sb.toString());
+                if (!OptimizationPreferenceCompat.startActivity(getContext(), share))
+                    Toast.makeText(getContext(), "Unsupported", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    public ErrorDialog(@NonNull final Context context, final String msg) {
+        this(context);
+        setMessage(msg);
+    }
+
     public static void Post(final Context context, final Throwable e) {
-        final File f = saveCrash(context, e);
+        File f = saveCrash(context, e);
+        crashToast(context, f);
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Error(context, toMessage(e), f);
+                Error(context, toMessage(e));
             }
         });
     }
@@ -164,21 +178,12 @@ public class ErrorDialog extends AlertDialog.Builder {
     }
 
     public static AlertDialog Error(Context context, Throwable e) {
-        return Error(context, e, null);
-    }
-
-    public static AlertDialog Error(Context context, Throwable e, File f) {
-        saveCrash(context, e);
-        return Error(context, ErrorDialog.toMessage(e), f);
+        ErrorDialog builder = new ErrorDialog(context, e);
+        return builder.show();
     }
 
     public static AlertDialog Error(Context context, String msg) {
-        return Error(context, msg, null);
-    }
-
-    public static AlertDialog Error(Context context, String msg, File f) {
         ErrorDialog builder = new ErrorDialog(context, msg);
-        builder.error = f;
         return builder.show();
     }
 }
