@@ -148,15 +148,15 @@ public class SuperUser {
         }
     }
 
-    public static Exception errno(String func, int errno) {
+    public static Exception errno(String func, int errno, Throwable e) {
         if (Build.VERSION.SDK_INT >= 21) {
-            return new ErrnoException(func, errno);
+            return new ErrnoException(func, errno, e);
         } else {
             try {
                 Class ErrnoException = Class.forName("libcore.io.ErrnoException");
-                return (Exception) ErrnoException.getDeclaredConstructor(String.class, int.class).newInstance(func, errno);
+                return (Exception) ErrnoException.getDeclaredConstructor(String.class, int.class).newInstance(func, errno, e);
             } catch (Exception ignore) {
-                return new IOException(func + ": " + errno);
+                return new IOException(func + ": " + errno, e);
             }
         }
     }
@@ -327,7 +327,7 @@ public class SuperUser {
         try {
             Process sh = Runtime.getRuntime().exec(new String[]{BIN_SH, "-c", BIN_TRAP + " '" + BIN_TRUE + "' ERR"});
             return TRAPERR = sh.waitFor() == 0;
-        } catch (IOException e) {
+        } catch (IOException ignore) {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -692,6 +692,9 @@ public class SuperUser {
         }
 
         public Commands(String cmd) {
+            if(cmd.startsWith("null")) {
+                throw new RuntimeException(cmd);
+            }
             add(cmd);
         }
 
@@ -791,10 +794,9 @@ public class SuperUser {
 
         public Exception errno() {
             if (stderr != null && !stderr.isEmpty())
-                return SuperUser.errno(stderr, errno);
-            if (e != null)
-                return SuperUser.errno(ErrorDialog.toMessage(e), errno);
-            return SuperUser.errno("", errno);
+                return SuperUser.errno(stderr, errno, e);
+            else
+                return SuperUser.errno("Unknown error", errno, e);
         }
     }
 
