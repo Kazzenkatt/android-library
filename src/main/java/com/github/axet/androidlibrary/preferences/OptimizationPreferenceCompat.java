@@ -212,12 +212,6 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
         pm.setComponentEnabledSetting(name, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
     }
 
-    public static void setComponentEnabled(Context context, Class<?> klass, boolean b) { // adb shell "pm disable com.github.axet.smsgate/.services.ImapSmsReplyService"
-        ComponentName name = new ComponentName(context, klass);
-        PackageManager pm = context.getPackageManager();
-        pm.setComponentEnabledSetting(name, b ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, 0);
-    }
-
     public static Intent IntentClassName(String p, String n) {
         Intent intent = new Intent();
         intent.setClassName(p, n);
