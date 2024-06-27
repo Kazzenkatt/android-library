@@ -27,9 +27,5 @@ public class OnBootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "onReceive " + intent);
-        onBootReceived(context);
-    }
-
-    public void onBootReceived(Context context) { // android.intent.action.EXTERNAL_APPLICATIONS_AVAILABLE received on external app == ON BOOT EVENT
     }
 }
