@@ -299,14 +299,14 @@ public class AssetsDexLoader {
         public ArrayList<Library> getDeps(String dep) {
             String[] dd = dep.split(":");
             ArrayList<Library> kk = new ArrayList<>();
-            if (dd.length == 3) {
+            if (dd.length == 3) { // group:artifact:version specified
                 Library info = mm.get(dep);
                 if (info != null)
                     return info.deps;
             }
             for (String id : mm.keySet()) {
                 String[] ss = id.split(":");
-                if (dd.length == 1) {
+                if (dd.length == 1) { // artifact only specified
                     if (ss[1].equals(dd[0])) {
                         Library info = mm.get(id);
                         for (Library l : getDeps(info)) {
