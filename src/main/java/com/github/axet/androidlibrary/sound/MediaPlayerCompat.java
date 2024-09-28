@@ -431,7 +431,7 @@ public class MediaPlayerCompat {
             final Method getAudioContentTypeForStreamType = Util.getMethod("getAudioContentTypeForStreamType", int.class);
             Class C = forName("com.google.android.exoplayer2.C");
             final long TIME_UNSET = C.getField("TIME_UNSET").getLong(null);
-            final Class PlayerView = forName("com.google.android.exoplayer2.ui.PlayerView");
+            final Class PlayerView = forName("com.google.android.exoplayer2.ui.SimpleExoPlayerView");
             final Class AudioAttributes$Builder = forName("com.google.android.exoplayer2.audio.AudioAttributes$Builder");
             final Class MediaSource = forName("com.google.android.exoplayer2.source.MediaSource");
             final MediaPlayerCompat mp = new MediaPlayerCompat() {
