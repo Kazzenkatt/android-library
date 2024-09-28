@@ -657,7 +657,10 @@ public class MediaPlayerCompat {
                             onPlayerError((Exception) args[0]);
                             break;
                         case "onTimelineChanged":
-                            onTimelineChanged(args[0], args[1], (int) args[2]);
+                            if (args.length == 2) // 2.5.4
+                                onTimelineChanged(args[0], args[1], 0);
+                            else // 2.7.3
+                                onTimelineChanged(args[0], args[1], (int) args[2]);
                             break;
                         case "onTracksChanged":
                             onTracksChanged(args[0], args[1]);
