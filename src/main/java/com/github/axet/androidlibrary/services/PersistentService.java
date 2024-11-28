@@ -72,7 +72,7 @@ public class PersistentService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (optimization.onStartCommand(intent, flags, startId)) {
+        if (optimization != null && optimization.onStartCommand(intent, flags, startId)) {
             Log.d(TAG, "onStartCommand restart"); // crash fail
             onRestartCommand();
         }
