@@ -11,8 +11,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AlertDialog;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import android.util.Log;
 
 import com.github.axet.androidlibrary.R;
@@ -180,7 +180,7 @@ public class ErrorDialog extends AlertDialog.Builder {
         crashToast(context, f);
         final String msg = toMessage(e);
         setMessage(msg);
-        setNeutralButton(TTSPreferenceCompat.getImageText(context, R.drawable.ic_open_in_new_black_24dp, R.attr.colorAccent), new DialogInterface.OnClickListener() {
+        setNeutralButton(TTSPreferenceCompat.getImageText(context, R.drawable.ic_open_in_new_black_24dp, androidx.appcompat.R.attr.colorAccent), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String name = "crash.txt";

@@ -9,8 +9,8 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Icon;
 import android.os.Build;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.view.ContextThemeWrapper;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.view.ContextThemeWrapper;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -142,8 +142,8 @@ public class RemoteViewsCompat extends RemoteViews {
         @SuppressLint("RestrictedApi")
         public int getButtonStyle(Resources.Theme theme, Context context) {
             TypedValue style = new TypedValue();
-            if (theme.resolveAttribute(R.attr.buttonStyle, style, true)) {
-                if (style.resourceId == R.style.Widget_AppCompat_Button) {
+            if (theme.resolveAttribute(androidx.appcompat.R.attr.buttonStyle, style, true)) {
+                if (style.resourceId == androidx.appcompat.R.style.Widget_AppCompat_Button) {
                     ContextThemeWrapper w = new ContextThemeWrapper(context, style.resourceId);
                     Resources.Theme t = w.getTheme();
                     TypedValue out = new TypedValue();
@@ -155,7 +155,7 @@ public class RemoteViewsCompat extends RemoteViews {
                             };
                             for (String s : ss) {
                                 if (out.string.equals(s)) { // AppCompat material button
-                                    if (t.resolveAttribute(android.R.attr.buttonStyle, out, true)) { // which theme light or dark?
+                                    if (t.resolveAttribute(androidx.appcompat.R.attr.buttonStyle, out, true)) { // which theme light or dark?
                                         switch (out.resourceId) {
                                             case android.R.style.Widget_Holo_Button:
                                             case android.R.style.Widget_Material_Button:
@@ -178,8 +178,8 @@ public class RemoteViewsCompat extends RemoteViews {
         @SuppressLint("RestrictedApi")
         public int getImageButtonStyle(Resources.Theme theme, Context context) {
             TypedValue style = new TypedValue();
-            if (theme.resolveAttribute(R.attr.imageButtonStyle, style, true)) {
-                if (style.resourceId == R.style.Widget_AppCompat_ImageButton) {
+            if (theme.resolveAttribute(androidx.appcompat.R.attr.imageButtonStyle, style, true)) {
+                if (style.resourceId == androidx.appcompat.R.style.Widget_AppCompat_ImageButton) {
                     ContextThemeWrapper w = new ContextThemeWrapper(context, style.resourceId);
                     Resources.Theme t = w.getTheme();
                     TypedValue out = new TypedValue();
@@ -191,7 +191,7 @@ public class RemoteViewsCompat extends RemoteViews {
                             };
                             for (String s : ss) {
                                 if (out.string.equals(s)) { // AppCompat material button
-                                    if (t.resolveAttribute(android.R.attr.imageButtonStyle, out, true)) { // which theme light or dark?
+                                    if (t.resolveAttribute(androidx.appcompat.R.attr.imageButtonStyle, out, true)) { // which theme light or dark?
                                         switch (out.resourceId) {
                                             case android.R.style.Widget_Holo_ImageButton:
                                             case android.R.style.Widget_Material_ImageButton:

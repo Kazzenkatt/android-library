@@ -1,37 +1,45 @@
 buildscript {
     repositories {
-        mavenLocal()
-        mavenCentral()
         google()
+        mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.4'
-        classpath 'digital.wup:android-maven-publish:3.6.2'
+        classpath 'com.android.tools.build:gradle:8.5.2'
     }
 }
 
 repositories {
-    mavenLocal()
-    mavenCentral()
     google()
+    mavenCentral()
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
-apply plugin: 'digital.wup.android-maven-publish' // 'gradle publishToMavenLocal' and 'publish' tasks
 
 android {
-    compileSdkVersion 31
+    namespace = 'com.github.axet.androidlibrary'
+    compileSdkVersion = 35
+    buildToolsVersion = "36.1.0"
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+    
     defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 23 // 24+ - unable to start intent with 'file://'
-        versionCode 688
-        versionName "1.39.0"
+        minSdkVersion = 24
+        targetSdkVersion = 35
+        versionCode = 690
+        versionName = "1.41.0-androidx-sdk35"
         consumerProguardFiles 'consumer-proguard-rules.pro'
+    }
+    lintOptions {
+        abortOnError = false
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
         }
     }
 }
@@ -39,86 +47,105 @@ android {
 // https://docs.gradle.org/current/userguide/publishing_maven.html
 
 task javadoc(type: Javadoc) {
-    failOnError = false // options.addStringOption('Xdoclint:none', '-quiet')
+    enabled = false  // Disable javadoc for local builds
+    failOnError = false
     source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(project.android.getBootClasspath().join(File.pathSeparator))
+    classpath += project.files(android.bootClasspath)
+    exclude '**/R.java', '**/BuildConfig.java'
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from android.sourceSets.main.java.srcDirs
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId 'com.github.axet'
-            artifactId 'android-library'
-            version android.defaultConfig.versionName
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId = 'com.github.axet'
+                artifactId = 'android-library'
+                version = android.defaultConfig.versionName
 
-            from components.android
-            artifact sourcesJar
-            artifact javadocJar
+                artifact bundleReleaseAar
+                artifact sourcesJar
+                artifact javadocJar
 
-            pom {
-                name = 'Android Library'
-                description = 'Android Simple Widgets and Support classes.'
-                url = 'https://gitlab.com/axet/android-library'
-                licenses {
-                    license {
-                        name = 'GNU LESSER GENERAL PUBLIC LICENSE 3.0'
-                        url = 'http://www.gnu.org/copyleft/lesser.html'
+                pom.withXml {
+                    def dependenciesNode = asNode().appendNode('dependencies')
+                    configurations.api.allDependencies.each {
+                        if (it.group != null && it.name != null) {
+                            def dependencyNode = dependenciesNode.appendNode('dependency')
+                            dependencyNode.appendNode('groupId', it.group)
+                            dependencyNode.appendNode('artifactId', it.name)
+                            dependencyNode.appendNode('version', it.version)
+                            dependencyNode.appendNode('scope', 'compile')
+                        }
                     }
                 }
-                developers {
-                    developer {
-                        id = 'axet'
-                        name = 'Alexey Kuznetsov'
-                        email = 'axet@me.com'
+
+                pom {
+                    name = 'Android Library'
+                    description = 'Android Simple Widgets and Support classes.'
+                    url = 'https://gitlab.com/axet/android-library'
+                    licenses {
+                        license {
+                            name = 'GNU LESSER GENERAL PUBLIC LICENSE 3.0'
+                            url = 'http://www.gnu.org/copyleft/lesser.html'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'axet'
+                            name = 'Alexey Kuznetsov'
+                            email = 'axet@me.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:' + pom.url.get()
+                        developerConnection = 'scm:git:' + pom.url.get()
+                        url = pom.url
                     }
                 }
-                scm {
-                    connection = 'scm:git:' + pom.url.get()
-                    developerConnection = 'scm:git:' + pom.url.get()
-                    url = pom.url
+            }
+        }
+        repositories {
+            maven {
+                def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+                def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = project.findProperty('ossrhUsername')
+                    password = project.findProperty('ossrhPassword')
                 }
             }
         }
     }
-    repositories {
-        maven {
-            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-                username project.findProperty('ossrhUsername')
-                password project.findProperty('ossrhPassword')
-            }
-        }
-    }
-}
 
-signing {
-    sign publishing.publications.mavenJava
+    signing {
+        required = { gradle.taskGraph.hasTask("publish") }  // Only sign for remote publish
+        sign publishing.publications.release
+    }
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.12'
-    api 'com.android.support:support-v4:25.3.1'
-    api 'com.android.support:appcompat-v7:25.3.1'
-    api 'com.android.support:preference-v7:25.3.1'
-    api 'com.android.support:mediarouter-v7:25.3.1'
-    api 'com.android.support:design:25.3.1'
+    testImplementation 'junit:junit:4.13.2'
+    api 'androidx.legacy:legacy-support-v4:1.0.0'
+    api 'androidx.appcompat:appcompat:1.6.1'
+    api 'androidx.preference:preference:1.2.1'
+    api 'androidx.mediarouter:mediarouter:1.6.0'
+    api 'androidx.media:media:1.6.0'
+    api 'com.google.android.material:material:1.9.0'
     api 'com.linkedin.dexmaker:dexmaker:2.28.1'
     api 'cz.msebera.android:httpclient:4.4.1.2'
     api 'commons-codec:commons-codec:1.10'
     api 'org.jsoup:jsoup:1.14.3'
-    api 'commons-io:commons-io:2.5' // older android requires 2.5
+    api 'commons-io:commons-io:2.5'
     api('net.i2p.android.ext:floatingactionbutton:1.10.1') { exclude group: 'com.android.support' }
     api('com.github.axet:java-unrar:1.7.0-4') { exclude group: 'commons-logging' }
     api 'com.github.axet:zip4j:2.9.0-1'

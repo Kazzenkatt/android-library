@@ -15,9 +15,9 @@ import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.view.ContextThemeWrapper;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.view.ContextThemeWrapper;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -391,7 +391,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
             create(R.layout.remoteview);
             setIcon(foreground);
             if (Build.VERSION.SDK_INT >= 21)
-                setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.colorButtonNormal));
+                setImageViewTint(R.id.icon_circle, getThemeColor(androidx.appcompat.R.attr.colorButtonNormal));
             else
                 setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.windowBackground));
         }
@@ -399,7 +399,7 @@ public class RemoteNotificationCompat extends NotificationCompat {
         @Override
         public Builder setTheme(int id) {
             super.setTheme(id);
-            setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal));
+            setImageViewTint(R.id.icon_circle, getThemeColor(androidx.appcompat.R.attr.colorButtonNormal));
             if (foreground == 0) // clear default tint if here is app default icon
                 setImageViewTint(R.id.icon, 0);
             return this;
@@ -459,9 +459,9 @@ public class RemoteNotificationCompat extends NotificationCompat {
         @Override
         public NotificationCompat.Builder setSmallIcon(int icon) {
             if (theme != null)
-                setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal));
+                setImageViewTint(R.id.icon_circle, getThemeColor(androidx.appcompat.R.attr.colorButtonNormal));
             else if (Build.VERSION.SDK_INT >= 21)
-                setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.colorButtonNormal));
+                setImageViewTint(R.id.icon_circle, getThemeColor(androidx.appcompat.R.attr.colorButtonNormal));
             else
                 setImageViewTint(R.id.icon_circle, getThemeColor(android.R.attr.windowBackground));
             return super.setSmallIcon(icon);

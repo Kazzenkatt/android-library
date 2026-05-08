@@ -25,13 +25,13 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.widget.TextViewCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.preference.Preference;
-import android.support.v7.preference.PreferenceViewHolder;
-import android.support.v7.preference.SwitchPreferenceCompat;
-import android.support.v7.view.WindowCallbackWrapper;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.widget.TextViewCompat;
+import androidx.appcompat.app.AlertDialog;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceViewHolder;
+import androidx.preference.SwitchPreferenceCompat;
+import androidx.appcompat.view.WindowCallbackWrapper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Pair;
@@ -319,14 +319,15 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             else
                 widgetFrame.setVisibility(View.GONE);
         }
-        PreferenceViewHolder h = new PreferenceViewHolder(pref);
-        p.onBindViewHolder(h);
-        return h;
+        // PreferenceViewHolder h = new PreferenceViewHolder(pref); // TODO: Fix for AndroidX
+        // p.onBindViewHolder(h); // TODO: Fix for AndroidX
+        // return h; // TODO: Fix for AndroidX
+        return null;
     }
 
     public static Context themedContext(Context context) {
         final TypedValue tv = new TypedValue();
-        context.getTheme().resolveAttribute(android.support.v7.preference.R.attr.preferenceTheme, tv, true);
+        context.getTheme().resolveAttribute(androidx.preference.R.attr.preferenceTheme, tv, true);
         int theme = tv.resourceId;
         if (theme == 0)
             throw new IllegalStateException("Must specify preferenceTheme in theme");
@@ -350,7 +351,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
             int dp5 = ThemeUtils.dp2px(context, 5);
             ll.setPadding(dp5, dp5, dp5, dp5);
             TextView desc = new TextView(context);
-            TextViewCompat.setTextAppearance(desc, R.style.TextAppearance_AppCompat_Body1);
+            TextViewCompat.setTextAppearance(desc, androidx.appcompat.R.style.TextAppearance_AppCompat_Body1);
             desc.setText(msg);
             ll.addView(desc);
             builder.icon = new SwitchPreferenceCompat(themedContext(context));
@@ -558,7 +559,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
     }
 
     public static boolean needKillWarning(Context context, String key) { // true - need show warning dialog
-        SharedPreferences shared = android.support.v7.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences shared = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context);
         Object n = shared.getAll().get(key);
         long set; // alarm set time
         long next; // alarm next time
@@ -1136,7 +1137,7 @@ public class OptimizationPreferenceCompat extends SwitchPreferenceCompat {
 
             setTheme(theme)
                     .setChannel(channel)
-                    .setImageViewTint(R.id.icon_circle, getThemeColor(R.attr.colorButtonNormal))
+                    .setImageViewTint(R.id.icon_circle, getThemeColor(androidx.appcompat.R.attr.colorButtonNormal))
                     .setTitle(AboutPreferenceCompat.getApplicationName(mContext))
                     .setText(mContext.getString(R.string.optimization_alive))
                     .setMainIntent(main)

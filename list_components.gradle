@@ -1,0 +1,6 @@
+afterEvaluate {
+    println "Available components:"
+    components.each { component ->
+        println "  - ${component.name}"
+    }
+}

@@ -8,9 +8,9 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.view.ViewCompat;
-import android.support.v7.widget.AppCompatImageView;
+import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.view.ViewCompat;
+import androidx.appcompat.widget.AppCompatImageView;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -72,7 +72,7 @@ public class PopupWindowCompat {
         Context context = anchor.getContext();
         View v = p.getContentView();
         Resources r = context.getResources();
-        float f = getDimension(context, R.attr.dialogPreferredPadding);
+        float f = getDimension(context, androidx.appcompat.R.attr.dialogPreferredPadding);
         DisplayMetrics dm = r.getDisplayMetrics();
         int w = (int) (dm.widthPixels - f * 2);
         int h = (int) (dm.heightPixels - f * 2);
@@ -105,7 +105,7 @@ public class PopupWindowCompat {
     }
 
     public static void showAsTooltip(PopupWindow p, View anchor, int gravity, int maxwidth) {
-        showAsTooltip(p, anchor, gravity, ThemeUtils.getThemeColor(anchor.getContext(), R.attr.colorButtonNormal), maxwidth);
+        showAsTooltip(p, anchor, gravity, ThemeUtils.getThemeColor(anchor.getContext(), androidx.appcompat.R.attr.colorButtonNormal), maxwidth);
     }
 
     public static void showAsTooltip(final PopupWindow p, View anchor, int gravity, int background, int maxwidth) {
@@ -158,7 +158,7 @@ public class PopupWindowCompat {
         }
 
         Resources r = context.getResources();
-        float f = getDimension(context, R.attr.dialogPreferredPadding);
+        float f = getDimension(context, androidx.appcompat.R.attr.dialogPreferredPadding);
         DisplayMetrics dm = r.getDisplayMetrics();
         int w = (int) (dm.widthPixels - f * 2);
         int h = (int) (dm.heightPixels - f * 2);
